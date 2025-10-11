@@ -613,7 +613,9 @@ class RectangularTool(QtWidgets.QLabel):
                 self.making_additional_selection = True
             else:
                 self.making_additional_selection = False
+                self.selections_paths = []
                 selections.clear()
+                self.merged_selection_path = QPainterPath()
                 self.image = self.original_image.copy()
                 self.clear_overlay()
                 #self.update()
@@ -622,7 +624,9 @@ class RectangularTool(QtWidgets.QLabel):
             self.drawing = True
             self.start_point = event.position().toPoint()
             self.update_overlay()
-            self.update()
+
+
+
 
     def mouseMoveEvent(self, event):
         if self.drawing:
@@ -643,6 +647,8 @@ class RectangularTool(QtWidgets.QLabel):
 
     def mouseReleaseEvent(self,event):
         if event.button() == QtCore.Qt.LeftButton:
+            
+
             if self.drawing:
                 self.release_point = event.position().toPoint()
 
@@ -710,6 +716,43 @@ class RectangularTool(QtWidgets.QLabel):
             self.image = self.original_image.copy()
         self.drawing = False
         self.update_overlay()
+
+
+        #convert rectanlge into polygon
+        new_polygon_f = QPolygonF(QPolygon(QtCore.QRect(self.start_point, self.release_point)))
+        new_path = QPainterPath()
+        new_path.addPolygon(new_polygon_f)
+            
+        if not self.making_additional_selection:
+            self.selections_paths = [new_path]
+        else:
+            merged_any_polygons = False
+
+            #merge polygons if overlapping
+            for i, path in enumerate(list(self.selections_paths)):
+                if path.intersects(new_path):
+                    merge_path = path.united(new_path)
+
+                    self.selections_paths[i] = merge_path
+                    merged_any_polygons = True
+
+                    changed = True
+                    while changed:
+                        changed = False
+                        for j, other_path in enumerate(list(self.selections_paths)):
+                            if j == i:
+                                continue
+                            if self.selections_paths[i].intersects(other_path):
+                                self.selections_paths[i] = self.selections_paths[i].united(other_path)
+                                self.selections_paths.pop(j)
+                                changed = True
+                                break
+                    break
+                if not merged_any_polygons:
+                    self.selections_paths.append(new_path)
+        self.points = []
+        self.update_overlay()
+        self.update()
 
 
     def paintEvent(self, event):
@@ -814,16 +857,23 @@ class RectangularTool(QtWidgets.QLabel):
             #painter.setBrush(QtGui.QColor(255,0,0,50))
             #self.commit_rectanlge_to_image(rectangle)
             selections.append(rectangle)
-            
-        if len(selections) > 0:
-            painter.setBrush(QtGui.QColor(255,0,0,50))
 
-            for selection in selections:
-                painter.drawRect(selection)
-                painter.drawPolyline(selection)
-            if not self.drawing:
-                painter.drawRect(rectangle)
-                self.is_first_click_of_selection = True
+        if not self.drawing:
+            self.clear_overlay()
+            
+        outline_pen = QtGui.QPen(QtCore.Qt.red, 2)
+        fill_brush = QtGui.QBrush(QtGui.QColor(255, 0, 0, 50))
+
+        for path in self.selections_paths:
+            all_polys = path.toFillPolygons()
+            for poly_f in all_polys:
+                poly_q = QtGui.QPolygon([QtCore.QPoint(int(round(p.x())), int(round(p.y()))) for p in poly_f])
+                painter.setPen(outline_pen)
+                painter.setBrush(QtCore.Qt.NoBrush)
+                painter.drawPolygon(poly_q)
+                painter.setPen(QtCore.Qt.NoPen)
+                painter.setBrush(fill_brush)
+                painter.drawPolygon(poly_q)
 
     # def commit_rectanlge_to_image(self,rectangle):
     #     painter = QtGui.QPainter(self.image)
@@ -836,6 +886,7 @@ class RectangularTool(QtWidgets.QLabel):
 ###############################################################
 #                       ELLIPSE TOOL                          #
 ###############################################################
+
 class EllipticalTool(QtWidgets.QLabel):
     def __init__(self, image_path):
         super().__init__()
@@ -865,6 +916,9 @@ class EllipticalTool(QtWidgets.QLabel):
         self.setFixedSize(self.image.size())
         self.setWindowTitle("Ellipse Tool")
 
+        self.merged_selection_path = QPainterPath()
+        self.selections_paths = []
+
 
 
     def mousePressEvent(self,event):
@@ -873,7 +927,9 @@ class EllipticalTool(QtWidgets.QLabel):
                 self.making_additional_selection = True
             else:
                 self.making_additional_selection = False
+                self.selections_paths = []
                 selections.clear()
+                self.merged_selection_path = QPainterPath()
                 self.image = self.original_image.copy()
                 self.clear_overlay()
                 #self.update()
@@ -882,7 +938,9 @@ class EllipticalTool(QtWidgets.QLabel):
             self.drawing = True
             self.start_point = event.position().toPoint()
             self.update_overlay()
-            self.update()
+
+
+
 
     def mouseMoveEvent(self, event):
         if self.drawing:
@@ -903,6 +961,8 @@ class EllipticalTool(QtWidgets.QLabel):
 
     def mouseReleaseEvent(self,event):
         if event.button() == QtCore.Qt.LeftButton:
+            
+
             if self.drawing:
                 self.release_point = event.position().toPoint()
 
@@ -925,10 +985,9 @@ class EllipticalTool(QtWidgets.QLabel):
 
                 self.release_point.setY(self.start_point.y() + variance * directionY)
                 self.release_point.setX(self.start_point.x() + variance * directionX)
-                self.update()
+                self.update_overlay()
 
             else:
-                #### add to else of next one???? FIX FIX FIX
                 self.release_point = event.position().toPoint()
                 self.drawing = False
                 self.update()
@@ -936,7 +995,10 @@ class EllipticalTool(QtWidgets.QLabel):
                 
 
             if self.drawing_in_place:
-                self.drawing_in_place = False
+                self.drawing_in_place
+
+                print ("Drawing self in place")
+
                 self.central_point = self.start_point
                 self.start_point = self.hover_point
 
@@ -945,12 +1007,20 @@ class EllipticalTool(QtWidgets.QLabel):
                 #self.release_point = -1 * self.hover_point
                 self.release_point.setY(self.central_point.y()-self.y_difference)
                 self.release_point.setX(self.central_point.x()-self.x_difference)
+                ellipse = QtCore.QRect(self.start_point, self.release_point)
+
+
+
+                #self.commit_rectanlge_to_image()
                 self.update()
 
             elif not self.drawing_circle:
-                # self.release_point = event.position().toPoint()
-                # self.drawing = False
+                #self.release_point = event.position().toPoint()
+                #self.drawing = False
+                #self.commit_rectanlge_to_image()
                 self.update()
+                ellipse = QtCore.QRect(self.start_point, self.hover_point)
+
 
 
 
@@ -963,6 +1033,50 @@ class EllipticalTool(QtWidgets.QLabel):
             self.image = self.original_image.copy()
         self.drawing = False
         self.update_overlay()
+
+
+
+        #convert rectanlge into polygon
+        painter = QtGui.QPainter(self)
+        ellipse_path = QtGui.QPainterPath()
+        ellipse_path.addEllipse(ellipse)
+        ellipse_polygon = ellipse_path.toFillPolygon()
+
+        new_polygon_f = QtGui.QPolygonF(map_points_of_polygon(ellipse_polygon, 100))
+        new_path = QPainterPath()
+        new_path.addPolygon(new_polygon_f)
+            
+        
+        if not self.making_additional_selection:
+            self.selections_paths = [new_path]
+        else:
+            merged_any_polygons = False
+
+            #merge polygons if overlapping
+            for i, path in enumerate(list(self.selections_paths)):
+                if path.intersects(new_path):
+                    merge_path = path.united(new_path)
+
+                    self.selections_paths[i] = merge_path
+                    merged_any_polygons = True
+
+                    changed = True
+                    while changed:
+                        changed = False
+                        for j, other_path in enumerate(list(self.selections_paths)):
+                            if j == i:
+                                continue
+                            if self.selections_paths[i].intersects(other_path):
+                                self.selections_paths[i] = self.selections_paths[i].united(other_path)
+                                self.selections_paths.pop(j)
+                                changed = True
+                                break
+                    break
+                if not merged_any_polygons:
+                    self.selections_paths.append(new_path)
+        self.points = []
+        self.update_overlay()
+        self.update()
 
 
     def paintEvent(self, event):
@@ -980,6 +1094,7 @@ class EllipticalTool(QtWidgets.QLabel):
         painter = QtGui.QPainter(self.overlay)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         self.isDrawn = False
+        
 
         if self.start_point != QtCore.QPoint(0, 0) and self.release_point != QtCore.QPoint(0, 0 and self.drawing):
                     
@@ -1010,12 +1125,12 @@ class EllipticalTool(QtWidgets.QLabel):
                 self.hover_point.setX(self.start_point.x() + variance * directionX)
             
 
-                #painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                 ellipse = QtCore.QRect(self.start_point, self.hover_point)
                 if not self.drawing_in_place:
                     painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                     painter.drawEllipse(ellipse)
-                #painter.drawEllipse(ellipse)
+                self.update()
+
 
             # if self.drawing_in_place and self.drawing:
             #     self.central_point = self.start_point
@@ -1033,6 +1148,9 @@ class EllipticalTool(QtWidgets.QLabel):
             # rectangle = QtCore.QRect(self.start_point, self.release_point)
             # painter.drawRect(rectangle)
 
+
+            
+
             if self.drawing_in_place and self.drawing:
                 self.central_point = self.start_point
                 self.inital_point = self.hover_point
@@ -1048,33 +1166,52 @@ class EllipticalTool(QtWidgets.QLabel):
                 painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                 ellipse = QtCore.QRect(self.inital_point, self.temporary_release_point)
                 painter.drawEllipse(ellipse)
+                #self.isDrawn = True
 
-            elif self.drawing:
-                ellipse = QtCore.QRect(self.start_point, self.hover_point)
+                
+
+            elif self.drawing and not self.isDrawn and not self.drawing_circle:
                 painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
+                ellipse = QtCore.QRect(self.start_point, self.hover_point)
                 painter.drawEllipse(ellipse)
-        
+
+
+
         if self.isDrawn:
-            #self.commit_ellipse_to_image(ellipse)
+            #painter.setBrush(QtGui.QColor(255,0,0,50))
+            #self.commit_rectanlge_to_image(rectangle)
             selections.append(ellipse)
+
+        if not self.drawing:
+            self.clear_overlay()
             
-        if len(selections) > 0:
-            painter.setBrush(QtGui.QColor(255,0,0,50))
+        outline_pen = QtGui.QPen(QtCore.Qt.red, 2)
+        fill_brush = QtGui.QBrush(QtGui.QColor(255, 0, 0, 50))
 
-            for selection in selections:
-                painter.drawEllipse(selection)
-            if not self.drawing:
-                painter.drawEllipse(ellipse)
-                self.is_first_click_of_selection = True
+        for path in self.selections_paths:
+            all_polys = path.toFillPolygons()
+            for poly_f in all_polys:
+                poly_q = QtGui.QPolygon([QtCore.QPoint(int(round(p.x())), int(round(p.y()))) for p in poly_f])
+                painter.setPen(outline_pen)
+                painter.setBrush(QtCore.Qt.NoBrush)
+                painter.drawPolygon(poly_q)
+                painter.setPen(QtCore.Qt.NoPen)
+                painter.setBrush(fill_brush)
+                painter.drawPolygon(poly_q)
 
-    # def commit_ellipse_to_image(self,ellipse):
+    # def commit_rectanlge_to_image(self,rectangle):
     #     painter = QtGui.QPainter(self.image)
     #     painter.setRenderHint(QtGui.QPainter.Antialiasing)
     #     painter.setBrush(QtGui.QColor(255, 0, 0, 50))
     #     painter.setPen(QtGui.QPen(QtCore.Qt.red, 2))
-    #     painter.drawEllipse(ellipse)
+    #     painter.drawRect(rectangle)
     #     painter.end()
     #     self.update()
+
+    def map_points_of_polygon(self,polygon, n):
+        path = QPainterPath()
+        path.addPolygon(polygon)
+        return [path.pointAtPercent(i/(n-1)) for i in range (n)]
 
 ###############################################################
 #                   SELECTION MANAGEMENT                      #
