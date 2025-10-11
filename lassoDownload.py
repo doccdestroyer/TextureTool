@@ -605,7 +605,8 @@ class RectangularTool(QtWidgets.QLabel):
         self.setFixedSize(self.image.size())
         self.setWindowTitle("Rectangle Tool")
 
-
+        self.merged_selection_path = QPainterPath()
+        self.selections_paths = []
 
     def mousePressEvent(self,event):
         if event.button() == QtCore.Qt.LeftButton:
