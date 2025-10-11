@@ -460,7 +460,7 @@ class PolygonalTool(QtWidgets.QLabel):
                     self.clear_overlay()
                     self.update()
 
-            else: #MouseReleaseEvent Equivalent
+            else: #Check if polygon has completed
                 if (point - self.points[0]).manhattanLength() < 20:
                     self.points.append(self.points[0])
                     self.drawing = False 
@@ -503,7 +503,6 @@ class PolygonalTool(QtWidgets.QLabel):
                                 self.selections_paths.append(new_path)
 
 
-                    #self.commit_polygon_to_image(QtGui.QPolygon(self.points))
                     self.clear_overlay()
 
 
@@ -525,23 +524,17 @@ class PolygonalTool(QtWidgets.QLabel):
         painter = QtGui.QPainter(self)
         painter.drawPixmap(0, 0, self.image)   
         painter.drawPixmap(0, 0, self.overlay)
+
     ###HERE NEEDS TO BE REMOVED
     def clear_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
         self.update()
+        
 
     def update_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
         painter = QtGui.QPainter(self.overlay)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-
-        # for selection in selections:
-        #     painter.setBrush(QtGui.QColor(255, 0, 0, 50))
-        #     painter.setPen(QtGui.QPen(QtCore.Qt.red, 2))
-        #     painter.drawPolygon(selection)
-        #     painter.drawPolyline(selection)
-
-        #COPY AND PASTED FROM LASSO
 
         outline_pen = QtGui.QPen(QtCore.Qt.red, 2)
         fill_brush = QtGui.QBrush(QtGui.QColor(255, 0, 0, 50))
@@ -557,14 +550,7 @@ class PolygonalTool(QtWidgets.QLabel):
                 painter.setBrush(fill_brush)
                 painter.drawPolygon(poly_q)
 
-
-        # #add new polygon drawn
-        # if len(self.points) > 1:
-        #     painter.setPen(QtGui.QPen(QtCore.Qt.red, 2))
-        #     polygon = QtGui.QPolygon(self.points)
-        #     painter.drawPolyline(polygon)
-
-        if len(self.points) > 1:
+        if len(self.points) > 1 and self.drawing:
             painter.setPen(outline_pen)
             painter.setBrush(QtCore.Qt.NoBrush)
             painter.drawPolyline(QtGui.QPolygon(self.points))
@@ -679,10 +665,9 @@ class RectangularTool(QtWidgets.QLabel):
 
                 self.release_point.setY(self.start_point.y() + variance * directionY)
                 self.release_point.setX(self.start_point.x() + variance * directionX)
-                self.update()
+                self.update_overlay()
 
             else:
-                #### add to else of next one???? FIX FIX FIX
                 self.release_point = event.position().toPoint()
                 self.drawing = False
                 self.update()
@@ -709,8 +694,8 @@ class RectangularTool(QtWidgets.QLabel):
                 self.update()
 
             elif not self.drawing_square:
-                self.release_point = event.position().toPoint()
-                self.drawing = False
+                #self.release_point = event.position().toPoint()
+                #self.drawing = False
                 #self.commit_rectanlge_to_image()
                 self.update()
 
@@ -742,6 +727,7 @@ class RectangularTool(QtWidgets.QLabel):
         painter = QtGui.QPainter(self.overlay)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         self.isDrawn = False
+        
 
         if self.start_point != QtCore.QPoint(0, 0) and self.release_point != QtCore.QPoint(0, 0 and self.drawing):
                     
@@ -772,9 +758,10 @@ class RectangularTool(QtWidgets.QLabel):
                 self.hover_point.setX(self.start_point.x() + variance * directionX)
             
 
-                painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                 rectangle = QtCore.QRect(self.start_point, self.hover_point)
-                painter.drawRect(rectangle)
+                if not self.drawing_in_place:
+                    painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
+                    painter.drawRect(rectangle)
                 self.update()
 
 
@@ -794,6 +781,9 @@ class RectangularTool(QtWidgets.QLabel):
             # rectangle = QtCore.QRect(self.start_point, self.release_point)
             # painter.drawRect(rectangle)
 
+
+            
+
             if self.drawing_in_place and self.drawing:
                 self.central_point = self.start_point
                 self.inital_point = self.hover_point
@@ -809,22 +799,25 @@ class RectangularTool(QtWidgets.QLabel):
                 painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                 rectangle = QtCore.QRect(self.inital_point, self.temporary_release_point)
                 painter.drawRect(rectangle)
+                #self.isDrawn = True
+
                 
 
-            elif self.drawing and not self.isDrawn:
+            elif self.drawing and not self.isDrawn and not self.drawing_square:
                 painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                 rectangle = QtCore.QRect(self.start_point, self.hover_point)
                 painter.drawRect(rectangle)
 
-            
-        
 
 
         if self.isDrawn:
-            painter.setBrush(QtGui.QColor(255,0,0,50))
-            self.commit_rectanlge_to_image(rectangle)
+            #painter.setBrush(QtGui.QColor(255,0,0,50))
+            #self.commit_rectanlge_to_image(rectangle)
+            selections.append(rectangle)
             
         if len(selections) > 0:
+            painter.setBrush(QtGui.QColor(255,0,0,50))
+
             for selection in selections:
                 painter.drawRect(selection)
                 painter.drawPolyline(selection)
@@ -832,14 +825,14 @@ class RectangularTool(QtWidgets.QLabel):
                 painter.drawRect(rectangle)
                 self.is_first_click_of_selection = True
 
-    def commit_rectanlge_to_image(self,rectangle):
-        painter = QtGui.QPainter(self.image)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.setBrush(QtGui.QColor(255, 0, 0, 50))
-        painter.setPen(QtGui.QPen(QtCore.Qt.red, 2))
-        painter.drawRect(rectangle)
-        painter.end()
-        self.update()
+    # def commit_rectanlge_to_image(self,rectangle):
+    #     painter = QtGui.QPainter(self.image)
+    #     painter.setRenderHint(QtGui.QPainter.Antialiasing)
+    #     painter.setBrush(QtGui.QColor(255, 0, 0, 50))
+    #     painter.setPen(QtGui.QPen(QtCore.Qt.red, 2))
+    #     painter.drawRect(rectangle)
+    #     painter.end()
+    #     self.update()
 ###############################################################
 #                       ELLIPSE TOOL                          #
 ###############################################################
@@ -955,8 +948,8 @@ class EllipticalTool(QtWidgets.QLabel):
                 self.update()
 
             elif not self.drawing_circle:
-                self.release_point = event.position().toPoint()
-                self.drawing = False
+                # self.release_point = event.position().toPoint()
+                # self.drawing = False
                 self.update()
 
 
@@ -1017,9 +1010,12 @@ class EllipticalTool(QtWidgets.QLabel):
                 self.hover_point.setX(self.start_point.x() + variance * directionX)
             
 
-                painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
+                #painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                 ellipse = QtCore.QRect(self.start_point, self.hover_point)
-                painter.drawEllipse(ellipse)
+                if not self.drawing_in_place:
+                    painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
+                    painter.drawEllipse(ellipse)
+                #painter.drawEllipse(ellipse)
 
             # if self.drawing_in_place and self.drawing:
             #     self.central_point = self.start_point
@@ -1054,29 +1050,31 @@ class EllipticalTool(QtWidgets.QLabel):
                 painter.drawEllipse(ellipse)
 
             elif self.drawing:
-                painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                 ellipse = QtCore.QRect(self.start_point, self.hover_point)
+                painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                 painter.drawEllipse(ellipse)
         
         if self.isDrawn:
-            painter.setBrush(QtGui.QColor(255,0,0,50))
-            self.commit_ellipse_to_image(ellipse)
+            #self.commit_ellipse_to_image(ellipse)
+            selections.append(ellipse)
             
         if len(selections) > 0:
+            painter.setBrush(QtGui.QColor(255,0,0,50))
+
             for selection in selections:
                 painter.drawEllipse(selection)
             if not self.drawing:
                 painter.drawEllipse(ellipse)
                 self.is_first_click_of_selection = True
 
-    def commit_ellipse_to_image(self,ellipse):
-        painter = QtGui.QPainter(self.image)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.setBrush(QtGui.QColor(255, 0, 0, 50))
-        painter.setPen(QtGui.QPen(QtCore.Qt.red, 2))
-        painter.drawEllipse(ellipse)
-        painter.end()
-        self.update()
+    # def commit_ellipse_to_image(self,ellipse):
+    #     painter = QtGui.QPainter(self.image)
+    #     painter.setRenderHint(QtGui.QPainter.Antialiasing)
+    #     painter.setBrush(QtGui.QColor(255, 0, 0, 50))
+    #     painter.setPen(QtGui.QPen(QtCore.Qt.red, 2))
+    #     painter.drawEllipse(ellipse)
+    #     painter.end()
+    #     self.update()
 
 ###############################################################
 #                   SELECTION MANAGEMENT                      #
