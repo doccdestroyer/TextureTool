@@ -358,7 +358,6 @@ class LassoTool(QtWidgets.QLabel):
                                     self.selections_paths.pop(j)
                                     changed = True
                                     break
-                        break
                     if not removed_from_merge:
                         self.selections_paths.append(new_path)
 
@@ -554,7 +553,7 @@ class PolygonalTool(QtWidgets.QLabel):
                                             self.selections_paths.pop(j)
                                             changed = True
                                             break
-                                break
+                                
                             if not removed_from_merge:
                                 self.selections_paths.append(new_path)
 
