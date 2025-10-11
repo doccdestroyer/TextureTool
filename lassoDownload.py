@@ -282,7 +282,7 @@ class LassoTool(QtWidgets.QLabel):
         self.points = []
         self.drawing = False
         self.making_additional_selection = False
-
+        self.making_removal = False
 
         self.original_image = self.image.copy()
         self.overlay = QtGui.QPixmap(self.image.size())
@@ -295,20 +295,25 @@ class LassoTool(QtWidgets.QLabel):
         self.selections_paths = []
 
     def mousePressEvent(self, event):
-            if event.button() == QtCore.Qt.LeftButton:
-                self.points = []
-                if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
-                    self.making_additional_selection = True
-                else:
-                    self.making_additional_selection = False
-                    self.selections_paths = []
-                    selections.clear()
-                    self.merged_selection_path = QPainterPath()
-                    self.image = self.original_image.copy()
-                    self.clear_overlay()
-                self.drawing = True
-                self.points = [event.position().toPoint()]
-                self.update_overlay()
+        if event.button() == QtCore.Qt.LeftButton:
+            self.points = []
+            if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
+                self.making_additional_selection = True
+                self.making_removal = False
+            elif event.modifiers() & Qt.KeyboardModifier.AltModifier:
+                self.making_removal = True
+                self.making_additional_selection = False
+            else:
+                self.making_additional_selection = False
+                self.making_removal = False
+                self.selections_paths = []
+                selections.clear()
+                self.merged_selection_path = QPainterPath()
+                self.image = self.original_image.copy()
+                self.clear_overlay()
+            self.drawing = True
+            self.points = [event.position().toPoint()]
+            self.update_overlay()
 
     def mouseMoveEvent(self, event):
         if self.drawing:
@@ -326,9 +331,41 @@ class LassoTool(QtWidgets.QLabel):
                 new_path = QPainterPath()
                 new_path.addPolygon(new_polygon_f)
 
-            if not self.making_additional_selection:
+
+            if not self.making_removal and not self.making_additional_selection:
                 self.selections_paths = [new_path]
             else:
+                print ("is making removal")
+                removed_from_merge = False
+
+                #remove polygons if overlapping
+                for i, path in enumerate(list(self.selections_paths)):
+                    if path.intersects(new_path):
+                        subtraction_path = path.subtracted(new_path)
+
+                        self.selections_paths[i] = subtraction_path
+                        removed_from_merge = True
+
+                        changed = True
+                        while changed:
+                            changed = False
+                            for k, other_path in enumerate(list(self.selections_paths)):
+                                if k == i:
+                                    continue
+                                if self.selections_paths[i].intersects(other_path):
+                                    self.selections_paths[i] = self.selections_paths[i].subtracted(other_path)
+                                    print ("section removed")
+                                    self.selections_paths.pop(j)
+                                    changed = True
+                                    break
+                        break
+                    if not removed_from_merge:
+                        self.selections_paths.append(new_path)
+
+
+            if not self.making_additional_selection and not self.making_removal:
+                self.selections_paths = [new_path]
+            elif not self.making_removal:
                 merged_any_polygons = False
 
                 #merge polygons if overlapping
@@ -430,6 +467,9 @@ class PolygonalTool(QtWidgets.QLabel):
         self.drawing = False
         self.is_first_click = True
         self.making_additional_selection = False
+        self.making_removal = False
+
+
         self.setMouseTracking(True)
         self.setFixedSize(self.image.size())
         self.setWindowTitle("Polygonal Tool")
@@ -440,17 +480,25 @@ class PolygonalTool(QtWidgets.QLabel):
 
     def mousePressEvent(self, event):
         global selections
+        isComplete = False
+        new_path = QPainterPath()
+
         if event.button() == QtCore.Qt.LeftButton:
             point = event.position().toPoint()
             if self.is_first_click:
+                isComplete = False
                 self.points = [point]
                 self.drawing = True
                 self.is_first_click = False
                 if event.modifiers() & QtCore.Qt.ShiftModifier:
                     self.making_additional_selection = True
+                    self.making_removal = False
+                elif event.modifiers() & Qt.KeyboardModifier.AltModifier:
+                    self.making_removal = True
+                    self.making_additional_selection = False
                 else:
                     self.making_additional_selection = False
-                    
+                    self.making_removal = False
                     self.selections_paths = []
                     selections.clear()
                     self.merged_selection_path = QPainterPath()
@@ -462,6 +510,7 @@ class PolygonalTool(QtWidgets.QLabel):
 
             else: #Check if polygon has completed
                 if (point - self.points[0]).manhattanLength() < 20:
+                    isComplete = True
                     self.points.append(self.points[0])
                     self.drawing = False 
                     self.is_first_click = True
@@ -476,9 +525,47 @@ class PolygonalTool(QtWidgets.QLabel):
                     new_path = QPainterPath()
                     new_path.addPolygon(new_polygon_f)
 
-                    if not self.making_additional_selection:
+
+
+
+                    if not self.making_removal and not self.making_additional_selection and isComplete:
                         self.selections_paths = [new_path]
-                    else:
+                    elif self.making_removal and isComplete:
+                        print ("is making removal")
+                        removed_from_merge = False
+
+                        #remove polygons if overlapping
+                        for i, path in enumerate(list(self.selections_paths)):
+                            if path.intersects(new_path):
+                                subtraction_path = path.subtracted(new_path)
+
+                                self.selections_paths[i] = subtraction_path
+                                removed_from_merge = True
+
+                                changed = True
+                                while changed:
+                                    changed = False
+                                    for k, other_path in enumerate(list(self.selections_paths)):
+                                        if k == i:
+                                            continue
+                                        if self.selections_paths[i].intersects(other_path):
+                                            self.selections_paths[i] = self.selections_paths[i].subtracted(other_path)
+                                            print ("section removed")
+                                            self.selections_paths.pop(j)
+                                            changed = True
+                                            break
+                                break
+                            if not removed_from_merge:
+                                self.selections_paths.append(new_path)
+
+
+
+
+
+                    if not self.making_additional_selection and not self.making_removal:
+                        self.selections_paths = [new_path]
+                    elif not self.making_removal:
+                        print("merging polygons function")
                         merged_any_polygons = False
                         for i, path in enumerate(list(self.selections_paths)):
                             if path.intersects(new_path):
@@ -503,7 +590,7 @@ class PolygonalTool(QtWidgets.QLabel):
                                 self.selections_paths.append(new_path)
 
 
-                    self.clear_overlay()
+                        self.clear_overlay()
 
 
                 else:
@@ -601,6 +688,7 @@ class RectangularTool(QtWidgets.QLabel):
         self.drawing_in_place = False
 
         self.making_additional_selection = False
+        self.making_removal = False
 
         self.setFixedSize(self.image.size())
         self.setWindowTitle("Rectangle Tool")
@@ -612,8 +700,13 @@ class RectangularTool(QtWidgets.QLabel):
         if event.button() == QtCore.Qt.LeftButton:
             if event.modifiers() & QtCore.Qt.ShiftModifier:
                 self.making_additional_selection = True
+                self.making_removal = False
+            elif event.modifiers() & Qt.KeyboardModifier.AltModifier:
+                self.making_removal = True
+                self.making_additional_selection = False
             else:
                 self.making_additional_selection = False
+                self.making_removal = False
                 self.selections_paths = []
                 selections.clear()
                 self.merged_selection_path = QPainterPath()
@@ -724,7 +817,46 @@ class RectangularTool(QtWidgets.QLabel):
         new_path = QPainterPath()
         new_path.addPolygon(new_polygon_f)
             
-        if not self.making_additional_selection:
+
+
+
+        if not self.making_removal and not self.making_additional_selection:
+            self.selections_paths = [new_path]
+        elif self.making_removal:
+            print ("is making removal")
+            removed_from_merge = False
+
+            #remove polygons if overlapping
+            for i, path in enumerate(list(self.selections_paths)):
+                if path.intersects(new_path):
+                    subtraction_path = path.subtracted(new_path)
+
+                    self.selections_paths[i] = subtraction_path
+                    removed_from_merge = True
+
+                    changed = True
+                    while changed:
+                        changed = False
+                        for k, other_path in enumerate(list(self.selections_paths)):
+                            if k == i:
+                                continue
+                            if self.selections_paths[i].intersects(other_path):
+                                self.selections_paths[i] = self.selections_paths[i].subtracted(other_path)
+                                print ("section removed")
+                                self.selections_paths.pop(k)
+                                changed = True
+                                break
+                    
+                if not removed_from_merge:
+                    self.selections_paths.append(new_path)
+
+
+
+
+
+
+
+        elif not self.making_additional_selection:
             self.selections_paths = [new_path]
         else:
             merged_any_polygons = False
@@ -740,12 +872,12 @@ class RectangularTool(QtWidgets.QLabel):
                     changed = True
                     while changed:
                         changed = False
-                        for j, other_path in enumerate(list(self.selections_paths)):
-                            if j == i:
+                        for l, other_path in enumerate(list(self.selections_paths)):
+                            if l == i:
                                 continue
                             if self.selections_paths[i].intersects(other_path):
                                 self.selections_paths[i] = self.selections_paths[i].united(other_path)
-                                self.selections_paths.pop(j)
+                                self.selections_paths.pop(l)
                                 changed = True
                                 break
                     break
@@ -913,6 +1045,7 @@ class EllipticalTool(QtWidgets.QLabel):
         self.drawing_in_place = False
 
         self.making_additional_selection = False
+        self.making_removal = False
 
         self.setFixedSize(self.image.size())
         self.setWindowTitle("Ellipse Tool")
@@ -926,8 +1059,13 @@ class EllipticalTool(QtWidgets.QLabel):
         if event.button() == QtCore.Qt.LeftButton:
             if event.modifiers() & QtCore.Qt.ShiftModifier:
                 self.making_additional_selection = True
+                self.making_removal = False
+            elif event.modifiers() & Qt.KeyboardModifier.AltModifier:
+                self.making_removal = True
+                self.making_additional_selection = False
             else:
                 self.making_additional_selection = False
+                self.making_removal = False
                 self.selections_paths = []
                 selections.clear()
                 self.merged_selection_path = QPainterPath()
@@ -996,9 +1134,7 @@ class EllipticalTool(QtWidgets.QLabel):
                 
 
             if self.drawing_in_place:
-                self.drawing_in_place
-
-                print ("Drawing self in place")
+                #self.drawing_in_place
 
                 self.central_point = self.start_point
                 self.start_point = self.hover_point
@@ -1047,8 +1183,42 @@ class EllipticalTool(QtWidgets.QLabel):
         new_path = QPainterPath()
         new_path.addPolygon(new_polygon_f)
             
-        
-        if not self.making_additional_selection:
+        if not self.making_removal and not self.making_additional_selection:
+            self.selections_paths = [new_path]
+        elif self.making_removal:
+            print ("is making removal")
+            removed_from_merge = False
+
+            #remove polygons if overlapping
+            for i, path in enumerate(list(self.selections_paths)):
+                if path.intersects(new_path):
+                    subtraction_path = path.subtracted(new_path)
+
+                    self.selections_paths[i] = subtraction_path
+                    removed_from_merge = True
+
+                    changed = True
+                    while changed:
+                        changed = False
+                        for k, other_path in enumerate(list(self.selections_paths)):
+                            if k == i:
+                                continue
+                            if self.selections_paths[i].intersects(other_path):
+                                self.selections_paths[i] = self.selections_paths[i].subtracted(other_path)
+                                print ("section removed")
+                                self.selections_paths.pop(k)
+                                changed = True
+                                break
+                if not removed_from_merge:
+                    self.selections_paths.append(new_path)
+
+
+
+
+
+
+
+        elif not self.making_additional_selection:
             self.selections_paths = [new_path]
         else:
             merged_any_polygons = False
@@ -1064,12 +1234,12 @@ class EllipticalTool(QtWidgets.QLabel):
                     changed = True
                     while changed:
                         changed = False
-                        for j, other_path in enumerate(list(self.selections_paths)):
-                            if j == i:
+                        for l, other_path in enumerate(list(self.selections_paths)):
+                            if l == i:
                                 continue
                             if self.selections_paths[i].intersects(other_path):
                                 self.selections_paths[i] = self.selections_paths[i].united(other_path)
-                                self.selections_paths.pop(j)
+                                self.selections_paths.pop(l)
                                 changed = True
                                 break
                     break
@@ -1078,6 +1248,7 @@ class EllipticalTool(QtWidgets.QLabel):
         self.points = []
         self.update_overlay()
         self.update()
+
 
 
     def paintEvent(self, event):
@@ -1209,10 +1380,10 @@ class EllipticalTool(QtWidgets.QLabel):
     #     painter.end()
     #     self.update()
 
-    def map_points_of_polygon(self,polygon, n):
-        path = QPainterPath()
-        path.addPolygon(polygon)
-        return [path.pointAtPercent(i/(n-1)) for i in range (n)]
+    # def map_points_of_polygon(self,polygon, n):
+    #     path = QPainterPath()
+    #     path.addPolygon(polygon)
+    #     return [path.pointAtPercent(i/(n-1)) for i in range (n)]
 
 ###############################################################
 #                   SELECTION MANAGEMENT                      #
