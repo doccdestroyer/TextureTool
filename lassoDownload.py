@@ -33,7 +33,6 @@ from PIL import Image
 
 selections = []
 
-
 ###############################################################
 #                    INITIALISE TEXTURE                       # 
 ###############################################################
@@ -77,6 +76,7 @@ class CreateWindow(QtWidgets.QWidget):
         self.setWindowTitle("Selection Tools")
         self.image_path = image_path
         self.active_tool_widget = None
+
         self.scale_factor = 1.0
         
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
@@ -85,7 +85,7 @@ class CreateWindow(QtWidgets.QWidget):
         self.layout = QVBoxLayout(self)
         self.setLayout(self.layout)
 
-        self.active_tool_widget = PenTool(self.image_path)
+        self.active_tool_widget = (PenTool(self.image_path, parent_window=self))
         self.layout.addWidget(self.active_tool_widget)
 
         self.setFixedSize(self.active_tool_widget.size())
@@ -115,7 +115,7 @@ class CreateWindow(QtWidgets.QWidget):
         self.zoom_changed(self.scale_factor * 100)
 
     def reset_zoom(self):
-        self.scale_factor = 1.0321
+        self.scale_factor = 1.0
         self.zoom_changed(self.scale_factor * 100)
 
     #CHANGE TO LOCK AT MAX ZOOMED IN BASED ON SIZE OF TEXTRE
@@ -189,15 +189,15 @@ class ToolSectionMenu(QWidget):
         self.parent_window.active_tool_widget = None
 
         if button == self.pen_tool:
-            self.parent_window.active_tool_widget = PenTool(self.parent_window.image_path)
+            self.parent_window.active_tool_widget = PenTool(self.parent_window.image_path, parent_window=self.parent_window)
         elif button == self.rectangle_tool:
-            self.parent_window.active_tool_widget = RectangularTool(self.parent_window.image_path)
+            self.parent_window.active_tool_widget = RectangularTool(self.parent_window.image_path, parent_window=self.parent_window)
         elif button == self.ellipse_tool:
-            self.parent_window.active_tool_widget = EllipticalTool(self.parent_window.image_path)
+            self.parent_window.active_tool_widget = EllipticalTool(self.parent_window.image_path, parent_window=self.parent_window)
         elif button == self.lasso_tool:
-            self.parent_window.active_tool_widget = LassoTool(self.parent_window.image_path)
+            self.parent_window.active_tool_widget = LassoTool(self.parent_window.image_path, parent_window=self.parent_window)
         elif button == self.polygonal_tool:
-            self.parent_window.active_tool_widget = PolygonalTool(self.parent_window.image_path)
+            self.parent_window.active_tool_widget = PolygonalTool(self.parent_window.image_path, parent_window=self.parent_window)
 
 
         if self.parent_window.active_tool_widget:
@@ -209,12 +209,15 @@ class ToolSectionMenu(QWidget):
 #                     PEN DEBUG TOOL                          #
 ###############################################################
 class PenTool(QtWidgets.QWidget):
-    def __init__(self, image_path):
+    def __init__(self, image_path, parent_window=None):
         super().__init__()
         self.image = QtGui.QPixmap(image_path)
         if self.image.isNull():
             raise ValueError("Failed to load image")
 
+
+        self.parent_window = parent_window
+        
         self.original_image = self.image.copy()
         self.overlay = QtGui.QPixmap(self.image.size())
         self.overlay.fill(QtCore.Qt.transparent)
@@ -222,34 +225,34 @@ class PenTool(QtWidgets.QWidget):
         self.points = []
         self.drawing = False
 
-        self.scale_factor = 1.0
+
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setFocus()
         #CHANGE ONCE WINDOW SIZE IS DEFINED
         self.resize(self.image.size())
 
     def set_scale_factor(self, scale):
-        self.scale_factor = scale
+        self.parent_window.scale_factor = scale
         new_size = self.original_image.size() * scale
         self.resize(new_size)
         self.update()
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
-        painter.scale(self.scale_factor, self.scale_factor)
+        painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         painter.drawPixmap(0, 0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
-            point = (event.position() / self.scale_factor).toPoint()
+            point = (event.position() / self.parent_window.scale_factor).toPoint()
             self.drawing = True
             self.points = [point]
             self.update_overlay()
 
     def mouseMoveEvent(self, event):
         if self.drawing:
-            point = (event.position() / self.scale_factor).toPoint()
+            point = (event.position() / self.parent_window.scale_factor).toPoint()
             self.points.append(point)
             self.update_overlay()
 
@@ -293,10 +296,12 @@ class PenTool(QtWidgets.QWidget):
 #                       LASSO TOOL                            # 
 ###############################################################
 class LassoTool(QtWidgets.QWidget):
-    def __init__(self, image_path):
+    def __init__(self, image_path, parent_window):
         print("lasso initializing")
         super().__init__()
-        self.scale_factor = 1.0
+        #self.scale_factor = 1.0
+
+        self.parent_window = parent_window
 
         self.image = QtGui.QPixmap(image_path)
 
@@ -323,7 +328,7 @@ class LassoTool(QtWidgets.QWidget):
         self.selections_paths = []
 
     def set_scale_factor(self, scale):
-        self.scale_factor = scale
+        self.parent_window.scale_factor = scale
         new_size = self.original_image.size() * scale
         self.resize(new_size)
         self.update()
@@ -346,12 +351,12 @@ class LassoTool(QtWidgets.QWidget):
                 self.image = self.original_image.copy()
                 self.clear_overlay()
             self.drawing = True
-            self.points = [(event.position() / self.scale_factor).toPoint()]
+            self.points = [(event.position() / self.parent_window.scale_factor).toPoint()]
             self.update_overlay()
 
     def mouseMoveEvent(self, event):
         if self.drawing:
-            self.points.append((event.position() / self.scale_factor).toPoint())
+            self.points.append((event.position() / self.parent_window.scale_factor).toPoint())
             self.update_overlay()
         self.update()
 
@@ -435,7 +440,7 @@ class LassoTool(QtWidgets.QWidget):
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
-        painter.scale(self.scale_factor, self.scale_factor)
+        painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         painter.drawPixmap(0, 0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
 
@@ -486,9 +491,11 @@ class LassoTool(QtWidgets.QWidget):
 #CreatePolygonalLassoTool
 ###############################################################
 class PolygonalTool(QtWidgets.QLabel):
-    def __init__(self, image_path):
+    def __init__(self, image_path, parent_window=None):
         super().__init__()
         self.image = QtGui.QPixmap(image_path)
+
+        self.parent_window = parent_window
 
         if self.image.isNull():
             self.setText("Image failed to load")
@@ -507,7 +514,7 @@ class PolygonalTool(QtWidgets.QLabel):
         self.making_additional_selection = False
         self.making_removal = False
 
-        self.scale_factor = 1.0
+        self.parent_window.scale_factor = scale_factor
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setFocus()
 
@@ -520,7 +527,7 @@ class PolygonalTool(QtWidgets.QLabel):
 
 
     def set_scale_factor(self, scale):
-        self.scale_factor = scale
+        self.parent_window.scale_factor = scale
         new_size = self.original_image.size() * scale
         self.resize(new_size)
         self.update()
@@ -532,7 +539,7 @@ class PolygonalTool(QtWidgets.QLabel):
         new_path = QPainterPath()
 
         if event.button() == QtCore.Qt.LeftButton:
-            point = (event.position() / self.scale_factor).toPoint()
+            point = (event.position() / self.parent_window.scale_factor).toPoint()
             if self.is_first_click:
                 isComplete = False
                 self.points = [point]
@@ -650,14 +657,14 @@ class PolygonalTool(QtWidgets.QLabel):
             self.update_overlay()
 
     def mouseMoveEvent(self, event):
-        self.hover_point = (event.position() / self.scale_factor).toPoint()
+        self.hover_point = (event.position() / self.parent_window.scale_factor).toPoint()
         if self.drawing:
             self.update_overlay()
         self.update()
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
-        painter.scale(self.scale_factor, self.scale_factor)
+        painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         painter.drawPixmap(0, 0, self.image)   
         painter.drawPixmap(0, 0, self.overlay)
 
@@ -713,9 +720,13 @@ class PolygonalTool(QtWidgets.QLabel):
 #                     RECTANGLE TOOL                          #
 ###############################################################
 class RectangularTool(QtWidgets.QLabel):
-    def __init__(self, image_path):
+    def __init__(self, image_path, parent_window):
         super().__init__()
         self.image = QtGui.QPixmap(image_path)
+
+        self.parent_window = parent_window
+
+
         self.points = []
         if self.image.isNull():
             unreal.log_error(f"Failed to load image.")
@@ -723,7 +734,6 @@ class RectangularTool(QtWidgets.QLabel):
             self.setAlignment(QtCore.Qt.AlignCenter)
             return
         
-        self.scale_factor = 1.0
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setFocus()
 
@@ -754,7 +764,7 @@ class RectangularTool(QtWidgets.QLabel):
 
 
     def set_scale_factor(self, scale):
-        self.scale_factor = scale
+        self.parent_window.scale_factor = scale
         new_size = self.original_image.size() * scale
         self.resize(new_size)
         self.update()
@@ -779,7 +789,7 @@ class RectangularTool(QtWidgets.QLabel):
             self.release_point = QtCore.QPoint(0, 0)
             self.start_point = QtCore.QPoint(0, 0)
             self.drawing = True
-            self.start_point = (event.position() / self.scale_factor).toPoint()
+            self.start_point = (event.position() / self.parent_window.scale_factor).toPoint()
             self.update_overlay()
 
 
@@ -797,7 +807,7 @@ class RectangularTool(QtWidgets.QLabel):
             else:
                 self.drawing_in_place = False
 
-            self.hover_point = (event.position() / self.scale_factor).toPoint()
+            self.hover_point = (event.position() / self.parent_window.scale_factor).toPoint()
             self.update_overlay()
 
             self.update()
@@ -807,7 +817,7 @@ class RectangularTool(QtWidgets.QLabel):
             
 
             if self.drawing:
-                self.release_point = (event.position() / self.scale_factor).toPoint()
+                self.release_point = (event.position() / self.parent_window.scale_factor).toPoint()
 
             if self.drawing_square:
                 self.drawing_square = False
@@ -831,7 +841,7 @@ class RectangularTool(QtWidgets.QLabel):
                 self.update_overlay()
 
             else:
-                self.release_point = (event.position() / self.scale_factor).toPoint()
+                self.release_point = (event.position() / self.parent_window.scale_factor).toPoint()
                 self.drawing = False
                 self.update()
 
@@ -953,7 +963,7 @@ class RectangularTool(QtWidgets.QLabel):
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
-        painter.scale(self.scale_factor, self.scale_factor)
+        painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         painter.drawPixmap(0, 0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
 
@@ -1084,7 +1094,10 @@ class RectangularTool(QtWidgets.QLabel):
 ###############################################################
 
 class EllipticalTool(QtWidgets.QLabel):
-    def __init__(self, image_path):
+    def __init__(self, image_path, parent_window):
+
+        self.parent_window = parent_window
+
         super().__init__()
         self.image = QtGui.QPixmap(image_path)
         self.points = []
@@ -1094,7 +1107,6 @@ class EllipticalTool(QtWidgets.QLabel):
             self.setAlignment(QtCore.Qt.AlignCenter)
             return
         
-        self.scale_factor = 1.0
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setFocus()
 
@@ -1122,7 +1134,7 @@ class EllipticalTool(QtWidgets.QLabel):
         self.selections_paths = []
 
     def set_scale_factor(self, scale):
-        self.scale_factor = scale
+        self.parent_window.scale_factor = scale
         new_size = self.original_image.size() * scale
         self.resize(new_size)
         self.update()
@@ -1147,7 +1159,7 @@ class EllipticalTool(QtWidgets.QLabel):
             self.release_point = QtCore.QPoint(0, 0)
             self.start_point = QtCore.QPoint(0, 0)
             self.drawing = True
-            self.start_point = (event.position() / self.scale_factor).toPoint()
+            self.start_point = (event.position() / self.parent_window.scale_factor).toPoint()
             self.update_overlay()
 
 
@@ -1165,7 +1177,7 @@ class EllipticalTool(QtWidgets.QLabel):
             else:
                 self.drawing_in_place = False
 
-            self.hover_point = (event.position() / self.scale_factor).toPoint()
+            self.hover_point = (event.position() / self.parent_window.scale_factor).toPoint()
             self.update_overlay()
 
             self.update()
@@ -1175,7 +1187,7 @@ class EllipticalTool(QtWidgets.QLabel):
             
 
             if self.drawing:
-                self.release_point = (event.position() / self.scale_factor).toPoint()
+                self.release_point = (event.position() / self.parent_window.scale_factor).toPoint()
 
             if self.drawing_circle:
                 self.drawing_circle = False
@@ -1199,7 +1211,7 @@ class EllipticalTool(QtWidgets.QLabel):
                 self.update_overlay()
 
             else:
-                self.release_point = (event.position() / self.scale_factor).toPoint()
+                self.release_point =(event.position() / self.parent_window.scale_factor).toPoint()
                 self.drawing = False
                 self.update()
 
@@ -1325,7 +1337,7 @@ class EllipticalTool(QtWidgets.QLabel):
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
-        painter.scale(self.scale_factor, self.scale_factor)
+        painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         painter.drawPixmap(0,0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
 
