@@ -78,6 +78,7 @@ class CreateWindow(QtWidgets.QWidget):
         self.active_tool_widget = None
 
         self.scale_factor = 1.0
+        self.pan_offset = QtCore.QPoint(0,0)
         
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setFocus()
@@ -97,8 +98,6 @@ class CreateWindow(QtWidgets.QWidget):
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+="), self, activated=self.zoom_in)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+-"), self, activated=self.zoom_out)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+0"), self, activated=self.reset_zoom)
-
-
 
     def zoom_changed(self, value):
         if self.active_tool_widget:
@@ -204,6 +203,8 @@ class ToolSectionMenu(QWidget):
             parent_layout.addWidget(self.parent_window.active_tool_widget)
             self.parent_window.active_tool_widget.show()
 
+            self.parent_window.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
+
 
 ###############################################################
 #                     PEN DEBUG TOOL                          #
@@ -215,9 +216,8 @@ class PenTool(QtWidgets.QWidget):
         if self.image.isNull():
             raise ValueError("Failed to load image")
 
-
         self.parent_window = parent_window
-        
+
         self.original_image = self.image.copy()
         self.overlay = QtGui.QPixmap(self.image.size())
         self.overlay.fill(QtCore.Qt.transparent)
@@ -225,11 +225,18 @@ class PenTool(QtWidgets.QWidget):
         self.points = []
         self.drawing = False
 
+        self.panning = False
+        self.last_pan_point = None
 
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setFocus()
-        #CHANGE ONCE WINDOW SIZE IS DEFINED
-        self.resize(self.image.size())
+        self.resize(self.image.size()) 
+
+
+    def get_scaled_point(self, pos):         
+        scale = self.parent_window.scale_factor
+        pan = self.parent_window.pan_offset
+        return QtCore.QPoint(int((pos.x() - pan.x()) / scale), int((pos.y() - pan.y()) / scale))
 
     def set_scale_factor(self, scale):
         self.parent_window.scale_factor = scale
@@ -239,31 +246,55 @@ class PenTool(QtWidgets.QWidget):
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
+        painter.translate(self.parent_window.pan_offset)     
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         painter.drawPixmap(0, 0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
-            point = (event.position() / self.parent_window.scale_factor).toPoint()
-            self.drawing = True
-            self.points = [point]
-            self.update_overlay()
+            if self.panning:
+                self.last_pan_point = event.position().toPoint()
+                self.setCursor(QtCore.Qt.ClosedHandCursor)
+            else:
+                point = self.get_scaled_point(event.position())
+                self.drawing = True
+                self.points = [point]
+                self.update_overlay()
 
     def mouseMoveEvent(self, event):
-        if self.drawing:
-            point = (event.position() / self.parent_window.scale_factor).toPoint()
+        if self.drawing and not self.panning:
+            point = self.get_scaled_point(event.position())
             self.points.append(point)
             self.update_overlay()
 
+        if self.panning and self.last_pan_point:
+            change = event.position().toPoint() - self.last_pan_point 
+            self.parent_window.pan_offset += change                    
+            self.last_pan_point = event.position().toPoint()
+            self.update()
+
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
-            self.drawing = False
-            self.update_overlay()
+            if self.drawing:
+                self.drawing = False
+                self.update_overlay()
+
+            if self.panning:
+                self.panning = False
+                self.setCursor(QtCore.Qt.CrossCursor)
 
     def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = True
+            self.setCursor(QtCore.Qt.OpenHandCursor)
         if event.key() == QtCore.Qt.Key_Delete:
             self.clear_overlay()
+
+    def keyReleaseEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = False
+            self.setCursor(QtCore.Qt.CrossCursor)
 
     def update_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
@@ -327,119 +358,157 @@ class LassoTool(QtWidgets.QWidget):
         self.merged_selection_path = QPainterPath()
         self.selections_paths = []
 
+        self.panning = False
+        self.last_pan_point = None
+
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setFocus()
+
+
+    def get_scaled_point(self, pos):         
+        """Convert mouse position to image coordinate considering zoom and pan."""
+        scale = self.parent_window.scale_factor
+        pan = self.parent_window.pan_offset
+        return QtCore.QPoint(int((pos.x() - pan.x()) / scale), int((pos.y() - pan.y()) / scale))
+
     def set_scale_factor(self, scale):
         self.parent_window.scale_factor = scale
         new_size = self.original_image.size() * scale
         self.resize(new_size)
         self.update()
 
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = True
+            self.setCursor(QtCore.Qt.OpenHandCursor)
+
+    def keyReleaseEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = False
+            self.setCursor(QtCore.Qt.CrossCursor)
+
+
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
-            self.points = []
-            if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
-                self.making_additional_selection = True
-                self.making_removal = False
-            elif event.modifiers() & Qt.KeyboardModifier.AltModifier:
-                self.making_removal = True
-                self.making_additional_selection = False
+            if self.panning:
+                self.last_pan_point = event.position().toPoint()
+                self.setCursor(QtCore.Qt.ClosedHandCursor)
             else:
-                self.making_additional_selection = False
-                self.making_removal = False
-                self.selections_paths = []
-                selections.clear()
-                self.merged_selection_path = QPainterPath()
-                self.image = self.original_image.copy()
-                self.clear_overlay()
-            self.drawing = True
-            self.points = [(event.position() / self.parent_window.scale_factor).toPoint()]
-            self.update_overlay()
+                self.points = []
+                if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
+                    self.making_additional_selection = True
+                    self.making_removal = False
+                elif event.modifiers() & Qt.KeyboardModifier.AltModifier:
+                    self.making_removal = True
+                    self.making_additional_selection = False
+                else:
+                    self.making_additional_selection = False
+                    self.making_removal = False
+                    self.selections_paths = []
+                    selections.clear()
+                    self.merged_selection_path = QPainterPath()
+                    self.image = self.original_image.copy()
+                    self.clear_overlay()
+                self.drawing = True
+                self.points = [(self.get_scaled_point(event.position()))]
+                self.update_overlay()
 
     def mouseMoveEvent(self, event):
-        if self.drawing:
-            self.points.append((event.position() / self.parent_window.scale_factor).toPoint())
+        if self.drawing and not self.panning:
+            self.points.append(self.get_scaled_point(event.position()))
             self.update_overlay()
-        self.update()
+        #self.update()
 
+        if self.panning and self.last_pan_point:
+            change = event.position().toPoint() - self.last_pan_point 
+            self.parent_window.pan_offset += change                    
+            self.last_pan_point = event.position().toPoint()
+            self.update()
 
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
-            self.drawing = False
-            if len(self.points) <= 2:
+            if self.panning:
+                self.panning = False
+                self.setCursor(QtCore.Qt.CrossCursor)
+            else:
+                self.drawing = False
+                if len(self.points) <= 2:
+                    self.points = []
+                    self.update_overlay()
+                    return  # Not enough points to form a valid shape
+
+                # Proceed only if valid polygon
+                self.points.append(self.points[0])
+                new_polygon_f = QPolygonF(QPolygon(self.points))
+                new_path = QPainterPath()
+                new_path.addPolygon(new_polygon_f)
+
+                # Now safe to use new_path
+                if not self.making_removal and not self.making_additional_selection:
+                    self.selections_paths = [new_path]
+                else:
+                    print ("is making removal")
+                    removed_from_merge = False
+
+                    #remove polygons if overlapping
+                    for i, path in enumerate(list(self.selections_paths)):
+                        if path.intersects(new_path):
+                            subtraction_path = path.subtracted(new_path)
+
+                            self.selections_paths[i] = subtraction_path
+                            removed_from_merge = True
+
+                            changed = True
+                            while changed:
+                                changed = False
+                                for k, other_path in enumerate(list(self.selections_paths)):
+                                    if k == i:
+                                        continue
+                                    if self.selections_paths[i].intersects(other_path):
+                                        self.selections_paths[i] = self.selections_paths[i].subtracted(other_path)
+                                        print ("section removed")
+                                        self.selections_paths.pop(j)
+                                        changed = True
+                                        break
+                        if not removed_from_merge:
+                            self.selections_paths.append(new_path)
+
+
+                if not self.making_additional_selection and not self.making_removal:
+                    self.selections_paths = [new_path]
+                elif not self.making_removal:
+                    merged_any_polygons = False
+
+                    #merge polygons if overlapping
+                    for i, path in enumerate(list(self.selections_paths)):
+                        if path.intersects(new_path):
+                            merge_path = path.united(new_path)
+
+                            self.selections_paths[i] = merge_path
+                            merged_any_polygons = True
+
+                            changed = True
+                            while changed:
+                                changed = False
+                                for j, other_path in enumerate(list(self.selections_paths)):
+                                    if j == i:
+                                        continue
+                                    if self.selections_paths[i].intersects(other_path):
+                                        self.selections_paths[i] = self.selections_paths[i].united(other_path)
+                                        self.selections_paths.pop(j)
+                                        changed = True
+                                        break
+                            break
+                        if not merged_any_polygons:
+                            self.selections_paths.append(new_path)
                 self.points = []
                 self.update_overlay()
-                return  # Not enough points to form a valid shape
-
-            # Proceed only if valid polygon
-            self.points.append(self.points[0])
-            new_polygon_f = QPolygonF(QPolygon(self.points))
-            new_path = QPainterPath()
-            new_path.addPolygon(new_polygon_f)
-
-            # Now safe to use new_path
-            if not self.making_removal and not self.making_additional_selection:
-                self.selections_paths = [new_path]
-            else:
-                print ("is making removal")
-                removed_from_merge = False
-
-                #remove polygons if overlapping
-                for i, path in enumerate(list(self.selections_paths)):
-                    if path.intersects(new_path):
-                        subtraction_path = path.subtracted(new_path)
-
-                        self.selections_paths[i] = subtraction_path
-                        removed_from_merge = True
-
-                        changed = True
-                        while changed:
-                            changed = False
-                            for k, other_path in enumerate(list(self.selections_paths)):
-                                if k == i:
-                                    continue
-                                if self.selections_paths[i].intersects(other_path):
-                                    self.selections_paths[i] = self.selections_paths[i].subtracted(other_path)
-                                    print ("section removed")
-                                    self.selections_paths.pop(j)
-                                    changed = True
-                                    break
-                    if not removed_from_merge:
-                        self.selections_paths.append(new_path)
-
-
-            if not self.making_additional_selection and not self.making_removal:
-                self.selections_paths = [new_path]
-            elif not self.making_removal:
-                merged_any_polygons = False
-
-                #merge polygons if overlapping
-                for i, path in enumerate(list(self.selections_paths)):
-                    if path.intersects(new_path):
-                        merge_path = path.united(new_path)
-
-                        self.selections_paths[i] = merge_path
-                        merged_any_polygons = True
-
-                        changed = True
-                        while changed:
-                            changed = False
-                            for j, other_path in enumerate(list(self.selections_paths)):
-                                if j == i:
-                                    continue
-                                if self.selections_paths[i].intersects(other_path):
-                                    self.selections_paths[i] = self.selections_paths[i].united(other_path)
-                                    self.selections_paths.pop(j)
-                                    changed = True
-                                    break
-                        break
-                    if not merged_any_polygons:
-                        self.selections_paths.append(new_path)
-            self.points = []
-            self.update_overlay()
-            self.update()
+                self.update()
 
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
+        painter.translate(self.parent_window.pan_offset)     
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         painter.drawPixmap(0, 0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
@@ -514,7 +583,7 @@ class PolygonalTool(QtWidgets.QLabel):
         self.making_additional_selection = False
         self.making_removal = False
 
-        self.parent_window.scale_factor = scale_factor
+        #self.parent_window.scale_factor = scale_factor
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setFocus()
 
@@ -522,16 +591,32 @@ class PolygonalTool(QtWidgets.QLabel):
         self.setFixedSize(self.image.size())
         self.setWindowTitle("Polygonal Tool")
 
+        self.panning = False
+        self.last_pan_point = None
+
         self.merged_selection_path = QPainterPath()
         self.selections_paths = []
 
-
+    def get_scaled_point(self, pos):         
+        scale = self.parent_window.scale_factor
+        pan = self.parent_window.pan_offset
+        return QtCore.QPoint(int((pos.x() - pan.x()) / scale), int((pos.y() - pan.y()) / scale))
+    
     def set_scale_factor(self, scale):
         self.parent_window.scale_factor = scale
         new_size = self.original_image.size() * scale
         self.resize(new_size)
         self.update()
 
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = True
+            self.setCursor(QtCore.Qt.OpenHandCursor)
+
+    def keyReleaseEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = False
+            self.setCursor(QtCore.Qt.CrossCursor)
 
     def mousePressEvent(self, event):
         global selections
@@ -539,131 +624,147 @@ class PolygonalTool(QtWidgets.QLabel):
         new_path = QPainterPath()
 
         if event.button() == QtCore.Qt.LeftButton:
-            point = (event.position() / self.parent_window.scale_factor).toPoint()
-            if self.is_first_click:
-                isComplete = False
-                self.points = [point]
-                self.drawing = True
-                self.is_first_click = False
-                if event.modifiers() & QtCore.Qt.ShiftModifier:
-                    self.making_additional_selection = True
-                    self.making_removal = False
-                elif event.modifiers() & Qt.KeyboardModifier.AltModifier:
-                    self.making_removal = True
-                    self.making_additional_selection = False
-                else:
-                    self.making_additional_selection = False
-                    self.making_removal = False
-                    self.selections_paths = []
-                    selections.clear()
-                    self.merged_selection_path = QPainterPath()
-                    self.image = self.original_image.copy()
-
-                    
-                    self.clear_overlay()
-                    self.update()
-
-            else: #Check if polygon has completed
-                if (point - self.points[0]).manhattanLength() < 20:
-                    isComplete = True
-                    self.points.append(self.points[0])
-                    self.drawing = False 
-                    self.is_first_click = True
-                    if self.making_additional_selection:
-                        selections.append(QtGui.QPolygon(self.points))
+            if self.panning:
+                self.last_pan_point = event.position().toPoint()
+                self.setCursor(QtCore.Qt.ClosedHandCursor)
+            else:
+                point = self.get_scaled_point(event.position()) 
+                if self.is_first_click:
+                    isComplete = False
+                    self.points = [point]
+                    self.drawing = True
+                    self.is_first_click = False
+                    if event.modifiers() & QtCore.Qt.ShiftModifier:
+                        self.making_additional_selection = True
+                        self.making_removal = False
+                    elif event.modifiers() & Qt.KeyboardModifier.AltModifier:
+                        self.making_removal = True
+                        self.making_additional_selection = False
                     else:
-                        selections = [QtGui.QPolygon(self.points)]
+                        self.making_additional_selection = False
+                        self.making_removal = False
+                        self.selections_paths = []
+                        selections.clear()
+                        self.merged_selection_path = QPainterPath()
+                        self.image = self.original_image.copy()
 
-
-
-                    new_polygon_f = QPolygonF(QPolygon(self.points))
-                    new_path = QPainterPath()
-                    new_path.addPolygon(new_polygon_f)
-
-
-
-
-                    if not self.making_removal and not self.making_additional_selection and isComplete:
-                        self.selections_paths = [new_path]
-                    elif self.making_removal and isComplete:
-                        print ("is making removal")
-                        removed_from_merge = False
-
-                        #remove polygons if overlapping
-                        for i, path in enumerate(list(self.selections_paths)):
-                            if path.intersects(new_path):
-                                subtraction_path = path.subtracted(new_path)
-
-                                self.selections_paths[i] = subtraction_path
-                                removed_from_merge = True
-
-                                changed = True
-                                while changed:
-                                    changed = False
-                                    for k, other_path in enumerate(list(self.selections_paths)):
-                                        if k == i:
-                                            continue
-                                        if self.selections_paths[i].intersects(other_path):
-                                            self.selections_paths[i] = self.selections_paths[i].subtracted(other_path)
-                                            print ("section removed")
-                                            self.selections_paths.pop(j)
-                                            changed = True
-                                            break
-                                
-                            if not removed_from_merge:
-                                self.selections_paths.append(new_path)
-
-
-
-
-
-                    if not self.making_additional_selection and not self.making_removal:
-                        self.selections_paths = [new_path]
-                    elif not self.making_removal:
-                        print("merging polygons function")
-                        merged_any_polygons = False
-                        for i, path in enumerate(list(self.selections_paths)):
-                            if path.intersects(new_path):
-                                merge_path = path.united(new_path)
-
-                                self.selections_paths[i] = merge_path
-                                merged_any_polygons = True
-
-                                changed = True
-                                while changed:
-                                    changed = False
-                                    for j, other_path in enumerate(list(self.selections_paths)):
-                                        if j == i:
-                                            continue
-                                        if self.selections_paths[i].intersects(other_path):
-                                            self.selections_paths[i] = self.selections_paths[i].united(other_path)
-                                            self.selections_paths.pop(j)
-                                            changed = True
-                                            break
-                                break
-                            if not merged_any_polygons:
-                                self.selections_paths.append(new_path)
-
-
+                        
                         self.clear_overlay()
+                        self.update()
+
+                else: #Check if polygon has completed
+                    if (point - self.points[0]).manhattanLength() < 20:
+                        isComplete = True
+                        self.points.append(self.points[0])
+                        self.drawing = False 
+                        self.is_first_click = True
+                        if self.making_additional_selection:
+                            selections.append(QtGui.QPolygon(self.points))
+                        else:
+                            selections = [QtGui.QPolygon(self.points)]
 
 
-                else:
-                    self.points.append(point)
+
+                        new_polygon_f = QPolygonF(QPolygon(self.points))
+                        new_path = QPainterPath()
+                        new_path.addPolygon(new_polygon_f)
+
+                        if not self.making_removal and not self.making_additional_selection and isComplete:
+                            self.selections_paths = [new_path]
+                        elif self.making_removal and isComplete:
+                            print ("is making removal")
+                            removed_from_merge = False
+
+                            #remove polygons if overlapping
+                            for i, path in enumerate(list(self.selections_paths)):
+                                if path.intersects(new_path):
+                                    subtraction_path = path.subtracted(new_path)
+
+                                    self.selections_paths[i] = subtraction_path
+                                    removed_from_merge = True
+
+                                    changed = True
+                                    while changed:
+                                        changed = False
+                                        for k, other_path in enumerate(list(self.selections_paths)):
+                                            if k == i:
+                                                continue
+                                            if self.selections_paths[i].intersects(other_path):
+                                                self.selections_paths[i] = self.selections_paths[i].subtracted(other_path)
+                                                print ("section removed")
+                                                self.selections_paths.pop(j)
+                                                changed = True
+                                                break
+                                    
+                                if not removed_from_merge:
+                                    self.selections_paths.append(new_path)
+
+                        if not self.making_additional_selection and not self.making_removal:
+                            self.selections_paths = [new_path]
+                        elif not self.making_removal:
+                            print("merging polygons function")
+                            merged_any_polygons = False
+                            for i, path in enumerate(list(self.selections_paths)):
+                                if path.intersects(new_path):
+                                    merge_path = path.united(new_path)
+
+                                    self.selections_paths[i] = merge_path
+                                    merged_any_polygons = True
+
+                                    changed = True
+                                    while changed:
+                                        changed = False
+                                        for j, other_path in enumerate(list(self.selections_paths)):
+                                            if j == i:
+                                                continue
+                                            if self.selections_paths[i].intersects(other_path):
+                                                self.selections_paths[i] = self.selections_paths[i].united(other_path)
+                                                self.selections_paths.pop(j)
+                                                changed = True
+                                                break
+                                    break
+                                if not merged_any_polygons:
+                                    self.selections_paths.append(new_path)
+
+
+                            self.clear_overlay()
+
+
+                    else:
+                        self.points.append(point)
 
 
 
                 
-            self.update_overlay()
+                self.update_overlay()
 
     def mouseMoveEvent(self, event):
-        self.hover_point = (event.position() / self.parent_window.scale_factor).toPoint()
-        if self.drawing:
-            self.update_overlay()
-        self.update()
+        # if not self.panning:
+        #     self.hover_point = self.get_scaled_point(event.position())
+        #     if self.drawing:
+        #         self.update_overlay()
+        #     self.update()
+        if self.panning and self.last_pan_point:
+            change = event.position().toPoint() - self.last_pan_point 
+            self.parent_window.pan_offset += change
+            self.last_pan_point = event.position().toPoint()
+            self.update()
+        else:
+            self.hover_point = self.get_scaled_point(event.position())
+            if self.drawing:
+                self.update_overlay()
+            self.update()
+
+    def mouseReleaseEvent(self,event):
+        if event.button() == QtCore.Qt.LeftButton:
+            if self.panning:
+                self.panning = False
+                self.last_pan_point = None
+                self.setCursor(QtCore.Qt.CrossCursor)
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
+        painter.translate(self.parent_window.pan_offset)     
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         painter.drawPixmap(0, 0, self.image)   
         painter.drawPixmap(0, 0, self.overlay)
