@@ -1,14 +1,6 @@
-#TODO ADD PEN TOOL, ABILITY TO ADD WITHIN SELECTION BOUNDS ON A MASK
 
-#TODO MAKE LASSO ACTUALLY SELECET
-
-#TODO MAKE POLYGONAL TOOL WORK
-
-#TODO MAKE RECTANGULAR AND SQUARE EXPANSION AROUND A POINT
-#TODO MAKE RECTANGLULAR SELECTION WORK
-
-#TODO MAKE ELLIPTICAL AND CIRCULAR EXPANSION AROUND A POINT
-#TODO MAKE ELLIPSUS SELECTION WORK
+#TODO MAKE SELECTIONS SHARED
+#TODO MAKE SELECTIONS LIMIT WHERE THE PEN CAN DRAW
 
 #TODO MAKE MAGIC WAND
 #TODO ADD TOLERANCE FOR WAND
@@ -16,15 +8,11 @@
 #TODO MAKE COLOUR RANGE
 #TODO ADD TOLERANCE FOR COLOUR RANGE
 
-#TODO ADD ABILITY TO ADD MORE LASSO AND MERGE THEM
-#TODO ADD ABILITY TO TAKE AWAY LASSO AND MERGE THEM
 #TODO CTRL + SHIFT + I TO INVERT SELECTION
 
-#TODO ADD ABILITY TO DELETE PARTS IN SELECTION
+#TODO CHANGE ZOOM IN TO LOCK AT MIN AND MAX BASED ON TEXTURE SIZE
 
-#TODO ADD ABILITY TO ZOOM IN/OUT WITH MOUSE WHEEL
 
-####drop down menu = ComboBox
 
 import os
 import PySide6
@@ -37,11 +25,17 @@ import math
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial
 from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF
 
+import PIL 
+from PIL import Image
+
+
+
+
 selections = []
 
 
 ###############################################################
-#Creates Temporary PNG for Texture to be Viewed
+#                    INITIALISE TEXTURE                       # 
 ###############################################################
 def export_texture_to_png(texture_asset):
     #ensures selection is a texture
@@ -75,29 +69,63 @@ def export_texture_to_png(texture_asset):
 is_first_click_of_selection = True
 
 ###############################################################
-#CreateMainWindow
+#                        MAIN WINDOW                          #
 ###############################################################
 class CreateWindow(QtWidgets.QWidget):
     def __init__(self, image_path):
         super().__init__()
         self.setWindowTitle("Selection Tools")
         self.image_path = image_path
-        self.active_tool_widget = None 
+        self.active_tool_widget = None
+        self.scale_factor = 1.0
+        
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setFocus()
 
-        layout = QVBoxLayout(self)
+        self.layout = QVBoxLayout(self)
+        self.setLayout(self.layout)
 
-        self.image_label = QLabel()
-        self.image_label.setPixmap(QtGui.QPixmap(self.image_path))
-        layout.addWidget(self.image_label)
+        self.active_tool_widget = PenTool(self.image_path)
+        self.layout.addWidget(self.active_tool_widget)
 
-        self.setFixedSize(self.image_label.pixmap().size())
+        self.setFixedSize(self.active_tool_widget.size())
 
         self.tool_panel = ToolSectionMenu(parent=self)
         self.tool_panel.show()
 
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl++"), self, activated=self.zoom_in)
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+="), self, activated=self.zoom_in)
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+-"), self, activated=self.zoom_out)
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+0"), self, activated=self.reset_zoom)
+
+
+
+    def zoom_changed(self, value):
+        if self.active_tool_widget:
+            self.active_tool_widget.set_scale_factor(value / 100.0)
+            new_size = self.active_tool_widget.size()
+            #self.setFixedSize(new_size)
+
+    def zoom_in(self):
+        self._apply_zoom(10/9)
+        self.zoom_changed(self.scale_factor * 100)
+
+    def zoom_out(self):
+        self._apply_zoom(0.9)
+        self.zoom_changed(self.scale_factor * 100)
+
+    def reset_zoom(self):
+        self.scale_factor = 1.0321
+        self.zoom_changed(self.scale_factor * 100)
+
+    #CHANGE TO LOCK AT MAX ZOOMED IN BASED ON SIZE OF TEXTRE
+    def _apply_zoom(self, factor: float):
+        new_scale = self.scale_factor * factor
+        if 0.1 <= new_scale <= 10.0:
+            self.scale_factor = new_scale
 
 ###############################################################
-#CreateToolSectionWindow
+#                    TOOL SELECTION MENU                      #
 ###############################################################
 class ToolSectionMenu(QWidget):
     def __init__(self, parent = None):
@@ -149,7 +177,7 @@ class ToolSectionMenu(QWidget):
 
     def radioButtonGroupChanged(self):
         button = self.radioButtonGroup.checkedButton()
-        parent_layout = self.parent_window.layout()
+        parent_layout = self.parent_window.layout
 
         if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
             parent_layout.removeWidget(self.parent_window.active_tool_widget)
@@ -178,107 +206,107 @@ class ToolSectionMenu(QWidget):
 
 
 ###############################################################
-#                   CreatePenDebugTool
+#                     PEN DEBUG TOOL                          #
 ###############################################################
-class PenTool(QtWidgets.QLabel):
-    def __init__(self,image_path):
+class PenTool(QtWidgets.QWidget):
+    def __init__(self, image_path):
         super().__init__()
         self.image = QtGui.QPixmap(image_path)
-
         if self.image.isNull():
-            unreal.log_error("Failed to load image")
-            self.setText("Image failed to load")
-            self.setAlignment(QtCore.Qt.AlignCenter)
-            return      
+            raise ValueError("Failed to load image")
 
         self.original_image = self.image.copy()
         self.overlay = QtGui.QPixmap(self.image.size())
         self.overlay.fill(QtCore.Qt.transparent)
 
-        self.isDrawingWithPen = False
         self.points = []
         self.drawing = False
-        
-        self.setFocusPolicy(QtCore.Qt.StrongFocus) 
-        self.setFocus() 
 
+        self.scale_factor = 1.0
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setFocus()
+        #CHANGE ONCE WINDOW SIZE IS DEFINED
+        self.resize(self.image.size())
+
+    def set_scale_factor(self, scale):
+        self.scale_factor = scale
+        new_size = self.original_image.size() * scale
+        self.resize(new_size)
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        painter.scale(self.scale_factor, self.scale_factor)
+        painter.drawPixmap(0, 0, self.image)
+        painter.drawPixmap(0, 0, self.overlay)
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
-            #############TEST
-            self.setPixmap(self.overlay)
-            print("mouse pressed")
+            point = (event.position() / self.scale_factor).toPoint()
             self.drawing = True
-            self.points = [event.position().toPoint()]
+            self.points = [point]
             self.update_overlay()
 
-   
     def mouseMoveEvent(self, event):
-        if event.buttons() & QtCore.Qt.LeftButton and self.drawing:
-            self.points.append(event.position().toPoint())
+        if self.drawing:
+            point = (event.position() / self.scale_factor).toPoint()
+            self.points.append(point)
             self.update_overlay()
-        else:
-            self.update()
 
-    def mouseReleaseEvent(self,event):
+    def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             self.drawing = False
             self.update_overlay()
 
-    def keyPressEvent(self,event):
+    def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Delete:
             self.clear_overlay()
-            print ("delete pressed and cleared")
-
-    def paintEvent(self,event):
-        painter = QtGui.QPainter(self)
-        painter.drawPixmap(0,0,self.image)
-        painter.drawPixmap(0,0,self.overlay)
-
-    def clear_overlay(self):
-            self.image = self.original_image.copy()
-            self.overlay.fill(QtCore.Qt.transparent)
-            self.update()
 
     def update_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
         painter = QtGui.QPainter(self.overlay)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
         if len(self.points) > 1:
             pen = QtGui.QPen(QtCore.Qt.black, 3)
             painter.setPen(pen)
-            line = QtGui.QPolygon(self.points)
-            painter.drawPolyline(line)
+            painter.drawPolyline(QtGui.QPolygon(self.points))
             self.commit_line_to_image(QtGui.QPolygon(self.points))
+
         painter.end()
         self.update()
 
+    def clear_overlay(self):
+        self.overlay.fill(QtCore.Qt.transparent)
+        self.image = self.original_image.copy()
+        self.update()
 
     def commit_line_to_image(self, line):
         painter = QtGui.QPainter(self.image)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        #painter.setBrush(QtGui.QColor(255, 0, 0, 50))
         painter.setPen(QtGui.QPen(QtCore.Qt.black, 2))
         painter.drawPolyline(line)
         painter.end()
         self.update()
 
 ###############################################################
-#                    CreateLassoTool
+#                       LASSO TOOL                            # 
 ###############################################################
-class LassoTool(QtWidgets.QLabel):
+class LassoTool(QtWidgets.QWidget):
     def __init__(self, image_path):
         print("lasso initializing")
         super().__init__()
+        self.scale_factor = 1.0
+
         self.image = QtGui.QPixmap(image_path)
 
         if self.image.isNull():
             unreal.log_error(f"Failed to load image: {image_path}")
-            self.setText("Image failed to load")
-            self.setAlignment(QtCore.Qt.AlignCenter)
+            #self.setText("Image failed to load")
+            #self.setAlignment(QtCore.Qt.AlignCenter)
             return
         
-        self.setPixmap(self.image)
+        #self.setPixmap(self.image)
         self.points = []
         self.drawing = False
         self.making_additional_selection = False
@@ -293,6 +321,12 @@ class LassoTool(QtWidgets.QLabel):
 
         self.merged_selection_path = QPainterPath()
         self.selections_paths = []
+
+    def set_scale_factor(self, scale):
+        self.scale_factor = scale
+        new_size = self.original_image.size() * scale
+        self.resize(new_size)
+        self.update()
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
@@ -312,12 +346,12 @@ class LassoTool(QtWidgets.QLabel):
                 self.image = self.original_image.copy()
                 self.clear_overlay()
             self.drawing = True
-            self.points = [event.position().toPoint()]
+            self.points = [(event.position() / self.scale_factor).toPoint()]
             self.update_overlay()
 
     def mouseMoveEvent(self, event):
         if self.drawing:
-            self.points.append(event.position().toPoint())
+            self.points.append((event.position() / self.scale_factor).toPoint())
             self.update_overlay()
         self.update()
 
@@ -325,13 +359,18 @@ class LassoTool(QtWidgets.QLabel):
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             self.drawing = False
-            if len(self.points) > 2:
-                self.points.append(self.points[0])
-                new_polygon_f = QPolygonF(QPolygon(self.points))
-                new_path = QPainterPath()
-                new_path.addPolygon(new_polygon_f)
+            if len(self.points) <= 2:
+                self.points = []
+                self.update_overlay()
+                return  # Not enough points to form a valid shape
 
+            # Proceed only if valid polygon
+            self.points.append(self.points[0])
+            new_polygon_f = QPolygonF(QPolygon(self.points))
+            new_path = QPainterPath()
+            new_path.addPolygon(new_polygon_f)
 
+            # Now safe to use new_path
             if not self.making_removal and not self.making_additional_selection:
                 self.selections_paths = [new_path]
             else:
@@ -396,6 +435,7 @@ class LassoTool(QtWidgets.QLabel):
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
+        painter.scale(self.scale_factor, self.scale_factor)
         painter.drawPixmap(0, 0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
 
@@ -456,11 +496,10 @@ class PolygonalTool(QtWidgets.QLabel):
             return
 
         self.original_image = self.image.copy()
-
         self.overlay = QtGui.QPixmap(self.image.size())
         self.overlay.fill(QtCore.Qt.transparent)
 
-        self.setPixmap(self.image)
+        #self.setPixmap(self.image)
         self.points = []
         self.hover_point = None
         self.drawing = False
@@ -468,6 +507,9 @@ class PolygonalTool(QtWidgets.QLabel):
         self.making_additional_selection = False
         self.making_removal = False
 
+        self.scale_factor = 1.0
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setFocus()
 
         self.setMouseTracking(True)
         self.setFixedSize(self.image.size())
@@ -477,13 +519,20 @@ class PolygonalTool(QtWidgets.QLabel):
         self.selections_paths = []
 
 
+    def set_scale_factor(self, scale):
+        self.scale_factor = scale
+        new_size = self.original_image.size() * scale
+        self.resize(new_size)
+        self.update()
+
+
     def mousePressEvent(self, event):
         global selections
         isComplete = False
         new_path = QPainterPath()
 
         if event.button() == QtCore.Qt.LeftButton:
-            point = event.position().toPoint()
+            point = (event.position() / self.scale_factor).toPoint()
             if self.is_first_click:
                 isComplete = False
                 self.points = [point]
@@ -601,13 +650,14 @@ class PolygonalTool(QtWidgets.QLabel):
             self.update_overlay()
 
     def mouseMoveEvent(self, event):
-        self.hover_point = event.position().toPoint()
+        self.hover_point = (event.position() / self.scale_factor).toPoint()
         if self.drawing:
             self.update_overlay()
         self.update()
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
+        painter.scale(self.scale_factor, self.scale_factor)
         painter.drawPixmap(0, 0, self.image)   
         painter.drawPixmap(0, 0, self.overlay)
 
@@ -660,7 +710,7 @@ class PolygonalTool(QtWidgets.QLabel):
 
     
 ###############################################################
-#RECTANGLE TOOL
+#                     RECTANGLE TOOL                          #
 ###############################################################
 class RectangularTool(QtWidgets.QLabel):
     def __init__(self, image_path):
@@ -673,9 +723,13 @@ class RectangularTool(QtWidgets.QLabel):
             self.setAlignment(QtCore.Qt.AlignCenter)
             return
         
+        self.scale_factor = 1.0
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setFocus()
+
+        self.original_image = self.image.copy()
         self.overlay = QtGui.QPixmap(self.image.size())
         self.overlay.fill(QtCore.Qt.transparent)
-        self.original_image = self.image.copy()
 
         self.release_point = QtCore.QPoint(0, 0)
         self.start_point = QtCore.QPoint(0, 0)
@@ -689,11 +743,21 @@ class RectangularTool(QtWidgets.QLabel):
         self.making_additional_selection = False
         self.making_removal = False
 
+        self.resize(self.image.size())
+
+
         self.setFixedSize(self.image.size())
         self.setWindowTitle("Rectangle Tool")
 
         self.merged_selection_path = QPainterPath()
         self.selections_paths = []
+
+
+    def set_scale_factor(self, scale):
+        self.scale_factor = scale
+        new_size = self.original_image.size() * scale
+        self.resize(new_size)
+        self.update()
 
     def mousePressEvent(self,event):
         if event.button() == QtCore.Qt.LeftButton:
@@ -715,7 +779,7 @@ class RectangularTool(QtWidgets.QLabel):
             self.release_point = QtCore.QPoint(0, 0)
             self.start_point = QtCore.QPoint(0, 0)
             self.drawing = True
-            self.start_point = event.position().toPoint()
+            self.start_point = (event.position() / self.scale_factor).toPoint()
             self.update_overlay()
 
 
@@ -733,7 +797,7 @@ class RectangularTool(QtWidgets.QLabel):
             else:
                 self.drawing_in_place = False
 
-            self.hover_point = event.position().toPoint()
+            self.hover_point = (event.position() / self.scale_factor).toPoint()
             self.update_overlay()
 
             self.update()
@@ -743,7 +807,7 @@ class RectangularTool(QtWidgets.QLabel):
             
 
             if self.drawing:
-                self.release_point = event.position().toPoint()
+                self.release_point = (event.position() / self.scale_factor).toPoint()
 
             if self.drawing_square:
                 self.drawing_square = False
@@ -767,7 +831,7 @@ class RectangularTool(QtWidgets.QLabel):
                 self.update_overlay()
 
             else:
-                self.release_point = event.position().toPoint()
+                self.release_point = (event.position() / self.scale_factor).toPoint()
                 self.drawing = False
                 self.update()
 
@@ -889,9 +953,9 @@ class RectangularTool(QtWidgets.QLabel):
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
-        painter.drawPixmap(0,0, self.image)
+        painter.scale(self.scale_factor, self.scale_factor)
+        painter.drawPixmap(0, 0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
-
 
     def clear_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
@@ -1030,6 +1094,11 @@ class EllipticalTool(QtWidgets.QLabel):
             self.setAlignment(QtCore.Qt.AlignCenter)
             return
         
+        self.scale_factor = 1.0
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setFocus()
+
+        
         self.overlay = QtGui.QPixmap(self.image.size())
         self.overlay.fill(QtCore.Qt.transparent)
         self.original_image = self.image.copy()
@@ -1052,7 +1121,11 @@ class EllipticalTool(QtWidgets.QLabel):
         self.merged_selection_path = QPainterPath()
         self.selections_paths = []
 
-
+    def set_scale_factor(self, scale):
+        self.scale_factor = scale
+        new_size = self.original_image.size() * scale
+        self.resize(new_size)
+        self.update()
 
     def mousePressEvent(self,event):
         if event.button() == QtCore.Qt.LeftButton:
@@ -1074,7 +1147,7 @@ class EllipticalTool(QtWidgets.QLabel):
             self.release_point = QtCore.QPoint(0, 0)
             self.start_point = QtCore.QPoint(0, 0)
             self.drawing = True
-            self.start_point = event.position().toPoint()
+            self.start_point = (event.position() / self.scale_factor).toPoint()
             self.update_overlay()
 
 
@@ -1092,7 +1165,7 @@ class EllipticalTool(QtWidgets.QLabel):
             else:
                 self.drawing_in_place = False
 
-            self.hover_point = event.position().toPoint()
+            self.hover_point = (event.position() / self.scale_factor).toPoint()
             self.update_overlay()
 
             self.update()
@@ -1102,7 +1175,7 @@ class EllipticalTool(QtWidgets.QLabel):
             
 
             if self.drawing:
-                self.release_point = event.position().toPoint()
+                self.release_point = (event.position() / self.scale_factor).toPoint()
 
             if self.drawing_circle:
                 self.drawing_circle = False
@@ -1126,7 +1199,7 @@ class EllipticalTool(QtWidgets.QLabel):
                 self.update_overlay()
 
             else:
-                self.release_point = event.position().toPoint()
+                self.release_point = (event.position() / self.scale_factor).toPoint()
                 self.drawing = False
                 self.update()
 
@@ -1252,6 +1325,7 @@ class EllipticalTool(QtWidgets.QLabel):
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
+        painter.scale(self.scale_factor, self.scale_factor)
         painter.drawPixmap(0,0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
 
