@@ -92,8 +92,12 @@ class CreateWindow(QtWidgets.QWidget):
         # Load base image as first layer
         base_pixmap = QtGui.QPixmap(self.image_path)
         base_layer = TextureLayer(base_pixmap, QtCore.QPoint(0, 0))
-        self.texture_layers.append(base_layer)
+        #self.texture_layers.append(base_layer)
 
+        # overlay_pixmap = QtGui.QPixmap(self.image_path)
+        # self.overlay_layer = TextureLayer(overlay_pixmap, QtCore.QPoint(0,0))
+        # self.texture_layers.append(self.overlay_layer)
+        self.texture_layers.append(base_layer)
 
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setFocus()
@@ -380,11 +384,13 @@ class MoveTool(QtWidgets.QWidget):
 class PenTool(QtWidgets.QWidget):
     def __init__(self, image_path, parent_window=None):
         super().__init__()
-        self.image = QtGui.QPixmap(image_path)
-        if self.image.isNull():
-            raise ValueError("Failed to load image")
+
 
         self.parent_window = parent_window
+
+        self.image = self.parent_window.texture_layers[0].pixmap
+        if self.image.isNull():
+            raise ValueError("Failed to load image")
 
         self.original_image = self.image.copy()
         self.overlay = QtGui.QPixmap(self.image.size())
@@ -429,7 +435,14 @@ class PenTool(QtWidgets.QWidget):
         painter.translate(self.parent_window.pan_offset)     
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         painter.drawPixmap(0, 0, self.image)
-        painter.drawPixmap(0, 0, self.overlay)
+        #painter.drawPixmap(0, 0, self.overlay)
+
+        for layer in self.parent_window.texture_layers[1:]:
+            painter.drawPixmap(layer.position, layer.pixmap)
+
+        painter.drawPixmap(0,0, self.overlay)
+        self.update_overlay()
+
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
@@ -684,6 +697,9 @@ class LassoTool(QtWidgets.QWidget):
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         painter.drawPixmap(0, 0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
+
+        for layer in self.parent_window.texture_layers[1:]:
+            painter.drawPixmap(layer.position, layer.pixmap)
 
 
     def clear_overlay(self):
@@ -956,6 +972,9 @@ class PolygonalTool(QtWidgets.QLabel):
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         painter.drawPixmap(0, 0, self.image)   
         painter.drawPixmap(0, 0, self.overlay)
+
+        for layer in self.parent_window.texture_layers[1:]:
+            painter.drawPixmap(layer.position, layer.pixmap)
 
     ###HERE NEEDS TO BE REMOVED
     def clear_overlay(self):
@@ -1287,6 +1306,9 @@ class RectangularTool(QtWidgets.QLabel):
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         painter.drawPixmap(0, 0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
+
+        for layer in self.parent_window.texture_layers[1:]:
+            painter.drawPixmap(layer.position, layer.pixmap)
 
     def clear_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
@@ -1678,6 +1700,8 @@ class EllipticalTool(QtWidgets.QLabel):
         painter.drawPixmap(0,0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
 
+        for layer in self.parent_window.texture_layers[1:]:
+            painter.drawPixmap(layer.position, layer.pixmap)
 
     def clear_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
