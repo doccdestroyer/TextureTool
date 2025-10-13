@@ -65,7 +65,6 @@ def export_texture_to_png(texture_asset):
         unreal.log_error(f"Failed to export texture: {texture_asset.get_name()}")
         return None
 
-is_first_click_of_selection = True
 
 ###############################################################
 #                        MAIN WINDOW                          #
@@ -625,11 +624,13 @@ class PolygonalTool(QtWidgets.QLabel):
                     self.drawing = False
                     self.selections_paths = []
                     self.points = []
+                    self.is_first_click = True
             else:   
                 self.clear_overlay()
                 self.drawing = False
                 self.selections_paths = []
                 self.points = []
+                self.is_first_click = True
 
     def keyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
@@ -1662,8 +1663,8 @@ is_first_click_of_selection = True
 for tex in assets:
     if isinstance(tex, unreal.Texture):
         if __name__ == "__main__":
-            png_path = export_texture_to_png(tex)
+            main_png_path = export_texture_to_png(tex)
             app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-            win = CreateWindow(png_path)
+            win = CreateWindow(main_png_path)
             win.show()
             app.exec()
