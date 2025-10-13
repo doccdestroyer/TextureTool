@@ -513,6 +513,7 @@ class PenTool(QtWidgets.QWidget):
     def clear_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
         self.image = self.original_image.copy()
+        self.points.clear()
         self.update()
 
     def commit_line_to_image(self, line):
