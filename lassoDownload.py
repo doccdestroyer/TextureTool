@@ -23,7 +23,7 @@ import unreal
 import math
 ###TODO ADJUST IMPORTS TO INCLUDE WHATS ONLY NECESARY
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial
-from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF
+from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF,QGuiApplication
 
 import PIL 
 from PIL import Image
@@ -88,15 +88,19 @@ class CreateWindow(QtWidgets.QWidget):
         self.pan_offset = QtCore.QPoint(0,0)
         self.texture_layers = []
 
+        self.pixmap = None
 
         # Load base image as first layer
         base_pixmap = QtGui.QPixmap(self.image_path)
-        base_layer = TextureLayer(base_pixmap, QtCore.QPoint(0, 0))
-        #self.texture_layers.append(base_layer)
 
-        # overlay_pixmap = QtGui.QPixmap(self.image_path)
-        # self.overlay_layer = TextureLayer(overlay_pixmap, QtCore.QPoint(0,0))
-        # self.texture_layers.append(self.overlay_layer)
+
+
+        # self.image_label = QLabel()
+        # self.image_label.setAlignment(Qt.AlignCenter)
+        # self.image_label.setPixmap(base_pixmap)
+
+        # base_pixmap = base_pixmap.scaled(base_pixmap)
+        base_layer = TextureLayer(base_pixmap, QtCore.QPoint(0, 0))
         self.texture_layers.append(base_layer)
 
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
@@ -105,9 +109,21 @@ class CreateWindow(QtWidgets.QWidget):
         self.layout = QVBoxLayout(self)
         self.setLayout(self.layout)
 
+
+  
+
+
         self.active_tool_widget = MoveTool(parent_window=self)
-        self.layout.addWidget(self.active_tool_widget)
-        self.setFixedSize(self.active_tool_widget.size())
+        #self.layout.addWidget(self.active_tool_widget)
+        self.layout.insertWidget(0,self.active_tool_widget)
+        self.setFixedSize((self.active_tool_widget.size())*2)
+        #self.setFixedSize(1200,850)
+
+        self.add_texture_button = QPushButton("Add Texture")
+        self.add_texture_button.clicked.connect(self.prompt_add_texture)
+        #self.layout.addWidget(self.add_texture_button)
+        self.layout.insertWidget(1,self.add_texture_button)
+
 
         self.tool_panel = ToolSectionMenu(parent=self)
         self.tool_panel.show()
@@ -117,9 +133,7 @@ class CreateWindow(QtWidgets.QWidget):
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+-"), self, activated=self.zoom_out)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+0"), self, activated=self.reset_zoom)
 
-        self.add_texture_button = QPushButton("Add Texture")
-        self.add_texture_button.clicked.connect(self.prompt_add_texture)
-        self.layout.addWidget(self.add_texture_button)
+
 
     def prompt_add_texture(self):
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
@@ -132,18 +146,22 @@ class CreateWindow(QtWidgets.QWidget):
             self.add_new_texture_layer(file_path)
 
     def add_new_texture_layer(self, texture_path):
-        pixmap = QtGui.QPixmap(texture_path)
-        if pixmap.isNull():
+        self.pixmap = QtGui.QPixmap(texture_path)
+        
+        if self.pixmap.isNull():
             print(f"Failed to load texture: {texture_path}")
             return
 
         print(f"Loaded new texture: {texture_path}")
-        new_layer = TextureLayer(pixmap, QtCore.QPoint(100, 100))
+        new_layer = TextureLayer(self.pixmap, QtCore.QPoint(100, 100))
         self.texture_layers.append(new_layer)
 
         # Tell active tool to update/redraw
         if self.active_tool_widget:
             self.active_tool_widget.update()
+        self.update()
+
+
 
         #self.new_image = export_texture_to_png()
         
@@ -260,9 +278,9 @@ class ToolSectionMenu(QWidget):
         if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
             parent_layout.removeWidget(self.parent_window.active_tool_widget)
             self.parent_window.active_tool_widget.deleteLater()
-        else:
-            parent_layout.removeWidget(self.parent_window.image_label)
-            self.parent_window.image_label.deleteLater()
+        #else:
+            #parent_layout.removeWidget(self.parent_window.image_label)
+            #self.parent_window.image_label.deleteLater()
 
         self.parent_window.active_tool_widget = None
 
@@ -281,7 +299,8 @@ class ToolSectionMenu(QWidget):
 
 
         if self.parent_window.active_tool_widget:
-            parent_layout.addWidget(self.parent_window.active_tool_widget)
+            parent_layout.insertWidget(0,self.parent_window.active_tool_widget)
+            #parent_layout.insertWidget(1,self.parent_window.add_texture_button)
             self.parent_window.active_tool_widget.show()
             if self.parent_window.active_tool_widget == self.move_tool:
                 self.parent_window.active_tool_widget.setCursor(QtCore.Qt.ArrowCursor)
@@ -297,7 +316,7 @@ class MoveTool(QtWidgets.QWidget):
         self.parent_window = parent_window
 
         base_layer = self.parent_window.texture_layers[0]
-        self.setFixedSize(base_layer.pixmap.size())
+        #self.setFixedSize((base_layer.pixmap.size())*0.8)
 
         self.panning = False
         self.last_pan_point = None
@@ -533,7 +552,7 @@ class LassoTool(QtWidgets.QWidget):
         self.overlay = QtGui.QPixmap(self.image.size())
         self.overlay.fill(QtCore.Qt.transparent)
 
-        self.setFixedSize(self.image.size())
+        #self.setFixedSize(self.image.size())
         self.setWindowTitle("Lasso Tool")
 
         self.merged_selection_path = QPainterPath()
@@ -776,7 +795,7 @@ class PolygonalTool(QtWidgets.QLabel):
         self.setFocus()
 
         self.setMouseTracking(True)
-        self.setFixedSize(self.image.size())
+        #self.setFixedSize(self.image.size())
         self.setWindowTitle("Polygonal Tool")
 
         self.panning = False
@@ -1066,7 +1085,7 @@ class RectangularTool(QtWidgets.QLabel):
         self.panning = False
         self.last_pan_point = None
 
-        self.setFixedSize(self.image.size())
+        #self.setFixedSize(self.image.size())
         self.setWindowTitle("Rectangle Tool")
 
         self.merged_selection_path = QPainterPath()
@@ -1449,7 +1468,7 @@ class EllipticalTool(QtWidgets.QLabel):
         self.making_additional_selection = False
         self.making_removal = False
 
-        self.setFixedSize(self.image.size())
+        #self.setFixedSize(self.image.size())
         self.setWindowTitle("Ellipse Tool")
 
         self.merged_selection_path = QPainterPath()
