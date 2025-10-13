@@ -65,7 +65,15 @@ def export_texture_to_png(texture_asset):
         unreal.log_error(f"Failed to export texture: {texture_asset.get_name()}")
         return None
 
-
+###############################################################
+#                       TEXTURE LAYERS                        # 
+###############################################################
+class TextureLayer:
+    def __init__(self, pixmap: QtGui.QPixmap, position: QtCore.QPoint = QtCore.QPoint(0, 0)):
+        self.pixmap = pixmap
+        self.position = position
+        self.selected = False
+        
 ###############################################################
 #                        MAIN WINDOW                          #
 ###############################################################
@@ -78,16 +86,23 @@ class CreateWindow(QtWidgets.QWidget):
 
         self.scale_factor = 1.0
         self.pan_offset = QtCore.QPoint(0,0)
-        
+        self.texture_layers = []
+
+
+        # Load base image as first layer
+        base_pixmap = QtGui.QPixmap(self.image_path)
+        base_layer = TextureLayer(base_pixmap, QtCore.QPoint(0, 0))
+        self.texture_layers.append(base_layer)
+
+
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setFocus()
 
         self.layout = QVBoxLayout(self)
         self.setLayout(self.layout)
 
-        self.active_tool_widget = (PenTool(self.image_path, parent_window=self))
+        self.active_tool_widget = MoveTool(parent_window=self)
         self.layout.addWidget(self.active_tool_widget)
-
         self.setFixedSize(self.active_tool_widget.size())
 
         self.tool_panel = ToolSectionMenu(parent=self)
@@ -97,6 +112,62 @@ class CreateWindow(QtWidgets.QWidget):
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+="), self, activated=self.zoom_in)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+-"), self, activated=self.zoom_out)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+0"), self, activated=self.reset_zoom)
+
+        self.add_texture_button = QPushButton("Add Texture")
+        self.add_texture_button.clicked.connect(self.prompt_add_texture)
+        self.layout.addWidget(self.add_texture_button)
+
+    def prompt_add_texture(self):
+        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            "Select PNG Texture",
+            "",
+            "Images (*.png *.jpg *.jpeg)"
+        )
+        if file_path:
+            self.add_new_texture_layer(file_path)
+
+    def add_new_texture_layer(self, texture_path):
+        pixmap = QtGui.QPixmap(texture_path)
+        if pixmap.isNull():
+            print(f"Failed to load texture: {texture_path}")
+            return
+
+        print(f"Loaded new texture: {texture_path}")
+        new_layer = TextureLayer(pixmap, QtCore.QPoint(100, 100))
+        self.texture_layers.append(new_layer)
+
+        # Tell active tool to update/redraw
+        if self.active_tool_widget:
+            self.active_tool_widget.update()
+
+        #self.new_image = export_texture_to_png()
+        
+    #     self.new_text_path = "/Game/Characters/Mannequins/Textures/Shared/T_UE_Logo_M.T_UE_Logo_M"
+
+    #     # button
+    #     self.button = QPushButton("AddAsset")
+    #     self.button.setCheckable(True)
+    #     self.button.clicked.connect(self.buttonClicked)
+
+    #     # label
+    #     self.label = QLabel()
+
+    #     # line edit
+    #     self.lineEdit = QLineEdit()
+    #     self.lineEdit.textChanged.connect(self.label.setText)
+    #     self.lineEdit.setText('Enter Texture Path')
+
+
+    # def buttonClicked(self, checked):
+    #     if checked:
+
+
+    # def comboBoxTextChanged(self, text):
+    #     unreal.log('Combo Box Text: ' + str(text))
+
+    #     self.new_text_path = text
+    #     self.update()
 
     def zoom_changed(self, value):
         if self.active_tool_widget:
@@ -146,20 +217,25 @@ class ToolSectionMenu(QWidget):
         self.ellipse_tool.setText('Ellipse Tool')
         self.polygonal_tool = QRadioButton()
         self.polygonal_tool.setText('Polygonal Tool')
+        self.move_tool = QRadioButton()
+        self.move_tool.setText('Move Tool')
+
         self.radioButtonGroup = QButtonGroup()
         self.radioButtonGroup.addButton(self.pen_tool)
         self.radioButtonGroup.addButton(self.lasso_tool)
         self.radioButtonGroup.addButton(self.rectangle_tool)
         self.radioButtonGroup.addButton(self.ellipse_tool)
         self.radioButtonGroup.addButton(self.polygonal_tool)
+        self.radioButtonGroup.addButton(self.move_tool)
 
         layout.addWidget(self.pen_tool)
         layout.addWidget(self.lasso_tool)
         layout.addWidget(self.rectangle_tool)
         layout.addWidget(self.ellipse_tool)
         layout.addWidget(self.polygonal_tool)
+        layout.addWidget(self.move_tool)
 
-        for btn in [self.pen_tool, self.rectangle_tool, self.ellipse_tool, self.lasso_tool, self.polygonal_tool]:
+        for btn in [self.pen_tool, self.rectangle_tool, self.ellipse_tool, self.lasso_tool, self.polygonal_tool, self.move_tool]:
             self.radioButtonGroup.addButton(btn)
             btn.clicked.connect(self.radioButtonGroupChanged)
 
@@ -196,13 +272,106 @@ class ToolSectionMenu(QWidget):
             self.parent_window.active_tool_widget = LassoTool(self.parent_window.image_path, parent_window=self.parent_window)
         elif button == self.polygonal_tool:
             self.parent_window.active_tool_widget = PolygonalTool(self.parent_window.image_path, parent_window=self.parent_window)
+        elif button == self.move_tool:
+            self.parent_window.active_tool_widget = MoveTool(parent_window=self.parent_window)
 
 
         if self.parent_window.active_tool_widget:
             parent_layout.addWidget(self.parent_window.active_tool_widget)
             self.parent_window.active_tool_widget.show()
+            if self.parent_window.active_tool_widget == self.move_tool:
+                self.parent_window.active_tool_widget.setCursor(QtCore.Qt.ArrowCursor)
+            else: 
+                self.parent_window.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
 
-            self.parent_window.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
+###############################################################
+#                     PEN DEBUG TOOL                          #
+###############################################################
+class MoveTool(QtWidgets.QWidget):
+    def __init__(self, parent_window):
+        super().__init__()
+        self.parent_window = parent_window
+
+        base_layer = self.parent_window.texture_layers[0]
+        self.setFixedSize(base_layer.pixmap.size())
+
+        self.panning = False
+        self.last_pan_point = None
+
+        self.dragging_layer = None
+        self.drag_start_offset = QtCore.QPoint()
+
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setFocus()
+
+    def get_scaled_point(self, pos):
+        scale = self.parent_window.scale_factor
+        pan = self.parent_window.pan_offset
+        return QtCore.QPoint(int((pos.x() - pan.x()) / scale), int((pos.y() - pan.y()) / scale))
+
+    def set_scale_factor(self, scale):
+        self.parent_window.scale_factor = scale
+        base_size = self.parent_window.texture_layers[0].pixmap.size()
+        new_size = base_size * scale
+        self.resize(new_size)
+        self.update()
+
+    def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            if self.panning:
+                self.last_pan_point = event.position().toPoint()
+                self.setCursoe(QtCore.Qt.ClosedHandCursor)
+            else:
+                point = self.get_scaled_point(event.position())
+                for layer in reversed(self.parent_window.texture_layers):
+                    rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
+                    if rectangle.contains(point):
+                        if layer == self.parent_window.texture_layers[0]:
+                            break #NEW NEW NEW  
+                        else:
+                            layer.selected = True
+                            self.dragging_layer = layer
+                            self.drag_start_offset = point - layer.position
+                            break
+    
+    def mouseMoveEvent(self,event):
+        if self.panning and self.last_pan_point:
+            change = event.position().toPoint() - self.last_pan_point
+            self.parent_window.pan_offset += change
+            self.last_pan_point = event.position().toPoint()
+            self.update()
+        elif self.dragging_layer:
+            new_position = self.get_scaled_point(event.position()) - self.drag_start_offset
+            self.dragging_layer.position = new_position
+            self.update()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            if self.panning:
+                self.panning = False
+                self.setCursor(QtCore.Qt.ArrowCursor)
+            if self.dragging_layer:
+                self.dragging_layer.selected = False
+                self.dragging_layer = None
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = True
+            self.setCursor(QtCore.Qt.OpenHandCursor)
+
+    def keyReleaseEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = False
+            self.setCursor(QtCore.Qt.ArrowCursor)
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        painter.translate(self.parent_window.pan_offset)
+        painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
+
+        for layer in self.parent_window.texture_layers:
+            painter.drawPixmap(layer.position, layer.pixmap)
+
 
 
 ###############################################################
