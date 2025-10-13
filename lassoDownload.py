@@ -423,10 +423,15 @@ class PenTool(QtWidgets.QWidget):
         self.panning = False
         self.last_pan_point = None
 
+        self.in_selection = False
+
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setFocus()
         self.resize(self.image.size()) 
 
+        self.merged_selection_path = parent_window.merged_selection_path
+        self.selections_paths = parent_window.selections_paths
+        self.update_overlay()
 
     def get_scaled_point(self, pos):         
         scale = self.parent_window.scale_factor
@@ -462,19 +467,30 @@ class PenTool(QtWidgets.QWidget):
             painter.drawPixmap(layer.position, layer.pixmap)
 
         painter.drawPixmap(0,0, self.overlay)
-        self.update_overlay()
+        #self.update_overlay()
 
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
-            if self.panning:
-                self.last_pan_point = event.position().toPoint()
-                self.setCursor(QtCore.Qt.ClosedHandCursor)
+                        
+            point = self.get_scaled_point(event.position())
+            for i, path in enumerate(list(self.selections_paths)):
+                    if path.contains(point):
+                        self.in_selection = True
+                    else:
+                        self.in_selection = False
+
+            if (len(self.selections_paths) > 0 and self.in_selection) or len(self.selections_paths)==0:
+                if self.panning:
+                    self.last_pan_point = event.position().toPoint()
+                    self.setCursor(QtCore.Qt.ClosedHandCursor)
+                else:
+                    point = self.get_scaled_point(event.position())
+                    self.drawing = True
+                    self.points = [point]
+                    self.update_overlay()
             else:
-                point = self.get_scaled_point(event.position())
-                self.drawing = True
-                self.points = [point]
-                self.update_overlay()
+                return
 
     def mouseMoveEvent(self, event):
         if self.drawing and not self.panning:
@@ -482,11 +498,22 @@ class PenTool(QtWidgets.QWidget):
             self.points.append(point)
             self.update_overlay()
 
+            if len(self.selections_paths) > 0:
+                for i, path in enumerate(list(self.selections_paths)):
+                    if path.contains(point):
+                        self.in_selection = True
+                    else:
+                        self.in_selection = False
+            self.update_overlay()
+
+
         if self.panning and self.last_pan_point:
             change = event.position().toPoint() - self.last_pan_point 
             self.parent_window.pan_offset += change                    
             self.last_pan_point = event.position().toPoint()
             self.update()
+            
+
 
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
@@ -502,12 +529,29 @@ class PenTool(QtWidgets.QWidget):
         self.overlay.fill(QtCore.Qt.transparent)
         painter = QtGui.QPainter(self.overlay)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        outline_pen = QtGui.QPen(QtCore.Qt.red, 2)
+        fill_brush = QtGui.QBrush(QtGui.QColor(255, 0, 0, 50))
 
-        if len(self.points) > 1:
-            pen = QtGui.QPen(QtCore.Qt.black, 3)
-            painter.setPen(pen)
-            painter.drawPolyline(QtGui.QPolygon(self.points))
-            self.commit_line_to_image(QtGui.QPolygon(self.points))
+        if self.in_selection or len(self.selections_paths)<1:
+            if len(self.points) > 1:
+                pen = QtGui.QPen(QtCore.Qt.black, 3)
+                painter.setPen(pen)
+                painter.drawPolyline(QtGui.QPolygon(self.points))
+                self.commit_line_to_image(QtGui.QPolygon(self.points))
+
+        #elif not self.in_selection and len(self.selections_paths)>0:
+            #self.drawing = False
+
+        for path in self.selections_paths:
+            all_polys = path.toFillPolygons()
+            for poly_f in all_polys:
+                poly_q = QtGui.QPolygon([QtCore.QPoint(int(round(p.x())), int(round(p.y()))) for p in poly_f])
+                painter.setPen(outline_pen)
+                painter.setBrush(QtCore.Qt.NoBrush)
+                painter.drawPolygon(poly_q)
+                painter.setPen(QtCore.Qt.NoPen)
+                painter.setBrush(fill_brush)
+                painter.drawPolygon(poly_q)
 
         painter.end()
         self.update()
