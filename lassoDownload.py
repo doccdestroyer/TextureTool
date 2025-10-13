@@ -244,6 +244,18 @@ class PenTool(QtWidgets.QWidget):
         self.resize(new_size)
         self.update()
 
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = True
+            self.setCursor(QtCore.Qt.OpenHandCursor)
+        if event.key() == QtCore.Qt.Key_Delete:
+            self.clear_overlay()
+
+    def keyReleaseEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = False
+            self.setCursor(QtCore.Qt.CrossCursor)
+        
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
         painter.translate(self.parent_window.pan_offset)     
@@ -283,18 +295,6 @@ class PenTool(QtWidgets.QWidget):
             if self.panning:
                 self.panning = False
                 self.setCursor(QtCore.Qt.CrossCursor)
-
-    def keyPressEvent(self, event):
-        if event.key() == QtCore.Qt.Key_Space:
-            self.panning = True
-            self.setCursor(QtCore.Qt.OpenHandCursor)
-        if event.key() == QtCore.Qt.Key_Delete:
-            self.clear_overlay()
-
-    def keyReleaseEvent(self, event):
-        if event.key() == QtCore.Qt.Key_Space:
-            self.panning = False
-            self.setCursor(QtCore.Qt.CrossCursor)
 
     def update_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
@@ -380,6 +380,11 @@ class LassoTool(QtWidgets.QWidget):
         if event.key() == QtCore.Qt.Key_Space:
             self.panning = True
             self.setCursor(QtCore.Qt.OpenHandCursor)
+        if event.key() == QtCore.Qt.Key_Delete:
+            self.clear_overlay()
+            self.drawing = False
+            self.selections_paths = []
+            self.points = []
 
     def keyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
@@ -611,6 +616,17 @@ class PolygonalTool(QtWidgets.QLabel):
         if event.key() == QtCore.Qt.Key_Space:
             self.panning = True
             self.setCursor(QtCore.Qt.OpenHandCursor)
+        if event.key() == QtCore.Qt.Key_Delete:
+            if self.drawing:
+                if len(self.points)>0:
+                    self.points.remove(self.points[-1])
+                else:
+                    self.drawing = False
+            else:   
+                self.clear_overlay()
+                self.drawing = False
+                self.selections_paths = []
+                self.points = []
 
     def keyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
@@ -865,7 +881,6 @@ class RectangularTool(QtWidgets.QLabel):
         self.selections_paths = []
 
         self.panning = False
-       #self.last_pan_point = QtCore.QPoint(0, 0)
         self.last_pan_point = None
 
     def get_scaled_point(self, pos):         
@@ -883,6 +898,11 @@ class RectangularTool(QtWidgets.QLabel):
         if event.key() == QtCore.Qt.Key_Space:
             self.panning = True
             self.setCursor(QtCore.Qt.OpenHandCursor)
+        if event.key() == QtCore.Qt.Key_Delete:
+            self.clear_overlay()
+            self.drawing = False
+            self.selections_paths = []
+            self.points = []
 
     def keyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
@@ -937,7 +957,6 @@ class RectangularTool(QtWidgets.QLabel):
             self.update_overlay()
             self.update()
 
-            #self.update()
         if self.panning and self.last_pan_point:
             change = event.position().toPoint() - self.last_pan_point 
             self.parent_window.pan_offset += change                    
@@ -984,7 +1003,7 @@ class RectangularTool(QtWidgets.QLabel):
 
                 if self.drawing_in_place:
                     self.drawing_in_place
-                    
+
                     self.central_point = self.start_point
                     self.start_point = self.hover_point
 
@@ -1201,7 +1220,6 @@ class RectangularTool(QtWidgets.QLabel):
 ###############################################################
 #                       ELLIPSE TOOL                          #
 ###############################################################
-
 class EllipticalTool(QtWidgets.QLabel):
     def __init__(self, image_path, parent_window):
 
@@ -1260,6 +1278,11 @@ class EllipticalTool(QtWidgets.QLabel):
         if event.key() == QtCore.Qt.Key_Space:
             self.panning = True
             self.setCursor(QtCore.Qt.OpenHandCursor)
+        if event.key() == QtCore.Qt.Key_Delete:
+            self.clear_overlay()
+            self.drawing = False
+            self.selections_paths = []
+            self.points = []
 
     def keyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
@@ -1594,19 +1617,6 @@ class EllipticalTool(QtWidgets.QLabel):
                 painter.setBrush(fill_brush)
                 painter.drawPolygon(poly_q)
 
-    # def commit_rectanlge_to_image(self,rectangle):
-    #     painter = QtGui.QPainter(self.image)
-    #     painter.setRenderHint(QtGui.QPainter.Antialiasing)
-    #     painter.setBrush(QtGui.QColor(255, 0, 0, 50))
-    #     painter.setPen(QtGui.QPen(QtCore.Qt.red, 2))
-    #     painter.drawRect(rectangle)
-    #     painter.end()
-    #     self.update()
-
-    # def map_points_of_polygon(self,polygon, n):
-    #     path = QPainterPath()
-    #     path.addPolygon(polygon)
-    #     return [path.pointAtPercent(i/(n-1)) for i in range (n)]
 
 ###############################################################
 #                   SELECTION MANAGEMENT                      #
