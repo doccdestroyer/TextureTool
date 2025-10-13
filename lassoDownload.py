@@ -621,7 +621,10 @@ class PolygonalTool(QtWidgets.QLabel):
                 if len(self.points)>0:
                     self.points.remove(self.points[-1])
                 else:
+                    self.clear_overlay()
                     self.drawing = False
+                    self.selections_paths = []
+                    self.points = []
             else:   
                 self.clear_overlay()
                 self.drawing = False
