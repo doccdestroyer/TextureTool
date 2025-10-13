@@ -366,7 +366,6 @@ class LassoTool(QtWidgets.QWidget):
 
 
     def get_scaled_point(self, pos):         
-        """Convert mouse position to image coordinate considering zoom and pan."""
         scale = self.parent_window.scale_factor
         pan = self.parent_window.pan_offset
         return QtCore.QPoint(int((pos.x() - pan.x()) / scale), int((pos.y() - pan.y()) / scale))
@@ -856,6 +855,8 @@ class RectangularTool(QtWidgets.QLabel):
 
         self.resize(self.image.size())
 
+        self.panning = False
+        self.last_pan_point = None
 
         self.setFixedSize(self.image.size())
         self.setWindowTitle("Rectangle Tool")
@@ -863,6 +864,14 @@ class RectangularTool(QtWidgets.QLabel):
         self.merged_selection_path = QPainterPath()
         self.selections_paths = []
 
+        self.panning = False
+       #self.last_pan_point = QtCore.QPoint(0, 0)
+        self.last_pan_point = None
+
+    def get_scaled_point(self, pos):         
+        scale = self.parent_window.scale_factor
+        pan = self.parent_window.pan_offset
+        return QtCore.QPoint(int((pos.x() - pan.x()) / scale), int((pos.y() - pan.y()) / scale))
 
     def set_scale_factor(self, scale):
         self.parent_window.scale_factor = scale
@@ -870,34 +879,50 @@ class RectangularTool(QtWidgets.QLabel):
         self.resize(new_size)
         self.update()
 
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = True
+            self.setCursor(QtCore.Qt.OpenHandCursor)
+
+    def keyReleaseEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = False
+            self.setCursor(QtCore.Qt.CrossCursor)
+
+
     def mousePressEvent(self,event):
         if event.button() == QtCore.Qt.LeftButton:
-            if event.modifiers() & QtCore.Qt.ShiftModifier:
-                self.making_additional_selection = True
-                self.making_removal = False
-            elif event.modifiers() & Qt.KeyboardModifier.AltModifier:
-                self.making_removal = True
-                self.making_additional_selection = False
+            if self.panning:
+                self.last_pan_point = event.position().toPoint()
+                self.setCursor(QtCore.Qt.ClosedHandCursor)
             else:
-                self.making_additional_selection = False
-                self.making_removal = False
-                self.selections_paths = []
-                selections.clear()
-                self.merged_selection_path = QPainterPath()
-                self.image = self.original_image.copy()
-                self.clear_overlay()
-                #self.update()
-            self.release_point = QtCore.QPoint(0, 0)
-            self.start_point = QtCore.QPoint(0, 0)
-            self.drawing = True
-            self.start_point = (event.position() / self.parent_window.scale_factor).toPoint()
-            self.update_overlay()
+                if event.modifiers() & QtCore.Qt.ShiftModifier:
+                    self.making_additional_selection = True
+                    self.making_removal = False
+                elif event.modifiers() & Qt.KeyboardModifier.AltModifier:
+                    self.making_removal = True
+                    self.making_additional_selection = False
+                else:
+                    self.making_additional_selection = False
+                    self.making_removal = False
+                    self.selections_paths = []
+                    selections.clear()
+                    self.merged_selection_path = QPainterPath()
+                    self.image = self.original_image.copy()
+                    self.clear_overlay()
+
+                    #self.update()
+                self.release_point = QtCore.QPoint(0, 0)
+                self.start_point = QtCore.QPoint(0, 0)
+                self.drawing = True
+                self.start_point = self.get_scaled_point(event.position())
+                self.update_overlay()
 
 
 
 
     def mouseMoveEvent(self, event):
-        if self.drawing:
+        if self.drawing and not self.panning:
             if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
                 self.drawing_square = True
             else:
@@ -908,162 +933,165 @@ class RectangularTool(QtWidgets.QLabel):
             else:
                 self.drawing_in_place = False
 
-            self.hover_point = (event.position() / self.parent_window.scale_factor).toPoint()
+            self.hover_point = self.get_scaled_point(event.position())
             self.update_overlay()
+            self.update()
 
+            #self.update()
+        if self.panning and self.last_pan_point:
+            change = event.position().toPoint() - self.last_pan_point 
+            self.parent_window.pan_offset += change                    
+            self.last_pan_point = event.position().toPoint()
             self.update()
 
     def mouseReleaseEvent(self,event):
         if event.button() == QtCore.Qt.LeftButton:
-            
+            if self.panning:
+                self.panning = False
+                self.last_pan_point = None
+                self.setCursor(QtCore.Qt.CrossCursor)
+            else:            
+                if self.drawing:
+                    self.release_point = self.get_scaled_point(event.position())
 
-            if self.drawing:
-                self.release_point = (event.position() / self.parent_window.scale_factor).toPoint()
+                if self.drawing_square:
+                    self.drawing_square = False
+                    self.x_difference = (self.release_point.x()-self.start_point.x())
+                    self.y_difference = (self.release_point.y()-self.start_point.y())
 
-            if self.drawing_square:
-                self.drawing_square = False
-                self.x_difference = (self.release_point.x()-self.start_point.x())
-                self.y_difference = (self.release_point.y()-self.start_point.y())
+                    variance = min(abs(self.x_difference), abs(self.y_difference))
 
-                variance = min(abs(self.x_difference), abs(self.y_difference))
+                    if self.x_difference <0:
+                        directionX = -1
+                    else:
+                        directionX = 1
 
-                if self.x_difference <0:
-                    directionX = -1
+                    if self.y_difference <0:
+                        directionY = -1
+                    else:
+                        directionY = 1
+
+                    self.release_point.setY(self.start_point.y() + variance * directionY)
+                    self.release_point.setX(self.start_point.x() + variance * directionX)
+                    self.update_overlay()
+
                 else:
-                    directionX = 1
+                    self.release_point = self.get_scaled_point(event.position())
+                    self.drawing = False
+                    self.update()
 
-                if self.y_difference <0:
-                    directionY = -1
-                else:
-                    directionY = 1
+                    
 
-                self.release_point.setY(self.start_point.y() + variance * directionY)
-                self.release_point.setX(self.start_point.x() + variance * directionX)
-                self.update_overlay()
+                if self.drawing_in_place:
+                    self.drawing_in_place
+                    
+                    self.central_point = self.start_point
+                    self.start_point = self.hover_point
 
-            else:
-                self.release_point = (event.position() / self.parent_window.scale_factor).toPoint()
-                self.drawing = False
-                self.update()
+                    self.x_difference = (self.hover_point.x()-self.central_point.x())
+                    self.y_difference = (self.hover_point.y()-self.central_point.y())
+                    #self.release_point = -1 * self.hover_point
+                    self.release_point.setY(self.central_point.y()-self.y_difference)
+                    self.release_point.setX(self.central_point.x()-self.x_difference)
 
+
+
+                    #self.commit_rectanlge_to_image()
+                    self.update()
+
+                elif not self.drawing_square:
+                    #self.release_point = event.position().toPoint()
+                    #self.drawing = False
+                    #self.commit_rectanlge_to_image()
+                    self.update()
                 
 
-            if self.drawing_in_place:
-                self.drawing_in_place
-
-                print ("Drawing self in place")
-
-                self.central_point = self.start_point
-                self.start_point = self.hover_point
-
-                self.x_difference = (self.hover_point.x()-self.central_point.x())
-                self.y_difference = (self.hover_point.y()-self.central_point.y())
-                #self.release_point = -1 * self.hover_point
-                self.release_point.setY(self.central_point.y()-self.y_difference)
-                self.release_point.setX(self.central_point.x()-self.x_difference)
 
 
+                
+            if self.making_additional_selection:
+                selections.append((QtCore.QRect(self.start_point, self.release_point)))
+            else:
+                selections.clear()
+                self.selection = QtCore.QRect(self.start_point, self.release_point)
+                self.image = self.original_image.copy()
+            self.drawing = False
+            self.update_overlay()
 
-                #self.commit_rectanlge_to_image()
-                self.update()
 
-            elif not self.drawing_square:
-                #self.release_point = event.position().toPoint()
-                #self.drawing = False
-                #self.commit_rectanlge_to_image()
-                self.update()
+            #convert rectanlge into polygon
+            new_polygon_f = QPolygonF(QPolygon(QtCore.QRect(self.start_point, self.release_point)))
+            new_path = QPainterPath()
+            new_path.addPolygon(new_polygon_f)
+                
 
 
 
-            
-        if self.making_additional_selection:
-            selections.append((QtCore.QRect(self.start_point, self.release_point)))
-        else:
-            selections.clear()
-            self.selection = QtCore.QRect(self.start_point, self.release_point)
-            self.image = self.original_image.copy()
-        self.drawing = False
-        self.update_overlay()
+            if not self.making_removal and not self.making_additional_selection:
+                self.selections_paths = [new_path]
+            elif self.making_removal:
+                removed_from_merge = False
+
+                #remove polygons if overlapping
+                for i, path in enumerate(list(self.selections_paths)):
+                    if path.intersects(new_path):
+                        subtraction_path = path.subtracted(new_path)
+
+                        self.selections_paths[i] = subtraction_path
+                        removed_from_merge = True
+
+                        changed = True
+                        while changed:
+                            changed = False
+                            for k, other_path in enumerate(list(self.selections_paths)):
+                                if k == i:
+                                    continue
+                                if self.selections_paths[i].intersects(other_path):
+                                    self.selections_paths[i] = self.selections_paths[i].subtracted(other_path)
+                                    print ("section removed")
+                                    self.selections_paths.pop(k)
+                                    changed = True
+                                    break
+                        
+                    if not removed_from_merge:
+                        self.selections_paths.append(new_path)
 
 
-        #convert rectanlge into polygon
-        new_polygon_f = QPolygonF(QPolygon(QtCore.QRect(self.start_point, self.release_point)))
-        new_path = QPainterPath()
-        new_path.addPolygon(new_polygon_f)
-            
+            elif not self.making_additional_selection:
+                self.selections_paths = [new_path]
+            else:
+                merged_any_polygons = False
 
+                #merge polygons if overlapping
+                for i, path in enumerate(list(self.selections_paths)):
+                    if path.intersects(new_path):
+                        merge_path = path.united(new_path)
 
+                        self.selections_paths[i] = merge_path
+                        merged_any_polygons = True
 
-        if not self.making_removal and not self.making_additional_selection:
-            self.selections_paths = [new_path]
-        elif self.making_removal:
-            print ("is making removal")
-            removed_from_merge = False
-
-            #remove polygons if overlapping
-            for i, path in enumerate(list(self.selections_paths)):
-                if path.intersects(new_path):
-                    subtraction_path = path.subtracted(new_path)
-
-                    self.selections_paths[i] = subtraction_path
-                    removed_from_merge = True
-
-                    changed = True
-                    while changed:
-                        changed = False
-                        for k, other_path in enumerate(list(self.selections_paths)):
-                            if k == i:
-                                continue
-                            if self.selections_paths[i].intersects(other_path):
-                                self.selections_paths[i] = self.selections_paths[i].subtracted(other_path)
-                                print ("section removed")
-                                self.selections_paths.pop(k)
-                                changed = True
-                                break
-                    
-                if not removed_from_merge:
-                    self.selections_paths.append(new_path)
-
-
-
-
-
-
-
-        elif not self.making_additional_selection:
-            self.selections_paths = [new_path]
-        else:
-            merged_any_polygons = False
-
-            #merge polygons if overlapping
-            for i, path in enumerate(list(self.selections_paths)):
-                if path.intersects(new_path):
-                    merge_path = path.united(new_path)
-
-                    self.selections_paths[i] = merge_path
-                    merged_any_polygons = True
-
-                    changed = True
-                    while changed:
-                        changed = False
-                        for l, other_path in enumerate(list(self.selections_paths)):
-                            if l == i:
-                                continue
-                            if self.selections_paths[i].intersects(other_path):
-                                self.selections_paths[i] = self.selections_paths[i].united(other_path)
-                                self.selections_paths.pop(l)
-                                changed = True
-                                break
-                    break
-                if not merged_any_polygons:
-                    self.selections_paths.append(new_path)
-        self.points = []
-        self.update_overlay()
-        self.update()
+                        changed = True
+                        while changed:
+                            changed = False
+                            for l, other_path in enumerate(list(self.selections_paths)):
+                                if l == i:
+                                    continue
+                                if self.selections_paths[i].intersects(other_path):
+                                    self.selections_paths[i] = self.selections_paths[i].united(other_path)
+                                    self.selections_paths.pop(l)
+                                    changed = True
+                                    break
+                        break
+                    if not merged_any_polygons:
+                        self.selections_paths.append(new_path)
+            self.points = []
+            self.update_overlay()
+            self.update()
 
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
+        painter.translate(self.parent_window.pan_offset)     
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         painter.drawPixmap(0, 0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
@@ -1079,15 +1107,14 @@ class RectangularTool(QtWidgets.QLabel):
         self.isDrawn = False
         
 
-        if self.start_point != QtCore.QPoint(0, 0) and self.release_point != QtCore.QPoint(0, 0 and self.drawing):
+        # if self.start_point != QtCore.QPoint(0, 0) and self.release_point != QtCore.QPoint(0, 0 and self.drawing):
                     
-            painter.setPen(QtGui.QPen(QtCore.Qt.red, 2))
-            rectangle = QtCore.QRect(self.start_point, self.release_point)
-            painter.drawRect(rectangle)
-            self.isDrawn = True
+        #     painter.setPen(QtGui.QPen(QtCore.Qt.red, 2))
+        #     rectangle = QtCore.QRect(self.start_point, self.release_point)
+        #     painter.drawRect(rectangle)
+        #     self.isDrawn = True
 
         if self.start_point != QtCore.QPoint(0, 0) and self.hover_point != QtCore.QPoint(0, 0) and self.drawing:
-            
             if self.drawing_square and self.drawing:
 
                 self.x_difference = (self.hover_point.x()-self.start_point.x())
@@ -1114,26 +1141,6 @@ class RectangularTool(QtWidgets.QLabel):
                     painter.drawRect(rectangle)
                 self.update()
 
-
-            # if self.drawing_in_place and self.drawing:
-            #     self.central_point = self.start_point
-            #     self.start_point = self.hover_point
-
-            #     self.x_difference = (self.hover_point.x()-self.central_point.x())
-            #     self.y_difference = (self.hover_point.y()-self.central_point.y())
-            #     #self.release_point = -1 * self.hover_point
-            #     self.release_point.setY(self.central_point.y()-self.y_difference)
-            #     self.release_point.setX(self.central_point.x()-self.x_difference)
-
-                
-
-            # painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
-            # rectangle = QtCore.QRect(self.start_point, self.release_point)
-            # painter.drawRect(rectangle)
-
-
-            
-
             if self.drawing_in_place and self.drawing:
                 self.central_point = self.start_point
                 self.inital_point = self.hover_point
@@ -1157,6 +1164,7 @@ class RectangularTool(QtWidgets.QLabel):
                 painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                 rectangle = QtCore.QRect(self.start_point, self.hover_point)
                 painter.drawRect(rectangle)
+            
 
 
 
@@ -1234,40 +1242,63 @@ class EllipticalTool(QtWidgets.QLabel):
         self.merged_selection_path = QPainterPath()
         self.selections_paths = []
 
+        self.panning = False
+        self.last_pan_point = None
+
     def set_scale_factor(self, scale):
         self.parent_window.scale_factor = scale
         new_size = self.original_image.size() * scale
         self.resize(new_size)
         self.update()
 
+    def get_scaled_point(self, pos):         
+        scale = self.parent_window.scale_factor
+        pan = self.parent_window.pan_offset
+        return QtCore.QPoint(int((pos.x() - pan.x()) / scale), int((pos.y() - pan.y()) / scale))
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = True
+            self.setCursor(QtCore.Qt.OpenHandCursor)
+
+    def keyReleaseEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = False
+            self.setCursor(QtCore.Qt.CrossCursor)
+
+
     def mousePressEvent(self,event):
         if event.button() == QtCore.Qt.LeftButton:
-            if event.modifiers() & QtCore.Qt.ShiftModifier:
-                self.making_additional_selection = True
-                self.making_removal = False
-            elif event.modifiers() & Qt.KeyboardModifier.AltModifier:
-                self.making_removal = True
-                self.making_additional_selection = False
+            if self.panning:
+                self.last_pan_point = event.position().toPoint()
+                self.setCursor(QtCore.Qt.ClosedHandCursor)
             else:
-                self.making_additional_selection = False
-                self.making_removal = False
-                self.selections_paths = []
-                selections.clear()
-                self.merged_selection_path = QPainterPath()
-                self.image = self.original_image.copy()
-                self.clear_overlay()
-                #self.update()
-            self.release_point = QtCore.QPoint(0, 0)
-            self.start_point = QtCore.QPoint(0, 0)
-            self.drawing = True
-            self.start_point = (event.position() / self.parent_window.scale_factor).toPoint()
-            self.update_overlay()
+                if event.modifiers() & QtCore.Qt.ShiftModifier:
+                    self.making_additional_selection = True
+                    self.making_removal = False
+                elif event.modifiers() & Qt.KeyboardModifier.AltModifier:
+                    self.making_removal = True
+                    self.making_additional_selection = False
+                else:
+                    self.making_additional_selection = False
+                    self.making_removal = False
+                    self.selections_paths = []
+                    selections.clear()
+                    self.merged_selection_path = QPainterPath()
+                    self.image = self.original_image.copy()
+                    self.clear_overlay()
+                    #self.update()
+                self.release_point = QtCore.QPoint(0, 0)
+                self.start_point = QtCore.QPoint(0, 0)
+                self.drawing = True
+                self.start_point = self.get_scaled_point(event.position())
+                self.update_overlay()
 
 
 
 
     def mouseMoveEvent(self, event):
-        if self.drawing:
+        if self.drawing and not self.panning:
             if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
                 self.drawing_circle = True
             else:
@@ -1278,124 +1309,132 @@ class EllipticalTool(QtWidgets.QLabel):
             else:
                 self.drawing_in_place = False
 
-            self.hover_point = (event.position() / self.parent_window.scale_factor).toPoint()
+            self.hover_point = self.get_scaled_point(event.position())
             self.update_overlay()
+            self.update()
 
+        if self.panning and self.last_pan_point:
+            change = event.position().toPoint() - self.last_pan_point 
+            self.parent_window.pan_offset += change                    
+            self.last_pan_point = event.position().toPoint()
             self.update()
 
     def mouseReleaseEvent(self,event):
         if event.button() == QtCore.Qt.LeftButton:
-            
+            if self.panning:
+                self.panning = False
+                self.last_pan_point = None
+                self.setCursor(QtCore.Qt.CrossCursor)
+            else:               
+                if self.drawing:
+                    self.release_point = self.get_scaled_point(event.position())
 
-            if self.drawing:
-                self.release_point = (event.position() / self.parent_window.scale_factor).toPoint()
+                if self.drawing_circle:
+                    self.drawing_circle = False
+                    self.x_difference = (self.release_point.x()-self.start_point.x())
+                    self.y_difference = (self.release_point.y()-self.start_point.y())
 
-            if self.drawing_circle:
-                self.drawing_circle = False
-                self.x_difference = (self.release_point.x()-self.start_point.x())
-                self.y_difference = (self.release_point.y()-self.start_point.y())
+                    variance = min(abs(self.x_difference), abs(self.y_difference))
 
-                variance = min(abs(self.x_difference), abs(self.y_difference))
+                    if self.x_difference <0:
+                        directionX = -1
+                    else:
+                        directionX = 1
 
-                if self.x_difference <0:
-                    directionX = -1
+                    if self.y_difference <0:
+                        directionY = -1
+                    else:
+                        directionY = 1
+
+                    self.release_point.setY(self.start_point.y() + variance * directionY)
+                    self.release_point.setX(self.start_point.x() + variance * directionX)
+                    self.update_overlay()
+
                 else:
-                    directionX = 1
+                    self.release_point = self.get_scaled_point(event.position())
+                    self.drawing = False
+                    self.update()
 
-                if self.y_difference <0:
-                    directionY = -1
-                else:
-                    directionY = 1
+                    
 
-                self.release_point.setY(self.start_point.y() + variance * directionY)
-                self.release_point.setX(self.start_point.x() + variance * directionX)
-                self.update_overlay()
+                if self.drawing_in_place:
+                    #self.drawing_in_place
 
-            else:
-                self.release_point =(event.position() / self.parent_window.scale_factor).toPoint()
-                self.drawing = False
-                self.update()
+                    self.central_point = self.start_point
+                    self.start_point = self.hover_point
+
+                    self.x_difference = (self.hover_point.x()-self.central_point.x())
+                    self.y_difference = (self.hover_point.y()-self.central_point.y())
+                    #self.release_point = -1 * self.hover_point
+                    self.release_point.setY(self.central_point.y()-self.y_difference)
+                    self.release_point.setX(self.central_point.x()-self.x_difference)
+                    ellipse = QtCore.QRect(self.start_point, self.release_point)
+
+
+
+                    #self.commit_rectanlge_to_image()
+                    self.update()
+
+                elif not self.drawing_circle:
+                    #self.release_point = event.position().toPoint()
+                    #self.drawing = False
+                    #self.commit_rectanlge_to_image()
+                    self.update()
+                    ellipse = QtCore.QRect(self.start_point, self.hover_point)
+
+
+
 
                 
-
-            if self.drawing_in_place:
-                #self.drawing_in_place
-
-                self.central_point = self.start_point
-                self.start_point = self.hover_point
-
-                self.x_difference = (self.hover_point.x()-self.central_point.x())
-                self.y_difference = (self.hover_point.y()-self.central_point.y())
-                #self.release_point = -1 * self.hover_point
-                self.release_point.setY(self.central_point.y()-self.y_difference)
-                self.release_point.setX(self.central_point.x()-self.x_difference)
-                ellipse = QtCore.QRect(self.start_point, self.release_point)
+            if self.making_additional_selection:
+                selections.append((QtCore.QRect(self.start_point, self.release_point)))
+            else:
+                selections.clear()
+                self.selection = QtCore.QRect(self.start_point, self.release_point)
+                self.image = self.original_image.copy()
+            self.drawing = False
+            self.update_overlay()
 
 
 
-                #self.commit_rectanlge_to_image()
-                self.update()
+            #convert rectanlge into polygon
+            painter = QtGui.QPainter(self)
+            ellipse_path = QtGui.QPainterPath()
+            ellipse_path.addEllipse(ellipse)
+            ellipse_polygon = ellipse_path.toFillPolygon()
 
-            elif not self.drawing_circle:
-                #self.release_point = event.position().toPoint()
-                #self.drawing = False
-                #self.commit_rectanlge_to_image()
-                self.update()
-                ellipse = QtCore.QRect(self.start_point, self.hover_point)
+            new_polygon_f = QtGui.QPolygonF(map_points_of_polygon(ellipse_polygon, 100))
+            new_path = QPainterPath()
+            new_path.addPolygon(new_polygon_f)
+                
+            if not self.making_removal and not self.making_additional_selection:
+                self.selections_paths = [new_path]
+            elif self.making_removal:
+                print ("is making removal")
+                removed_from_merge = False
 
+                #remove polygons if overlapping
+                for i, path in enumerate(list(self.selections_paths)):
+                    if path.intersects(new_path):
+                        subtraction_path = path.subtracted(new_path)
 
+                        self.selections_paths[i] = subtraction_path
+                        removed_from_merge = True
 
-
-            
-        if self.making_additional_selection:
-            selections.append((QtCore.QRect(self.start_point, self.release_point)))
-        else:
-            selections.clear()
-            self.selection = QtCore.QRect(self.start_point, self.release_point)
-            self.image = self.original_image.copy()
-        self.drawing = False
-        self.update_overlay()
-
-
-
-        #convert rectanlge into polygon
-        painter = QtGui.QPainter(self)
-        ellipse_path = QtGui.QPainterPath()
-        ellipse_path.addEllipse(ellipse)
-        ellipse_polygon = ellipse_path.toFillPolygon()
-
-        new_polygon_f = QtGui.QPolygonF(map_points_of_polygon(ellipse_polygon, 100))
-        new_path = QPainterPath()
-        new_path.addPolygon(new_polygon_f)
-            
-        if not self.making_removal and not self.making_additional_selection:
-            self.selections_paths = [new_path]
-        elif self.making_removal:
-            print ("is making removal")
-            removed_from_merge = False
-
-            #remove polygons if overlapping
-            for i, path in enumerate(list(self.selections_paths)):
-                if path.intersects(new_path):
-                    subtraction_path = path.subtracted(new_path)
-
-                    self.selections_paths[i] = subtraction_path
-                    removed_from_merge = True
-
-                    changed = True
-                    while changed:
-                        changed = False
-                        for k, other_path in enumerate(list(self.selections_paths)):
-                            if k == i:
-                                continue
-                            if self.selections_paths[i].intersects(other_path):
-                                self.selections_paths[i] = self.selections_paths[i].subtracted(other_path)
-                                print ("section removed")
-                                self.selections_paths.pop(k)
-                                changed = True
-                                break
-                if not removed_from_merge:
-                    self.selections_paths.append(new_path)
+                        changed = True
+                        while changed:
+                            changed = False
+                            for k, other_path in enumerate(list(self.selections_paths)):
+                                if k == i:
+                                    continue
+                                if self.selections_paths[i].intersects(other_path):
+                                    self.selections_paths[i] = self.selections_paths[i].subtracted(other_path)
+                                    print ("section removed")
+                                    self.selections_paths.pop(k)
+                                    changed = True
+                                    break
+                    if not removed_from_merge:
+                        self.selections_paths.append(new_path)
 
 
 
@@ -1403,41 +1442,42 @@ class EllipticalTool(QtWidgets.QLabel):
 
 
 
-        elif not self.making_additional_selection:
-            self.selections_paths = [new_path]
-        else:
-            merged_any_polygons = False
+            elif not self.making_additional_selection:
+                self.selections_paths = [new_path]
+            else:
+                merged_any_polygons = False
 
-            #merge polygons if overlapping
-            for i, path in enumerate(list(self.selections_paths)):
-                if path.intersects(new_path):
-                    merge_path = path.united(new_path)
+                #merge polygons if overlapping
+                for i, path in enumerate(list(self.selections_paths)):
+                    if path.intersects(new_path):
+                        merge_path = path.united(new_path)
 
-                    self.selections_paths[i] = merge_path
-                    merged_any_polygons = True
+                        self.selections_paths[i] = merge_path
+                        merged_any_polygons = True
 
-                    changed = True
-                    while changed:
-                        changed = False
-                        for l, other_path in enumerate(list(self.selections_paths)):
-                            if l == i:
-                                continue
-                            if self.selections_paths[i].intersects(other_path):
-                                self.selections_paths[i] = self.selections_paths[i].united(other_path)
-                                self.selections_paths.pop(l)
-                                changed = True
-                                break
-                    break
-                if not merged_any_polygons:
-                    self.selections_paths.append(new_path)
-        self.points = []
-        self.update_overlay()
-        self.update()
+                        changed = True
+                        while changed:
+                            changed = False
+                            for l, other_path in enumerate(list(self.selections_paths)):
+                                if l == i:
+                                    continue
+                                if self.selections_paths[i].intersects(other_path):
+                                    self.selections_paths[i] = self.selections_paths[i].united(other_path)
+                                    self.selections_paths.pop(l)
+                                    changed = True
+                                    break
+                        break
+                    if not merged_any_polygons:
+                        self.selections_paths.append(new_path)
+            self.points = []
+            self.update_overlay()
+            self.update()
 
 
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
+        painter.translate(self.parent_window.pan_offset)     
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         painter.drawPixmap(0,0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
@@ -1505,9 +1545,6 @@ class EllipticalTool(QtWidgets.QLabel):
             # painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
             # rectangle = QtCore.QRect(self.start_point, self.release_point)
             # painter.drawRect(rectangle)
-
-
-            
 
             if self.drawing_in_place and self.drawing:
                 self.central_point = self.start_point
