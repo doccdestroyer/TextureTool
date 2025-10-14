@@ -111,10 +111,6 @@ class CreateWindow(QtWidgets.QWidget):
         self.layout = QVBoxLayout(self)
         self.setLayout(self.layout)
 
-
-  
-
-
         self.active_tool_widget = MoveTool(parent_window=self)
         #self.layout.addWidget(self.active_tool_widget)
         self.layout.insertWidget(0,self.active_tool_widget)
@@ -135,6 +131,9 @@ class CreateWindow(QtWidgets.QWidget):
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+-"), self, activated=self.zoom_out)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+0"), self, activated=self.reset_zoom)
 
+        self.export_flat_button = QPushButton("Export Flattened Image")
+        self.export_flat_button.clicked.connect(lambda: self.export_flattened_image("/Game/YourFolder"))
+        self.layout.addWidget(self.export_flat_button)
 
 
     def prompt_add_texture(self):
@@ -164,40 +163,9 @@ class CreateWindow(QtWidgets.QWidget):
         self.update()
 
 
-
-        #self.new_image = export_texture_to_png()
-        
-    #     self.new_text_path = "/Game/Characters/Mannequins/Textures/Shared/T_UE_Logo_M.T_UE_Logo_M"
-
-    #     # button
-    #     self.button = QPushButton("AddAsset")
-    #     self.button.setCheckable(True)
-    #     self.button.clicked.connect(self.buttonClicked)
-
-    #     # label
-    #     self.label = QLabel()
-
-    #     # line edit
-    #     self.lineEdit = QLineEdit()
-    #     self.lineEdit.textChanged.connect(self.label.setText)
-    #     self.lineEdit.setText('Enter Texture Path')
-
-
-    # def buttonClicked(self, checked):
-    #     if checked:
-
-
-    # def comboBoxTextChanged(self, text):
-    #     unreal.log('Combo Box Text: ' + str(text))
-
-    #     self.new_text_path = text
-    #     self.update()
-
     def zoom_changed(self, value):
         if self.active_tool_widget:
             self.active_tool_widget.set_scale_factor(value / 100.0)
-            new_size = self.active_tool_widget.size()
-            #self.setFixedSize(new_size)
 
     def zoom_in(self):
         self._apply_zoom(10/9)
@@ -216,6 +184,40 @@ class CreateWindow(QtWidgets.QWidget):
         new_scale = self.scale_factor * factor
         if 0.1 <= new_scale <= 10.0:
             self.scale_factor = new_scale
+
+
+    def export_flattened_image(self, unreal_folder="/Game/YourFolder"):
+        temp_dir = os.path.join(unreal.Paths.project_intermediate_dir(), "TempExports")
+        os.makedirs(temp_dir, exist_ok=True)
+        temp_path = os.path.join(temp_dir, "Composite.png")
+
+        base_size = self.texture_layers[0].pixmap.size()
+        final_image = QtGui.QImage(base_size, QtGui.QImage.Format_ARGB32)
+        final_image.fill(QtCore.Qt.transparent)
+
+        painter = QtGui.QPainter(final_image)
+        for layer in self.texture_layers:
+            painter.drawPixmap(layer.position, layer.pixmap)
+        painter.end()
+
+        QtGui.QPixmap.fromImage(final_image).save(temp_path, "PNG")
+
+        import_task = unreal.AssetImportTask()
+        import_task.filename = temp_path
+        import_task.destination_path = unreal_folder
+        import_task.automated = True
+        import_task.save = True
+        import_task.replace_existing = True
+
+        asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
+        asset_tools.import_asset_tasks([import_task])
+
+        imported_asset_path = f"{unreal_folder}/Composite"
+        if unreal.EditorAssetLibrary.does_asset_exist(imported_asset_path):
+            unreal.log("Succesfully imported into Unreal")
+        else:
+            unreal.log_error("Failed to import into Unreal")
+
 
 ###############################################################
 #                    TOOL SELECTION MENU                      #
@@ -317,7 +319,7 @@ class MoveTool(QtWidgets.QWidget):
         super().__init__()
         self.parent_window = parent_window
 
-        base_layer = self.parent_window.texture_layers[0]
+        #base_layer = self.parent_window.texture_layers[0]
         #self.setFixedSize((base_layer.pixmap.size())*0.8)
 
         self.panning = False

@@ -13,33 +13,34 @@
 # [x] ADD DEBUG PEN                        <---------------------    MVP
 # [x] MULTIPLE LINES
 # [x] CAN BE CLEARED WITH DELETE
+# [x] PEN ONLY DRAWS WITHIN SELECTIONS 
 
 # [x] ADD LASSO                        <---------------------    MVP
 # [x] ADDITONAL SELECTIONS
 # [x] SUBTRACT SELECTIONS
-# [ ] SHARE SELECTIONS
-# [ ] DELETE ENTIRE SELECTION
+# [x] SHARE SELECTIONS
+# [X] DELETE ENTIRE SELECTION
 
 # [x] ADD POLYGON                        <---------------------    MVP
 # [x] ADDITIONAL SELECTIONS
 # [x] SUBTRACT SELECTIONS
-# [ ] SHARE SELECTIONS
-# [ ] DELETE ENTIRE SELECTIONS
-# [ ] DELETE MOST RECENT POINT
+# [x] SHARE SELECTIONS
+# [X] DELETE ENTIRE SELECTIONS
+# [X] DELETE MOST RECENT POINT
 
 # [x] ADD RECTANGLE                        <---------------------    MVP
 # [x] ADDITIONAL SELECTIONS
 # [x] SUBTRACTION SELECTIONS
-# [ ] SHARE SELECTIONS
-# [ ] DELETE ENTIRE SELECTION
+# [x] SHARE SELECTIONS
+# [X] DELETE ENTIRE SELECTION
 # [x] SHIFT FOR SQUARE
 # [x] ALT FOR DRAWING IN PLACE
 
 # [x] ADD RECTANGLE                        <---------------------    MVP
 # [x] ADDITIONAL SELECTIONS
 # [x] SUBTRACTION SELECTIONS
-# [ ] SHARE SELECTIONS
-# [ ] DELETE ENTIRE SELECTION
+# [x] SHARE SELECTIONS
+# [X] DELETE ENTIRE SELECTION
 # [x] SHIFT FOR CIRCLE
 # [x] ALT FOR DRAWING IN PLACE
 
@@ -74,7 +75,7 @@
 #  IMPORTED TEXTURES  #
 #######################
 
-# [ ] IMPORT TEXTURES                         <---------------------    MVP
+# [X] IMPORT TEXTURES                         <---------------------    MVP
 # [ ] BROWSER UI                              <---------------------    MVP
 # [ ] DRAG AND DROG                           <---------------------    MVP
 # [ ] TAGS FOR BROWSER
@@ -83,11 +84,13 @@
 #       LAYERS        #
 #######################
 
-# [ ] LAYERS ESTABLISHED                        <---------------------    MVP
+# [X] LAYERS ESTABLISHED                        <---------------------    MVP
 # [ ] ADD EMPTY LAYER
 # [ ] ADD GROUPS
 # [ ] DUPLICATE CURRENT LAYER
-# [ ] TRANSFORM LAYER (SCALE, MOVE, ROTATE)
+# [X] MOVE LAYERS
+# [ ] SCALE LAYERS
+# [ ] ROTATE LAYERS
 # [ ] IMPORTED TEXTURES HAVE UNIQUE LAYER                        <---------------------    MVP
 
 #######################
@@ -96,7 +99,7 @@
 
 # [ ] EXPORT AS TEXTURE                        <---------------------    MVP
 # [ ] OPTION TO REPLACE EXISTING TEXTURE
-# [ ] OPTION TO REPLACE EXISTING USES OF TEXTURE
+# [ ] OPTION TO REPLACE EXISTING USES OF TEXTURE-
 
 # [ ] EXPORT AS DECAL                        <---------------------    MVP
 # [ ] FIND MESHES THAT USE TEXTURE
