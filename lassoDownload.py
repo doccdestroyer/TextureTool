@@ -133,8 +133,12 @@ class CreateWindow(QtWidgets.QWidget):
 
         self.export_flat_button = QPushButton("Export Flattened Image")
         self.export_flat_button.clicked.connect(lambda: self.export_flattened_image(str(self.prompt_add_folder_path())))
-
         self.layout.addWidget(self.export_flat_button)
+
+
+        self.export_addtions_button = QPushButton("Export Additons as PNG")
+        self.export_addtions_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
+        self.layout.addWidget(self.export_addtions_button)
 
         self.setStyleSheet("""
             background-color: #262626;
@@ -253,6 +257,37 @@ class CreateWindow(QtWidgets.QWidget):
         else:
             unreal.log_error("Failed to import into Unreal")
 
+    def export_flattened_additions(self, unreal_folder):
+        temp_dir = os.path.join(unreal.Paths.project_intermediate_dir(), "TempExports")
+        os.makedirs(temp_dir, exist_ok=True)
+        temp_path = os.path.join(temp_dir, "Composite.png")
+
+        base_size = self.texture_layers[0].pixmap.size()
+        final_image = QtGui.QImage(base_size, QtGui.QImage.Format_ARGB32)
+        final_image.fill(QtCore.Qt.transparent)
+
+        painter = QtGui.QPainter(final_image)
+        for layer in self.texture_layers[1:]:
+            painter.drawPixmap(layer.position, layer.pixmap)
+        painter.end()
+
+        QtGui.QPixmap.fromImage(final_image).save(temp_path, "PNG")
+
+        import_task = unreal.AssetImportTask()
+        import_task.filename = temp_path
+        import_task.destination_path = unreal_folder
+        import_task.automated = True
+        import_task.save = True
+        import_task.replace_existing = True
+
+        asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
+        asset_tools.import_asset_tasks([import_task])
+
+        imported_asset_path = f"{unreal_folder}/NewTexture"
+        if unreal.EditorAssetLibrary.does_asset_exist(imported_asset_path):
+            unreal.log("Succesfully imported into Unreal")
+        else:
+            unreal.log_error("Failed to import into Unreal")
 
 ###############################################################
 #                    TOOL SELECTION MENU                      #
