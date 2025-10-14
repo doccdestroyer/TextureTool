@@ -25,8 +25,8 @@ import math
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial
 from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF,QGuiApplication
 
-import PIL 
-from PIL import Image
+# import PIL 
+# from PIL import Image
 
 
 
@@ -132,9 +132,16 @@ class CreateWindow(QtWidgets.QWidget):
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+0"), self, activated=self.reset_zoom)
 
         self.export_flat_button = QPushButton("Export Flattened Image")
-        self.export_flat_button.clicked.connect(lambda: self.export_flattened_image("/Game/YourFolder"))
+        self.export_flat_button.clicked.connect(lambda: self.export_flattened_image(str(self.prompt_add_folder_path())))
+
         self.layout.addWidget(self.export_flat_button)
 
+        self.setStyleSheet("""
+            background-color: #262626;
+            color: #ffffff;
+            font-family: Consolas;
+            font-size: 12px;
+        """)
 
     def prompt_add_texture(self):
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
@@ -145,6 +152,34 @@ class CreateWindow(QtWidgets.QWidget):
         )
         if file_path:
             self.add_new_texture_layer(file_path)
+
+
+    def prompt_add_folder_path(self):
+
+        file_path = QtWidgets.QFileDialog.getExistingDirectory(
+    self,
+    "Open a folder",
+    "/Game/",
+    QtWidgets.QFileDialog.ShowDirsOnly
+    )
+        print (f"file path = {file_path}")
+
+        split_path = file_path.split("/")
+        print (split_path.index("Content"))
+
+        new_path = "/Game/"
+
+        for item in split_path[split_path.index("Content")+1:]:
+            print (item)
+            new_path += str(item)
+            new_path += ("/")
+            
+        print(new_path)
+
+        if new_path:
+            return new_path
+        else:
+            print("FILE DIRECTORY NOT FOUND NOT FOUND NOT FOUND")
 
     def add_new_texture_layer(self, texture_path):
         self.pixmap = QtGui.QPixmap(texture_path)
@@ -186,7 +221,7 @@ class CreateWindow(QtWidgets.QWidget):
             self.scale_factor = new_scale
 
 
-    def export_flattened_image(self, unreal_folder="/Game/YourFolder"):
+    def export_flattened_image(self, unreal_folder):
         temp_dir = os.path.join(unreal.Paths.project_intermediate_dir(), "TempExports")
         os.makedirs(temp_dir, exist_ok=True)
         temp_path = os.path.join(temp_dir, "Composite.png")
@@ -212,7 +247,7 @@ class CreateWindow(QtWidgets.QWidget):
         asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
         asset_tools.import_asset_tasks([import_task])
 
-        imported_asset_path = f"{unreal_folder}/Composite"
+        imported_asset_path = f"{unreal_folder}/NewTexture"
         if unreal.EditorAssetLibrary.does_asset_exist(imported_asset_path):
             unreal.log("Succesfully imported into Unreal")
         else:
@@ -659,8 +694,8 @@ class LassoTool(QtWidgets.QWidget):
                 else:
                     self.making_additional_selection = False
                     self.making_removal = False
-                    #self.selections_paths.clear()
-                    selections.clear()
+                    self.selections_paths.clear()
+                    #selections.clear()
                     self.merged_selection_path = QPainterPath()
                     self.image = self.original_image.copy()
                     self.clear_overlay()
@@ -726,7 +761,6 @@ class LassoTool(QtWidgets.QWidget):
                                         break
                         if not removed_from_merge:
                             self.selections_paths.append(new_path)
-
 
                 if not self.making_additional_selection and not self.making_removal:
                     self.selections_paths.clear()
@@ -920,7 +954,7 @@ class PolygonalTool(QtWidgets.QLabel):
                     else:
                         self.making_additional_selection = False
                         self.making_removal = False
-                        selections.clear()
+                        self.selections_paths.clear()
                         self.merged_selection_path = QPainterPath()
                         self.image = self.original_image.copy()
 
