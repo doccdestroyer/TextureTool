@@ -25,6 +25,7 @@ import math
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial
 from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF,QGuiApplication
 
+import time
 # import PIL 
 # from PIL import Image
 
@@ -119,7 +120,6 @@ class CreateWindow(QtWidgets.QWidget):
 
         self.add_texture_button = QPushButton("Add Texture")
         self.add_texture_button.clicked.connect(self.prompt_add_texture)
-        #self.layout.addWidget(self.add_texture_button)
         self.layout.insertWidget(1,self.add_texture_button)
 
 
@@ -139,6 +139,11 @@ class CreateWindow(QtWidgets.QWidget):
         self.export_addtions_button = QPushButton("Export Additons as PNG")
         self.export_addtions_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
         self.layout.addWidget(self.export_addtions_button)
+
+        self.create_decal_button = QPushButton("Create Decal")
+        #self.create_decal_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
+        self.create_decal_button.clicked.connect(lambda: self.create_decal(self.prompt_add_folder_path(), "M_DecalTest69"))
+        self.layout.addWidget(self.create_decal_button)
 
         self.setStyleSheet("""
             background-color: #262626;
@@ -162,7 +167,7 @@ class CreateWindow(QtWidgets.QWidget):
 
         file_path = QtWidgets.QFileDialog.getExistingDirectory(
     self,
-    "Open a folder",
+    "Open a folder for merged texture",
     "/Game/",
     QtWidgets.QFileDialog.ShowDirsOnly
     )
@@ -205,6 +210,7 @@ class CreateWindow(QtWidgets.QWidget):
     def zoom_changed(self, value):
         if self.active_tool_widget:
             self.active_tool_widget.set_scale_factor(value / 100.0)
+            self.tool_panel.radioButtonGroupChanged()
 
     def zoom_in(self):
         self._apply_zoom(10/9)
@@ -283,11 +289,49 @@ class CreateWindow(QtWidgets.QWidget):
         asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
         asset_tools.import_asset_tasks([import_task])
 
-        imported_asset_path = f"{unreal_folder}/NewTexture"
+        imported_asset_path = f"{unreal_folder}Composite.png"
+        print("IMPORTED ASSET 1: ", imported_asset_path)
+
+        time.sleep(1)
+        unreal.AssetRegistryHelpers.get_asset_registry().scan_paths_synchronous([unreal_folder])
+
         if unreal.EditorAssetLibrary.does_asset_exist(imported_asset_path):
             unreal.log("Succesfully imported into Unreal")
+            return imported_asset_path
         else:
             unreal.log_error("Failed to import into Unreal")
+            #return imported_asset_path
+        
+    def create_decal(self, unreal_folder, material_name):
+        merged_texture_path = self.export_flattened_additions(str(self.prompt_add_folder_path()))
+        print("MERGED TEXTURE PATH: ", merged_texture_path)
+
+        asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
+        material_factory = unreal.MaterialFactoryNew()
+        package_path = unreal_folder
+        decal_name = material_name
+
+        #texture_path = merged_texture_path
+        texture = unreal.load_asset(merged_texture_path)
+
+        material = asset_tools.create_asset(decal_name, package_path, unreal.Material, material_factory)
+
+        mat_editor = unreal.MaterialEditingLibrary
+
+        material.set_editor_property("material_domain", unreal.MaterialDomain.MD_DEFERRED_DECAL)
+        material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+
+        texture_sample = mat_editor.create_material_expression(material, unreal.MaterialExpressionTextureSample, -400, 0)
+        texture_sample.set_editor_property("texture", texture)
+
+        mat_editor.connect_material_property(texture_sample, "rgb", unreal.MaterialProperty.MP_BASE_COLOR)
+        mat_editor.connect_material_property(texture_sample, "a", unreal.MaterialProperty.MP_OPACITY)
+
+        mat_editor.recompile_material(material)
+        unreal.EditorAssetLibrary.save_loaded_asset(material)
+
+
+
 
 ###############################################################
 #                    TOOL SELECTION MENU                      #
@@ -1906,23 +1950,6 @@ class EllipticalTool(QtWidgets.QLabel):
                     painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                     painter.drawEllipse(ellipse)
                 self.update()
-
-
-            # if self.drawing_in_place and self.drawing:
-            #     self.central_point = self.start_point
-            #     self.start_point = self.hover_point
-
-            #     self.x_difference = (self.hover_point.x()-self.central_point.x())
-            #     self.y_difference = (self.hover_point.y()-self.central_point.y())
-            #     #self.release_point = -1 * self.hover_point
-            #     self.release_point.setY(self.central_point.y()-self.y_difference)
-            #     self.release_point.setX(self.central_point.x()-self.x_difference)
-
-                
-
-            # painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
-            # rectangle = QtCore.QRect(self.start_point, self.release_point)
-            # painter.drawRect(rectangle)
 
             if self.drawing_in_place and self.drawing:
                 self.central_point = self.start_point
