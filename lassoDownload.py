@@ -22,8 +22,8 @@ from PySide6.QtCore import Qt
 import unreal
 import math
 ###TODO ADJUST IMPORTS TO INCLUDE WHATS ONLY NECESARY
-from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial
-from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF,QGuiApplication
+from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar
+from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF,QGuiApplication, QAction
 
 import time
 # import PIL 
@@ -74,11 +74,79 @@ class TextureLayer:
         self.pixmap = pixmap
         self.position = position
         self.selected = False
-        
+###############################################################
+#                       RENAMER MENU                          # 
+###############################################################
+class ChooseNameWindow(QMainWindow):
+    
+    def __init__(self):
+        super().__init__()           
+        central_widget = QWidget(self)
+        self.setCentralWidget(central_widget)
+
+        #self.mainWindow= QMainWindow()
+        #self.mainWindow.setParent(self)
+        self.button = QPushButton("Apply Name Change")
+        self.button.setCheckable(True)
+        self.button.clicked.connect(self.buttonClicked)
+
+        self.label = QLabel()
+
+        self.lineEdit = QLineEdit()
+        self.lineEdit.textChanged.connect(self.label.setText)
+        self.lineEdit.setText('Enter Text')
+
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.button)
+        layout.addWidget(self.lineEdit)
+        layout.addWidget(self.label)
+
+        container = QWidget()
+        container.setLayout(layout)
+
+        self.setStyleSheet("""
+            background-color: #262626;
+            color: #eb6b06;
+            font-family: Consolas;
+            font-size: 12px;
+        """)
+
+        self.setCentralWidget(container)
+
+        self.name = None
+        self.button_clicked = False
+
+
+
+    def buttonClicked(self, checked):
+        self.button_clicked = True
+        self.name = self.lineEdit.text() or "untitled"
+        self.update()
+
+    def getName(self):
+        print("internal name", self.name)
+        return self.name
+
+    def launchWindow(self):
+        if QApplication.instance():
+            for win in (QApplication.allWindows()):
+                if 'toolWindow' in win.objectName(): 
+                    win.destroy()
+        else:
+            QApplication(sys.argv)
+
+        ChooseNameWindow.window = ChooseNameWindow()
+        ChooseNameWindow.window.show()
+        ChooseNameWindow.window.setWindowTitle("WINDOW Demo")
+        ChooseNameWindow.window.setObjectName("ToolWindow")
+        unreal.parent_external_window_to_slate(ChooseNameWindow.window.winId())
+
+
 ###############################################################
 #                        MAIN WINDOW                          #
 ###############################################################
-class CreateWindow(QtWidgets.QWidget):
+class CreateWindow(QMainWindow):
     def __init__(self, image_path):
         super().__init__()
         self.setWindowTitle("Selection Tools")
@@ -109,7 +177,11 @@ class CreateWindow(QtWidgets.QWidget):
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setFocus()
 
-        self.layout = QVBoxLayout(self)
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+
+
+        self.layout = QVBoxLayout(central_widget)
         self.setLayout(self.layout)
 
         self.active_tool_widget = MoveTool(parent_window=self)
@@ -122,35 +194,110 @@ class CreateWindow(QtWidgets.QWidget):
         self.add_texture_button.clicked.connect(self.prompt_add_texture)
         self.layout.insertWidget(1,self.add_texture_button)
 
-
         self.tool_panel = ToolSectionMenu(parent=self)
         self.tool_panel.show()
+
+        self.chosen_name = None
 
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl++"), self, activated=self.zoom_in)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+="), self, activated=self.zoom_in)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+-"), self, activated=self.zoom_out)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+0"), self, activated=self.reset_zoom)
 
-        self.export_flat_button = QPushButton("Export Flattened Image")
-        self.export_flat_button.clicked.connect(lambda: self.export_flattened_image(str(self.prompt_add_folder_path())))
-        self.layout.addWidget(self.export_flat_button)
+        # #debug buttons
+        # self.export_flat_button = QPushButton("Export Flattened Image")
+        # self.export_flat_button.clicked.connect(lambda: self.export_flattened_image(str(self.prompt_add_folder_path())))
+        # self.layout.addWidget(self.export_flat_button)
 
 
-        self.export_addtions_button = QPushButton("Export Additons as PNG")
-        self.export_addtions_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
-        self.layout.addWidget(self.export_addtions_button)
+        # self.export_addtions_button = QPushButton("Export Additons as PNG")
+        # self.export_addtions_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
+        # self.layout.addWidget(self.export_addtions_button)
 
-        self.create_decal_button = QPushButton("Create Decal")
-        #self.create_decal_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
-        self.create_decal_button.clicked.connect(lambda: self.create_decal(self.prompt_add_folder_path(), "M_DecalTest69"))
-        self.layout.addWidget(self.create_decal_button)
+        # self.create_decal_button = QPushButton("Create Decal")
+        # #self.create_decal_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
+        # self.create_decal_button.clicked.connect(lambda: self.create_decal(self.prompt_add_folder_path(), "M_DecalTest69"))
+        # self.layout.addWidget(self.create_decal_button)
 
-        self.setStyleSheet("""
-            background-color: #262626;
-            color: #ffffff;
-            font-family: Consolas;
-            font-size: 12px;
-        """)
+        self.CreateToolBar()
+
+    ##########################################
+    #                 TOOL BAR               #
+    ##########################################
+    def CreateToolBar(self):
+        menu_bar = self.menuBar()
+
+        file_menu = menu_bar.addMenu("File")
+
+        #import button
+        import_action = QAction("Import", self)
+        import_action.triggered.connect(self.prompt_add_texture)
+        file_menu.addAction(import_action)
+
+
+
+
+        #export menu
+        export_menu = QMenu("Export", self)
+
+        export_flat_all = QAction("Export Flattened Image", self)
+        export_flat_additions = QAction("Export Flattened Additions", self)
+
+        export_menu.addAction(export_flat_all)
+        export_menu.addAction(export_flat_additions)
+
+        export_flat_all.triggered.connect(lambda: self.export_flattened_image((str(self.prompt_add_folder_path())), self.chosen_name))
+        export_flat_additions.triggered.connect(lambda: self.export_flattened_additions((str(self.prompt_add_folder_path())), self.chosen_name))
+        file_menu.addMenu(export_menu)    
+
+        self.chosen_name = "untitled"
+        #change name button
+        change_name_action = QAction("Change File Name", self)
+        file_menu.addAction(change_name_action)
+        change_name_action.triggered.connect(self.change_name)
+
+
+
+        select_menu = menu_bar.addMenu("Select")
+
+        select_all_action = QAction("Select All", self)
+        clear_selections_action = QAction("Clear Selections", self)
+        
+        select_menu.addAction(select_all_action)
+        select_menu.addAction(clear_selections_action)
+
+        modify_menu = QMenu("Modify", self)
+
+        expand_action = QAction("Expand", self)
+        contract_action = QAction("Contract", self)
+
+        modify_menu.addAction(expand_action)
+        modify_menu.addAction(contract_action)
+
+        select_menu.addMenu(modify_menu)
+
+        # self.setStyleSheet("""
+        #     background-color: #262626;
+        #     color: #ffffff;
+        #     font-family: Consolas;
+        #     font-size: 12px;
+        # """)   
+
+    def change_name(self):
+        name_window = ChooseNameWindow()
+        #name_window.launchWindow()
+        name_window.show()
+        name_window.setWindowTitle("WINDOW Demo")
+        name_window.setObjectName("ToolWindow")
+        unreal.parent_external_window_to_slate(name_window.winId())
+        looping = True
+        while looping:
+            QApplication.processEvents()
+            if name_window.button_clicked:
+                self.chosen_name = name_window.getName()
+                looping = False
+
+            
 
     def prompt_add_texture(self):
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
@@ -231,18 +378,17 @@ class CreateWindow(QtWidgets.QWidget):
             self.scale_factor = new_scale
 
 
-    def export_flattened_image(self, unreal_folder):
+    def export_flattened_image(self, unreal_folder,name):
         temp_dir = os.path.join(unreal.Paths.project_intermediate_dir(), "TempExports")
         os.makedirs(temp_dir, exist_ok=True)
-        temp_path = os.path.join(temp_dir, "Composite.png")
+        temp_path = os.path.join(temp_dir, (name + ".png"))
 
         base_size = self.texture_layers[0].pixmap.size()
         final_image = QtGui.QImage(base_size, QtGui.QImage.Format_ARGB32)
         final_image.fill(QtCore.Qt.transparent)
 
         painter = QtGui.QPainter(final_image)
-        for layer in self.texture_layers:
-            painter.drawPixmap(layer.position, layer.pixmap)
+        for layer in self.texture_layers:painter.drawPixmap(layer.position, layer.pixmap)
         painter.end()
 
         QtGui.QPixmap.fromImage(final_image).save(temp_path, "PNG")
@@ -257,16 +403,16 @@ class CreateWindow(QtWidgets.QWidget):
         asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
         asset_tools.import_asset_tasks([import_task])
 
-        imported_asset_path = f"{unreal_folder}/NewTexture"
+        imported_asset_path = f"{unreal_folder}" + "/" + name + ".png"
         if unreal.EditorAssetLibrary.does_asset_exist(imported_asset_path):
             unreal.log("Succesfully imported into Unreal")
         else:
             unreal.log_error("Failed to import into Unreal")
 
-    def export_flattened_additions(self, unreal_folder):
+    def export_flattened_additions(self, unreal_folder, name):
         temp_dir = os.path.join(unreal.Paths.project_intermediate_dir(), "TempExports")
         os.makedirs(temp_dir, exist_ok=True)
-        temp_path = os.path.join(temp_dir, "Composite.png")
+        temp_path = os.path.join(temp_dir, (name + ".png"))
 
         base_size = self.texture_layers[0].pixmap.size()
         final_image = QtGui.QImage(base_size, QtGui.QImage.Format_ARGB32)
@@ -2045,4 +2191,5 @@ for tex in assets:
             app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
             win = CreateWindow(main_png_path)
             win.show()
+            app.setStyle("Fusion")
             app.exec()
