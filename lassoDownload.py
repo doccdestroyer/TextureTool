@@ -23,7 +23,9 @@ import unreal
 import math
 ###TODO ADJUST IMPORTS TO INCLUDE WHATS ONLY NECESARY
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar
-from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF,QGuiApplication, QAction
+from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF,QGuiApplication, QAction, QImage
+
+from PySide6.QtWidgets import QGraphicsColorizeEffect
 
 import time
 # import PIL 
@@ -197,6 +199,9 @@ class CreateWindow(QMainWindow):
         self.tool_panel = ToolSectionMenu(parent=self)
         self.tool_panel.show()
 
+
+        self.saturation_panel = SaturationSlider(parent=self)
+        self.saturation_panel.show()
         self.chosen_name = None
 
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl++"), self, activated=self.zoom_in)
@@ -220,6 +225,7 @@ class CreateWindow(QMainWindow):
         # self.layout.addWidget(self.create_decal_button)
 
         self.CreateToolBar()
+
 
     ##########################################
     #                 TOOL BAR               #
@@ -476,9 +482,51 @@ class CreateWindow(QMainWindow):
         mat_editor.recompile_material(material)
         unreal.EditorAssetLibrary.save_loaded_asset(material)
 
+###############################################################
+#                     SATURATION SLIDER                       #
+###############################################################
+class SaturationSlider(QWidget):
+    def __init__(self, parent = None):
+        super().__init__(parent)
+        self.parent_window = parent
+
+
+        self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
+        self.setFixedSize(150, 100)
+        self.setWindowTitle("Saturation Slider")
+
+        layout = QVBoxLayout(self)
+
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.setMinimum(0)
+        self.slider.setMaximum(100)
+        self.slider.setSliderPosition(15)
+        self.slider.valueChanged.connect(self.sliderChanged)
+
+        layout.addWidget(self.slider)
+
+
+        self.setStyleSheet("""
+            background-color: #262626;
+            color: #ffffff;
+            font-family: Consolas;
+            font-size: 12px;
+        """)
 
 
 
+        self.label = QLabel(self)
+        effect = QGraphicsColorizeEffect(self.label)
+        effect.setStrength(0.0)
+        self.label.setGraphicsEffect(effect)
+
+    def sliderChanged(self, value):
+        unreal.log('Slider changed: ' + str(value))
+
+        if self.label.graphicsEffect().strength():
+            self.label.graphicsEffect().setStrength(value/100)
+        else:
+            self.label.graphicsEffect().setStrength(0.5)
 ###############################################################
 #                    TOOL SELECTION MENU                      #
 ###############################################################
@@ -2176,6 +2224,7 @@ class TransformTool(QWidget):
         self.overlay = QtGui.QPixmap(self.image.size())
         self.overlay.fill(QtCore.Qt.transparent)
 
+        self.dragging_pixmap = QtGui.QPixmap(self.image.size())
         #self.overlay = QtGui.QPixmap()
         #self.overlay.fill(QtCore.Qt.transparent)
 
@@ -2207,10 +2256,14 @@ class TransformTool(QWidget):
                             break #NEW NEW NEW  
                         else:
                             layer.selected = True
+                            # if self.dragging_layer != layer:
+                            #     self.clear_dragging_layer()
                             self.dragging_layer = layer
                             self.drag_start_offset = point - layer.position
                             self.overlay = QtGui.QPixmap(self.dragging_layer.pixmap.size())
+                            self.dragging_pixmap = self.dragging_layer.pixmap
                             self.update_overlay()
+
                             break
     def mouseMoveEvent(self,event):
         if self.panning and self.last_pan_point:
@@ -2234,7 +2287,7 @@ class TransformTool(QWidget):
             if self.dragging_layer:
                 self.dragging_layer.selected = False
                 self.dragging_layer = None
-
+                self.clear_overlay()
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
             self.panning = True
@@ -2253,8 +2306,16 @@ class TransformTool(QWidget):
         for layer in self.parent_window.texture_layers:
             painter.drawPixmap(layer.position, layer.pixmap)
 
-        
         painter.drawPixmap(0,0, self.overlay)
+
+    def clear_overlay(self):
+        self.overlay.fill(QtCore.Qt.transparent)
+        self.update()
+
+    def clear_dragging_layer(self):
+        self.dragging_pixmap.fill(QtCore.Qt.transparent)
+        self.update()
+
 
     def update_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
@@ -2268,21 +2329,6 @@ class TransformTool(QWidget):
             rect = QtCore.QRect(0, 0, self.dragging_layer.pixmap.width()-1, self.dragging_layer.pixmap.height()-1)
             painter.drawRect(rect)
             painter.end()
-        #fill_brush = QtGui.QBrush(QtGui.QColor(255, 0, 0, 50))
-
-        # for path in self.selections_paths:
-        #     all_polys = path.toFillPolygons()
-        #     for poly_f in all_polys:
-        #         poly_q = QtGui.QPolygon([QtCore.QPoint(int(round(p.x())), int(round(p.y()))) for p in poly_f])
-        #         painter.setPen(outline_pen)
-        #         painter.setBrush(QtCore.Qt.NoBrush)
-        #         painter.drawPolygon(poly_q)
-        #         painter.setPen(QtCore.Qt.NoPen)
-        #         painter.setBrush(fill_brush)
-        #         painter.drawPolygon(poly_q)
-
-
-
 
 
         painter.end()
