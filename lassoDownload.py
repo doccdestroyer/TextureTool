@@ -598,27 +598,6 @@ class SaturationSlider(QWidget):
         # self.parent_window.update()
         self.value_changed.emit(value)
 
-        # self.label = QLabel(parent)
-
-        # self.text = "hello"
-        
-    #     self.label.setPixmap(parent.base_pixmap)
-    #     effect = QGraphicsColorizeEffect(self.label)
-    #     effect.setColor(QColor(0,0,0))
-    #     effect.setStrength(0.0)
-    #     self.label.setGraphicsEffect(effect)
-    #     layout.addWidget(self.label)
-
-    #     self.saturation_value = 100
-
-    # def sliderChanged(self, value):
-    #     if self.label.graphicsEffect().strength():
-    #         self.saturation_value = value
-    #         self.label.graphicsEffect().setStrength(value/100)
-    #     else:
-    #         self.label.graphicsEffect().setStrength(0.5)
-    #     self.update()
-
     
 ###############################################################
 #                    TOOL SELECTION MENU                      #
@@ -803,16 +782,11 @@ class MoveTool(QtWidgets.QWidget):
         painter.translate(self.parent_window.pan_offset)
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
 
-        for layer in self.texture_layers:
+        for layer in self.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
     
     def update_overlay(self):
-        #self.overlay.fill(QtCore.Qt.transparent)
-        painter = QtGui.QPainter(self.overlay)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.end()
         self.update()
-
 
 
 ###############################################################
@@ -824,6 +798,9 @@ class PenTool(QtWidgets.QWidget):
 
 
         self.parent_window = parent_window
+
+
+        self.texture_layers = parent_window.texture_layers
 
         self.image = self.parent_window.texture_layers[0].pixmap
         if self.image.isNull():
