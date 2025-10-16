@@ -200,13 +200,15 @@ class MainWindow(QMainWindow):
         self.add_texture_button.clicked.connect(self.prompt_add_texture)
         self.layout.insertWidget(1,self.add_texture_button)
 
-
-
-        self.saturation_panel = Slider(parent=self)
-        self.saturation_panel.show()
         self.chosen_name = None
+
+        self.saturation_panel = Slider(parent = self, name = "Saturation Slider", min = 0, max =100, default =100)
+        self.saturation_panel.show()
         self.saturation_panel.value_changed.connect(self.adjust_saturation)
 
+        self.brightness_panel = Slider(self, "Brightness Slider" , 0, 199, 100)
+        self.brightness_panel.show()
+        self.brightness_panel.value_changed.connect(self.adjust_brightness)
 
         self.tool_panel = ToolSectionMenu(parent=self)
         self.tool_panel.show()
@@ -248,19 +250,44 @@ class MainWindow(QMainWindow):
                 image.setPixelColor(pixelX,pixelY,pixel_color)
         
         self.saturation_panel.image_label.setPixmap(QPixmap.fromImage(image))
+
+        self.base_pixmap = QPixmap.fromImage(image)
+        
+        
         updated_texture = TextureLayer(QPixmap.fromImage(image), QtCore.QPoint(0,0))
-
         self.texture_layers[0] = updated_texture
-
         self.active_tool_widget.texture_layers[0] = updated_texture
-
         self.active_tool_widget.update_overlay()
+
+        self.base_image = self.base_pixmap.toImage()
 
         self.update()
 
 
+    def adjust_brightness(self,value):
+        factor = value/100
+        image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
+        for pixelY in range(image.height()):
+            for pixelX in range (image.width()):
+                pixel_color = QColor(image.pixel(pixelX,pixelY))
+                H,S,L,A = pixel_color.getHsl()
+                L = int(L*factor)
+                pixel_color.setHsl(H,S,L,A)
+                image.setPixelColor(pixelX,pixelY,pixel_color)
 
+        self.brightness_panel.image_label.setPixmap(QPixmap.fromImage(image))
+
+        self.base_pixmap = QPixmap.fromImage(image)
+
+        updated_texture = TextureLayer(QPixmap.fromImage(image), QtCore.QPoint(0,0))
+        #update textures
+        self.texture_layers[0] = updated_texture
+        self.active_tool_widget.texture_layers[0] = updated_texture
+        self.active_tool_widget.update_overlay()
+        self.base_image = self.base_pixmap.toImage()
+
+        self.update()
 
     ##########################################
     #                 TOOL BAR               #
@@ -522,18 +549,18 @@ class MainWindow(QMainWindow):
 ###############################################################
 class Slider(QWidget):
     value_changed = Signal(int)
-    def __init__(self, parent = None):
+    def __init__(self, parent, name, min, max, default):
         super().__init__(parent)
         self.parent_window = parent
 
         self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
         self.setFixedSize(150, 100)
-        self.setWindowTitle("Saturation Slider")
+        self.setWindowTitle(name)
 
         self.slider = QSlider(Qt.Horizontal)
-        self.slider.setMinimum(0)
-        self.slider.setMaximum(100)
-        self.slider.setSliderPosition(100)
+        self.slider.setMinimum(min)
+        self.slider.setMaximum(max)
+        self.slider.setSliderPosition(default)
         self.slider.valueChanged.connect(self.sliderChanged)
 
         self.texture_layers = parent.texture_layers
@@ -2249,8 +2276,6 @@ class EllipticalTool(QtWidgets.QLabel):
                 painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                 ellipse = QtCore.QRect(self.start_point, self.hover_point)
                 painter.drawEllipse(ellipse)
-
-
 
         # if self.isDrawn:
         #     #painter.setBrush(QtGui.QColor(255,0,0,50))
