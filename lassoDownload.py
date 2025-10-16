@@ -147,7 +147,7 @@ class ChooseNameWindow(QMainWindow):
 ###############################################################
 #                        MAIN WINDOW                          #
 ###############################################################
-class CreateWindow(QMainWindow):
+class MainWindow(QMainWindow):
     def __init__(self, image_path):
         super().__init__()
         self.received_value = 100
@@ -202,11 +202,12 @@ class CreateWindow(QMainWindow):
 
 
 
-        self.saturation_panel = SaturationSlider(parent=self)
+        self.saturation_panel = Slider(parent=self)
         self.saturation_panel.show()
         self.chosen_name = None
+        self.saturation_panel.value_changed.connect(self.adjust_saturation)
 
-        self.saturation_panel.value_changed.connect(self.WINDOW)
+
         self.tool_panel = ToolSectionMenu(parent=self)
         self.tool_panel.show()
 
@@ -234,9 +235,7 @@ class CreateWindow(QMainWindow):
 
         self.base_image = self.base_pixmap.toImage()
 
-    def WINDOW(self,value):
-        #self.slider_value = value
-        print("POOP" , value)
+    def adjust_saturation(self,value):
         factor = value/100
         image = self.base_image.convertToFormat(QImage.Format_ARGB32)
         
@@ -249,22 +248,15 @@ class CreateWindow(QMainWindow):
                 image.setPixelColor(pixelX,pixelY,pixel_color)
         
         self.saturation_panel.image_label.setPixmap(QPixmap.fromImage(image))
-        #texture_layer = TextureLayer(self.image_label, QtCore.QPoint(100,100))
-        texture_layer2 = TextureLayer(QPixmap.fromImage(image), QtCore.QPoint(0,0))
+        updated_texture = TextureLayer(QPixmap.fromImage(image), QtCore.QPoint(0,0))
 
-        self.texture_layers[0] = texture_layer2
-        #self.parent_window.base_layer = texture_layer2
+        self.texture_layers[0] = updated_texture
 
-        #move_tool_class = MoveTool(parent=parent_window)
-        self.active_tool_widget.texture_layers[0] = texture_layer2
-
-        #self.received_pixmap = pixmap
+        self.active_tool_widget.texture_layers[0] = updated_texture
 
         self.active_tool_widget.update_overlay()
-        print("base texture layer updated")
-        #self.parent_window.update()
+
         self.update()
-        #return self.slider_value
 
 
 
@@ -526,27 +518,23 @@ class CreateWindow(QMainWindow):
         unreal.EditorAssetLibrary.save_loaded_asset(material)
 
 ###############################################################
-#                     SATURATION SLIDER                       #
+#                         SLIDER                              #
 ###############################################################
-class SaturationSlider(QWidget):
+class Slider(QWidget):
     value_changed = Signal(int)
     def __init__(self, parent = None):
         super().__init__(parent)
         self.parent_window = parent
 
-
         self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
         self.setFixedSize(150, 100)
         self.setWindowTitle("Saturation Slider")
-
 
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(0)
         self.slider.setMaximum(100)
         self.slider.setSliderPosition(100)
         self.slider.valueChanged.connect(self.sliderChanged)
-
-
 
         self.texture_layers = parent.texture_layers
 
@@ -557,7 +545,7 @@ class SaturationSlider(QWidget):
             font-size: 12px;
         """)
 
-        ################for layer in self.texture_layers:
+        ################for layer in self.texture_layers: ADD ONCE LAYER SELECTION IS A THING
         self.original_pixmap = self.parent_window.base_pixmap
         self.original_image = self.original_pixmap.toImage()
 
@@ -571,7 +559,6 @@ class SaturationSlider(QWidget):
         self.setLayout(layout)
 
     def sliderChanged(self,value):
-        print("VALUE FROM SLIDER CHANGEED:", value)
         # factor = value/100
         # image = self.original_image.convertToFormat(QImage.Format_ARGB32)
         
@@ -1159,13 +1146,13 @@ class LassoTool(QtWidgets.QWidget):
         painter = QtGui.QPainter(self)
         painter.translate(self.parent_window.pan_offset)     
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
-        painter.drawPixmap(0, 0, self.image)
-        painter.drawPixmap(0, 0, self.overlay)
+        # painter.drawPixmap(0, 0, self.image)
+        # painter.drawPixmap(0, 0, self.overlay)
 
         for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
-
-
+        painter.drawPixmap(0, 0, self.overlay)
+        
     def clear_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
         self.update()
@@ -1437,12 +1424,13 @@ class PolygonalTool(QtWidgets.QLabel):
         painter = QtGui.QPainter(self)
         painter.translate(self.parent_window.pan_offset)     
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
-        painter.drawPixmap(0, 0, self.image)   
-        painter.drawPixmap(0, 0, self.overlay)
+        # painter.drawPixmap(0, 0, self.image)   
+        # painter.drawPixmap(0, 0, self.overlay)
 
         for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
-
+        painter.drawPixmap(0, 0, self.overlay)
+        
     ###HERE NEEDS TO BE REMOVED
     def clear_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
@@ -1783,11 +1771,12 @@ class RectangularTool(QtWidgets.QLabel):
         painter = QtGui.QPainter(self)
         painter.translate(self.parent_window.pan_offset)     
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
-        painter.drawPixmap(0, 0, self.image)
-        painter.drawPixmap(0, 0, self.overlay)
+        # painter.drawPixmap(0, 0, self.image)
+        # painter.drawPixmap(0, 0, self.overlay)
 
         for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
+        painter.drawPixmap(0, 0, self.overlay)
 
     def clear_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
@@ -1861,10 +1850,10 @@ class RectangularTool(QtWidgets.QLabel):
 
 
 
-        if self.isDrawn:
+#if self.isDrawn:
             #painter.setBrush(QtGui.QColor(255,0,0,50))
             #self.commit_rectanlge_to_image(rectangle)
-            selections.append(rectangle)
+            #selections.append()
 
         if not self.drawing:
             self.clear_overlay()
@@ -2184,12 +2173,13 @@ class EllipticalTool(QtWidgets.QLabel):
         painter = QtGui.QPainter(self)
         painter.translate(self.parent_window.pan_offset)     
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
-        painter.drawPixmap(0,0, self.image)
-        painter.drawPixmap(0, 0, self.overlay)
+        # painter.drawPixmap(0, 0, self.image)
+        # painter.drawPixmap(0, 0, self.overlay)
 
         for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
-
+        painter.drawPixmap(0, 0, self.overlay)
+        
     def clear_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
         self.update()
@@ -2262,10 +2252,10 @@ class EllipticalTool(QtWidgets.QLabel):
 
 
 
-        if self.isDrawn:
-            #painter.setBrush(QtGui.QColor(255,0,0,50))
-            #self.commit_rectanlge_to_image(rectangle)
-            selections.append(ellipse)
+        # if self.isDrawn:
+        #     #painter.setBrush(QtGui.QColor(255,0,0,50))
+        #     #self.commit_rectanlge_to_image(rectangle)
+        #     self.selections_paths.append(ellipse)
 
         if not self.drawing:
             self.clear_overlay()
@@ -2391,11 +2381,13 @@ class TransformTool(QWidget):
         painter.translate(self.parent_window.pan_offset)
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
 
-        for layer in self.parent_window.texture_layers:
+        # painter.drawPixmap(0, 0, self.image)
+        # painter.drawPixmap(0, 0, self.overlay)
+
+        for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
-
-        painter.drawPixmap(0,0, self.overlay)
-
+        #painter.drawPixmap(0, 0, self.overlay)
+        
     def clear_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
         self.update()
@@ -2466,7 +2458,7 @@ for tex in assets:
         if __name__ == "__main__":
             main_png_path = export_texture_to_png(tex)
             app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-            win = CreateWindow(main_png_path)
+            win = MainWindow(main_png_path)
             win.show()
             app.setStyle("Fusion")
             app.exec()
