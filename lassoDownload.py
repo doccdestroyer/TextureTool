@@ -196,10 +196,6 @@ class MainWindow(QMainWindow):
         self.setFixedSize((self.active_tool_widget.size())*2)
         #self.setFixedSize(1200,850)
 
-        self.add_texture_button = QPushButton("Add Texture")
-        self.add_texture_button.clicked.connect(self.prompt_add_texture)
-        self.layout.insertWidget(1,self.add_texture_button)
-
         self.chosen_name = None
 
         self.saturation_panel = Slider(parent = self, name = "Saturation Slider", min = 0, max =100, default =100)
@@ -219,6 +215,11 @@ class MainWindow(QMainWindow):
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+0"), self, activated=self.reset_zoom)
 
         # #debug buttons
+
+        # self.add_texture_button = QPushButton("Add Texture")
+        # self.add_texture_button.clicked.connect(self.prompt_add_texture)
+        # self.layout.insertWidget(1,self.add_texture_button)
+
         # self.export_flat_button = QPushButton("Export Flattened Image")
         # self.export_flat_button.clicked.connect(lambda: self.export_flattened_image(str(self.prompt_add_folder_path())))
         # self.layout.addWidget(self.export_flat_button)
@@ -259,7 +260,7 @@ class MainWindow(QMainWindow):
         self.active_tool_widget.texture_layers[0] = updated_texture
         self.active_tool_widget.update_overlay()
 
-        self.base_image = self.base_pixmap.toImage()
+        #self.base_image = self.base_pixmap.toImage()
 
         self.update()
 
@@ -285,7 +286,8 @@ class MainWindow(QMainWindow):
         self.texture_layers[0] = updated_texture
         self.active_tool_widget.texture_layers[0] = updated_texture
         self.active_tool_widget.update_overlay()
-        self.base_image = self.base_pixmap.toImage()
+
+        #self.base_image = self.base_pixmap.toImage()
 
         self.update()
 
@@ -1505,7 +1507,90 @@ class PolygonalTool(QtWidgets.QLabel):
     #     painter.end()
     #     self.update()
 
-    
+###############################################################
+#                    MAGIC WAND TOOL                          #
+###############################################################
+class MagicWandTool(QtWidgets.QLabel):
+    def __init__(self, image_path, parent_window):
+        self.image = QtGui.QPixmap(image_path)
+
+        self.parent_window = parent_window
+
+        self.texture_layers = parent_window.texture_layers     
+
+        self.points = []
+        if self.image.isNull():
+            unreal.log_error(f"Failed to load image.")
+            self.setText("Image failed to load")
+            self.setAlignment(QtCore.Qt.AlignCenter)
+            return
+        
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setFocus()
+
+        self.making_additional_selection = False
+        self.making_removal = False
+
+        self.resize(self.image.size())
+
+        self.panning = False
+        self.last_pan_point = None
+
+        self.merged_selection_path = parent_window.merged_selection_path
+        self.selections_paths = parent_window.selections_paths
+
+        self.update_overlay()
+
+    def get_scaled_point(self, pos):         
+        scale = self.parent_window.scale_factor
+        pan = self.parent_window.pan_offset
+        return QtCore.QPoint(int((pos.x() - pan.x()) / scale), int((pos.y() - pan.y()) / scale))
+
+    def set_scale_factor(self, scale):
+        self.parent_window.scale_factor = scale
+        new_size = self.original_image.size() * scale
+        self.resize(new_size)
+        self.update()
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = True
+            self.setCursor(QtCore.Qt.OpenHandCursor)
+        if event.key() == QtCore.Qt.Key_Delete:
+            self.clear_overlay()
+            self.drawing = False
+            self.selections_paths.clear()
+            self.points = []
+
+    def keyReleaseEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            self.panning = False
+            self.setCursor(QtCore.Qt.CrossCursor)
+
+    def mousePressEvent(self,event):
+        if event.button() == QtCore.Qt.LeftButton:
+            if self.panning:
+                self.last_pan_point = event.position().toPoint()
+                self.setCursor(QtCore.Qt.ClosedHandCursor)
+            else:
+                if event.modifiers() & QtCore.Qt.ShiftModifier:
+                    self.making_additional_selection = True
+                    self.making_removal = False
+                elif event.modifiers() & Qt.KeyboardModifier.AltModifier:
+                    self.making_removal = True
+                    self.making_additional_selection = False
+                else:
+                    self.making_additional_selection = False
+                    self.making_removal = False
+                    self.selections_paths.clear()
+
+                    self.merged_selection_path = QPainterPath()
+                    self.image = self.original_image.copy()
+                    self.clear_overlay()
+
+                self.start_point = self.get_scaled_point(event.position())
+                #magic wand logic goes here
+
 ###############################################################
 #                     RECTANGLE TOOL                          #
 ###############################################################
@@ -1554,9 +1639,6 @@ class RectangularTool(QtWidgets.QLabel):
 
         self.merged_selection_path = parent_window.merged_selection_path
         self.selections_paths = parent_window.selections_paths
-
-        self.panning = False
-        self.last_pan_point = None
 
         self.update_overlay()
 
@@ -2330,8 +2412,14 @@ class TransformTool(QWidget):
         self.dragging_pixmap = QtGui.QPixmap(self.image.size())
         #self.overlay = QtGui.QPixmap()
         #self.overlay.fill(QtCore.Qt.transparent)
+        self.scaling = False
+        self.rotating = False
 
         self.update_overlay()
+
+        self.rectangle = None
+
+        self.point = None
 
     def get_scaled_point(self, pos):
         scale = self.parent_window.scale_factor
@@ -2351,10 +2439,14 @@ class TransformTool(QWidget):
                 self.last_pan_point = event.position().toPoint()
                 self.setCursoe(QtCore.Qt.ClosedHandCursor)
             else:
-                point = self.get_scaled_point(event.position())
+                self.point = self.get_scaled_point(event.position())
                 for layer in reversed(self.parent_window.texture_layers):
-                    rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
-                    if rectangle.contains(point):
+                    self.rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
+                    expanded_rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
+                    expanded_rectangle.setWidth(expanded_rectangle.width()*2)
+                    expanded_rectangle.setHeight(expanded_rectangle.height()*2)
+
+                    if self.rectangle.contains(self.point):
                         if layer == self.parent_window.texture_layers[0]:
                             break #NEW NEW NEW  
                         else:
@@ -2362,18 +2454,50 @@ class TransformTool(QWidget):
                             # if self.dragging_layer != layer:
                             #     self.clear_dragging_layer()
                             self.dragging_layer = layer
-                            self.drag_start_offset = point - layer.position
+                            self.drag_start_offset = self.point - layer.position
                             self.overlay = QtGui.QPixmap(self.dragging_layer.pixmap.size())
                             self.dragging_pixmap = self.dragging_layer.pixmap
+                            self.scaling = False
                             self.update_overlay()
-
                             break
+                    elif expanded_rectangle.contains(self.point):
+                        print ("YOU DID IT YOU DID IT")
+                        self.scaling = True
+                        self.rotating = False
+                    else: #currently set to scaling settings which will need ot be changed once ui and indication is clearer
+                        print ("ROTATION")
+                        self.rotating = False
+                        self.scaling = True
+
+
+                            
     def mouseMoveEvent(self,event):
         if self.panning and self.last_pan_point:
             change = event.position().toPoint() - self.last_pan_point
             self.parent_window.pan_offset += change
             self.last_pan_point = event.position().toPoint()
             self.update()
+        if self.scaling:
+            hover_point = self.get_scaled_point(event.position())
+            center_point = self.rectangle.center()
+            self.center_point = self.rectangle.center()
+
+            #  distance(hover and centre) / (distance point and centre) = scale factor
+            self.x_hover_difference = (center_point.x()-hover_point.x())
+            self.y_hover_difference = (center_point.y()-hover_point.y())
+            hover_variance = max(abs(self.x_hover_difference), abs(self.y_hover_difference))
+
+            self.x_main_difference = (center_point.x()-self.point.x())
+            self.y_main_difference = (center_point.y()-self.point.y())
+            main_variance = max(abs(self.x_main_difference), abs(self.y_main_difference))
+
+            self.scale_factor = hover_variance/main_variance
+            
+
+            # for layer in self.parent_window.texture_layers:
+            #     if self.dragging_layer == layer:
+
+                    
         elif self.dragging_layer:
             new_position = self.get_scaled_point(event.position()) - self.drag_start_offset
             self.dragging_layer.position = new_position
@@ -2387,10 +2511,28 @@ class TransformTool(QWidget):
             if self.panning:
                 self.panning = False
                 self.setCursor(QtCore.Qt.ArrowCursor)
-            if self.dragging_layer:
-                self.dragging_layer.selected = False
-                self.dragging_layer = None
-                self.clear_overlay()
+            if self.scaling:
+                print (self.dragging_pixmap.height())
+                self.dragging_pixmap = self.dragging_pixmap.scaled(self.dragging_pixmap.height()*self.scale_factor, self.dragging_pixmap.width()*self.scale_factor)
+                print (self.dragging_pixmap.height())
+
+
+                #print("INDEX: ", (self.parent_window.texture_layers.index(self.dragging_layer)))
+
+                new_layer = TextureLayer(self.dragging_pixmap, self.center_point)
+
+                self.parent_window.texture_layers[(self.parent_window.texture_layers.index(self.dragging_layer))] = new_layer
+                print("NEW LAYER DELT WITH")
+                self.scaling = False
+                self.update_overlay()
+
+
+ 
+
+            # elif self.dragging_layer:
+            #     self.dragging_layer.selected = False
+            #     self.dragging_layer = None
+            #     self.clear_overlay()
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
             self.panning = True
