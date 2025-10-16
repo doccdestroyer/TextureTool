@@ -18,14 +18,13 @@ import os
 import PySide6
 from PySide6 import QtWidgets, QtGui, QtCore
 from PySide6.QtWidgets import QPushButton, QWidget
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 import unreal
 import math
 ###TODO ADJUST IMPORTS TO INCLUDE WHATS ONLY NECESARY
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar
-from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF,QGuiApplication, QAction, QImage
+from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF, QAction, QImage, QColor, QPixmap
 
-from PySide6.QtWidgets import QGraphicsColorizeEffect
 
 import time
 # import PIL 
@@ -151,6 +150,8 @@ class ChooseNameWindow(QMainWindow):
 class CreateWindow(QMainWindow):
     def __init__(self, image_path):
         super().__init__()
+        self.received_value = 100
+
         self.setWindowTitle("Selection Tools")
         self.image_path = image_path
         self.active_tool_widget = None
@@ -163,6 +164,7 @@ class CreateWindow(QMainWindow):
 
         # Load base image as first layer
         base_pixmap = QtGui.QPixmap(self.image_path)
+        self.base_pixmap = QtGui.QPixmap(self.image_path)
 
 
         self.merged_selection_path = QPainterPath()
@@ -174,6 +176,8 @@ class CreateWindow(QMainWindow):
 
         # base_pixmap = base_pixmap.scaled(base_pixmap)
         base_layer = TextureLayer(base_pixmap, QtCore.QPoint(0, 0))
+        self.base_layer = TextureLayer(base_pixmap, QtCore.QPoint(0, 0))
+
         self.texture_layers.append(base_layer)
 
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
@@ -196,13 +200,15 @@ class CreateWindow(QMainWindow):
         self.add_texture_button.clicked.connect(self.prompt_add_texture)
         self.layout.insertWidget(1,self.add_texture_button)
 
-        self.tool_panel = ToolSectionMenu(parent=self)
-        self.tool_panel.show()
 
 
         self.saturation_panel = SaturationSlider(parent=self)
         self.saturation_panel.show()
         self.chosen_name = None
+
+        self.saturation_panel.value_changed.connect(self.WINDOW)
+        self.tool_panel = ToolSectionMenu(parent=self)
+        self.tool_panel.show()
 
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl++"), self, activated=self.zoom_in)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+="), self, activated=self.zoom_in)
@@ -225,6 +231,43 @@ class CreateWindow(QMainWindow):
         # self.layout.addWidget(self.create_decal_button)
 
         self.CreateToolBar()
+
+        self.base_image = self.base_pixmap.toImage()
+
+    def WINDOW(self,value):
+        #self.slider_value = value
+        print("POOP" , value)
+        factor = value/100
+        image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+        
+        for pixelY in range(image.height()):
+            for pixelX in range(image.width()):
+                pixel_color = QColor(image.pixel(pixelX,pixelY))
+                H,S,L,A = pixel_color.getHsl()
+                S = int(S*factor)
+                pixel_color.setHsl(H,S,L,A)
+                image.setPixelColor(pixelX,pixelY,pixel_color)
+        
+        self.saturation_panel.image_label.setPixmap(QPixmap.fromImage(image))
+        #texture_layer = TextureLayer(self.image_label, QtCore.QPoint(100,100))
+        texture_layer2 = TextureLayer(QPixmap.fromImage(image), QtCore.QPoint(0,0))
+
+        self.texture_layers[0] = texture_layer2
+        #self.parent_window.base_layer = texture_layer2
+
+        #move_tool_class = MoveTool(parent=parent_window)
+        self.active_tool_widget.texture_layers[0] = texture_layer2
+
+        #self.received_pixmap = pixmap
+
+        self.active_tool_widget.update_overlay()
+        print("base texture layer updated")
+        #self.parent_window.update()
+        self.update()
+        #return self.slider_value
+
+
+
 
 
     ##########################################
@@ -354,7 +397,6 @@ class CreateWindow(QMainWindow):
         new_layer = TextureLayer(self.pixmap, QtCore.QPoint(100, 100))
         self.texture_layers.append(new_layer)
 
-        # Tell active tool to update/redraw
         if self.active_tool_widget:
             self.active_tool_widget.update()
         self.update()
@@ -394,7 +436,8 @@ class CreateWindow(QMainWindow):
         final_image.fill(QtCore.Qt.transparent)
 
         painter = QtGui.QPainter(final_image)
-        for layer in self.texture_layers:painter.drawPixmap(layer.position, layer.pixmap)
+        for layer in self.texture_layers:
+            painter.drawPixmap(layer.position, layer.pixmap)
         painter.end()
 
         QtGui.QPixmap.fromImage(final_image).save(temp_path, "PNG")
@@ -486,6 +529,7 @@ class CreateWindow(QMainWindow):
 #                     SATURATION SLIDER                       #
 ###############################################################
 class SaturationSlider(QWidget):
+    value_changed = Signal(int)
     def __init__(self, parent = None):
         super().__init__(parent)
         self.parent_window = parent
@@ -495,16 +539,16 @@ class SaturationSlider(QWidget):
         self.setFixedSize(150, 100)
         self.setWindowTitle("Saturation Slider")
 
-        layout = QVBoxLayout(self)
 
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(0)
         self.slider.setMaximum(100)
-        self.slider.setSliderPosition(15)
+        self.slider.setSliderPosition(100)
         self.slider.valueChanged.connect(self.sliderChanged)
 
-        layout.addWidget(self.slider)
 
+
+        self.texture_layers = parent.texture_layers
 
         self.setStyleSheet("""
             background-color: #262626;
@@ -513,20 +557,69 @@ class SaturationSlider(QWidget):
             font-size: 12px;
         """)
 
+        ################for layer in self.texture_layers:
+        self.original_pixmap = self.parent_window.base_pixmap
+        self.original_image = self.original_pixmap.toImage()
+
+        self.image_label = QLabel()
+        self.image_label.setPixmap(self.original_pixmap)
 
 
-        self.label = QLabel(self)
-        effect = QGraphicsColorizeEffect(self.label)
-        effect.setStrength(0.0)
-        self.label.setGraphicsEffect(effect)
+        layout = QVBoxLayout()
+        layout.addWidget(self.slider)
+        layout.addWidget(self.image_label)
+        self.setLayout(layout)
 
-    def sliderChanged(self, value):
-        unreal.log('Slider changed: ' + str(value))
+    def sliderChanged(self,value):
+        print("VALUE FROM SLIDER CHANGEED:", value)
+        # factor = value/100
+        # image = self.original_image.convertToFormat(QImage.Format_ARGB32)
+        
+        # for pixelY in range(image.height()):
+        #     for pixelX in range(image.width()):
+        #         pixel_color = QColor(image.pixel(pixelX,pixelY))
+        #         H,S,L,A = pixel_color.getHsl()
+        #         S = int(S*factor)
+        #         pixel_color.setHsl(H,S,L,A)
+        #         image.setPixelColor(pixelX,pixelY,pixel_color)
+        
+        # self.image_label.setPixmap(QPixmap.fromImage(image))
+        # #texture_layer = TextureLayer(self.image_label, QtCore.QPoint(100,100))
+        # texture_layer2 = TextureLayer(QPixmap.fromImage(image), QtCore.QPoint(0,0))
 
-        if self.label.graphicsEffect().strength():
-            self.label.graphicsEffect().setStrength(value/100)
-        else:
-            self.label.graphicsEffect().setStrength(0.5)
+        # self.parent_window.texture_layers[0] = texture_layer2
+        # #self.parent_window.base_layer = texture_layer2
+
+        # #move_tool_class = MoveTool(parent=parent_window)
+        # self.parent_window.active_tool_widget.texture_layers[0] = texture_layer2
+
+        # self.parent_window.active_tool_widget.update_overlay()
+        # print("base texture layer updated")
+        # self.parent_window.update()
+        self.value_changed.emit(value)
+
+        # self.label = QLabel(parent)
+
+        # self.text = "hello"
+        
+    #     self.label.setPixmap(parent.base_pixmap)
+    #     effect = QGraphicsColorizeEffect(self.label)
+    #     effect.setColor(QColor(0,0,0))
+    #     effect.setStrength(0.0)
+    #     self.label.setGraphicsEffect(effect)
+    #     layout.addWidget(self.label)
+
+    #     self.saturation_value = 100
+
+    # def sliderChanged(self, value):
+    #     if self.label.graphicsEffect().strength():
+    #         self.saturation_value = value
+    #         self.label.graphicsEffect().setStrength(value/100)
+    #     else:
+    #         self.label.graphicsEffect().setStrength(0.5)
+    #     self.update()
+
+    
 ###############################################################
 #                    TOOL SELECTION MENU                      #
 ###############################################################
@@ -634,6 +727,7 @@ class MoveTool(QtWidgets.QWidget):
 
         #base_layer = self.parent_window.texture_layers[0]
         #self.setFixedSize((base_layer.pixmap.size())*0.8)
+        self.texture_layers = parent_window.texture_layers
 
         self.panning = False
         self.last_pan_point = None
@@ -709,8 +803,15 @@ class MoveTool(QtWidgets.QWidget):
         painter.translate(self.parent_window.pan_offset)
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
 
-        for layer in self.parent_window.texture_layers:
+        for layer in self.texture_layers:
             painter.drawPixmap(layer.position, layer.pixmap)
+    
+    def update_overlay(self):
+        #self.overlay.fill(QtCore.Qt.transparent)
+        painter = QtGui.QPainter(self.overlay)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.end()
+        self.update()
 
 
 
@@ -778,7 +879,7 @@ class PenTool(QtWidgets.QWidget):
         painter.drawPixmap(0, 0, self.image)
         #painter.drawPixmap(0, 0, self.overlay)
 
-        for layer in self.parent_window.texture_layers[1:]:
+        for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
 
         painter.drawPixmap(0,0, self.overlay)
@@ -885,6 +986,7 @@ class PenTool(QtWidgets.QWidget):
         painter.end()
         self.update()
 
+
 ###############################################################
 #                       LASSO TOOL                            # 
 ###############################################################
@@ -895,6 +997,8 @@ class LassoTool(QtWidgets.QWidget):
         #self.scale_factor = 1.0
 
         self.parent_window = parent_window
+
+        self.texture_layers = parent_window.texture_layers
 
         self.image = QtGui.QPixmap(image_path)
 
@@ -927,6 +1031,7 @@ class LassoTool(QtWidgets.QWidget):
         self.setFocus()
 
         self.update_overlay()
+
 
 
     def get_scaled_point(self, pos):         
@@ -1080,7 +1185,7 @@ class LassoTool(QtWidgets.QWidget):
         painter.drawPixmap(0, 0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
 
-        for layer in self.parent_window.texture_layers[1:]:
+        for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
 
 
@@ -1135,6 +1240,7 @@ class PolygonalTool(QtWidgets.QLabel):
         self.image = QtGui.QPixmap(image_path)
 
         self.parent_window = parent_window
+        self.texture_layers = parent_window.texture_layers
 
         if self.image.isNull():
             self.setText("Image failed to load")
@@ -1357,7 +1463,7 @@ class PolygonalTool(QtWidgets.QLabel):
         painter.drawPixmap(0, 0, self.image)   
         painter.drawPixmap(0, 0, self.overlay)
 
-        for layer in self.parent_window.texture_layers[1:]:
+        for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
 
     ###HERE NEEDS TO BE REMOVED
@@ -1418,6 +1524,7 @@ class RectangularTool(QtWidgets.QLabel):
 
         self.parent_window = parent_window
 
+        self.texture_layers = parent_window.texture_layers
 
         self.points = []
         if self.image.isNull():
@@ -1702,7 +1809,7 @@ class RectangularTool(QtWidgets.QLabel):
         painter.drawPixmap(0, 0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
 
-        for layer in self.parent_window.texture_layers[1:]:
+        for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
 
     def clear_overlay(self):
@@ -1814,6 +1921,8 @@ class EllipticalTool(QtWidgets.QLabel):
     def __init__(self, image_path, parent_window):
 
         self.parent_window = parent_window
+
+        self.texture_layers = parent_window.texture_layers
 
         super().__init__()
         self.image = QtGui.QPixmap(image_path)
@@ -2101,7 +2210,7 @@ class EllipticalTool(QtWidgets.QLabel):
         painter.drawPixmap(0,0, self.image)
         painter.drawPixmap(0, 0, self.overlay)
 
-        for layer in self.parent_window.texture_layers[1:]:
+        for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
 
     def clear_overlay(self):
@@ -2214,6 +2323,8 @@ class TransformTool(QWidget):
 
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setFocus()
+
+        self.texture_layers = parent_window.texture_layers
 
         self.inSelection = True
 
