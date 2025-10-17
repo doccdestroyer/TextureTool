@@ -214,6 +214,14 @@ class MainWindow(QMainWindow):
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+-"), self, activated=self.zoom_out)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+0"), self, activated=self.reset_zoom)
 
+
+        self.cyan_red_panel = Slider(self, "Colour Balance - Red " , 1, 100, 50)
+        self.cyan_red_panel.show()
+        self.cyan_red_panel.value_changed.connect(self.adjust_redness)
+
+        self.magenta_green_panel = Slider(self, "Colour Balance - Green " , 1, 100, 50)
+        self.magenta_green_panel.show()
+        self.magenta_green_panel.value_changed.connect(self.adjust_greenness)
         # #debug buttons
 
         # self.add_texture_button = QPushButton("Add Texture")
@@ -229,14 +237,78 @@ class MainWindow(QMainWindow):
         # self.export_addtions_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
         # self.layout.addWidget(self.export_addtions_button)
 
-        # self.create_decal_button = QPushButton("Create Decal")
-        # #self.create_decal_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
-        # self.create_decal_button.clicked.connect(lambda: self.create_decal(self.prompt_add_folder_path(), "M_DecalTest69"))
-        # self.layout.addWidget(self.create_decal_button)
+        self.create_decal_button = QPushButton("Create Decal")
+        #self.create_decal_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
+        self.create_decal_button.clicked.connect(lambda: self.create_decal(self.prompt_add_folder_path(), "M_DecalTest69"))
+        self.layout.addWidget(self.create_decal_button)
 
         self.CreateToolBar()
 
         self.base_image = self.base_pixmap.toImage()
+
+    def adjust_redness(self,value):
+        pass
+        factor = value/100
+        image = self.base_image.convertToFormat(QImage.Format_ARGB32) 
+        for pixelY in range(image.height()):
+            for pixelX in range(image.width()):
+                pixel_color = QColor(image.pixel(pixelX,pixelY))
+                #R = pixel_color.red()
+                if value == 0:
+                    pass
+                else:
+                    R = pixel_color.red()
+                    R = (R + (255-int(R))) * factor 
+                    pixel_color.setRed(R)
+                    #do red logic tint
+                image.setPixelColor(pixelX,pixelY,pixel_color)
+
+
+        self.cyan_red_panel.image_label.setPixmap(QPixmap.fromImage(image))
+
+        self.base_pixmap = QPixmap.fromImage(image)
+        
+        updated_texture = TextureLayer(QPixmap.fromImage(image), QtCore.QPoint(0,0))
+        self.texture_layers[0] = updated_texture
+        self.active_tool_widget.texture_layers[0] = updated_texture
+        self.active_tool_widget.update_overlay()
+
+        #self.base_image = self.base_pixmap.toImage()
+
+        self.update()
+
+    def adjust_greenness(self,value):
+        pass
+        factor = value/100
+        image = self.base_image.convertToFormat(QImage.Format_ARGB32) 
+        for pixelY in range(image.height()):
+            for pixelX in range(image.width()):
+                pixel_color = QColor(image.pixel(pixelX,pixelY))
+                #R = pixel_color.red()
+                if value == 0:
+                    pass
+                else:
+                    G = pixel_color.green()
+                    G = (G + (255-int(G))) * factor 
+                    pixel_color.setGreen(G)
+                    #do red logic tint
+                image.setPixelColor(pixelX,pixelY,pixel_color)
+
+
+        self.magenta_green_panel.image_label.setPixmap(QPixmap.fromImage(image))
+        
+        self.base_pixmap = QPixmap.fromImage(image)
+        
+        updated_texture = TextureLayer(QPixmap.fromImage(image), QtCore.QPoint(0,0))
+        self.texture_layers[0] = updated_texture
+        self.active_tool_widget.texture_layers[0] = updated_texture
+        self.active_tool_widget.update_overlay()
+
+        #self.base_image = self.base_pixmap.toImage()
+
+        self.update()
+
+
 
     def adjust_saturation(self,value):
         factor = value/100
@@ -346,12 +418,12 @@ class MainWindow(QMainWindow):
 
         select_menu.addMenu(modify_menu)
 
-        # self.setStyleSheet("""
-        #     background-color: #262626;
-        #     color: #ffffff;
-        #     font-family: Consolas;
-        #     font-size: 12px;
-        # """)   
+        self.setStyleSheet("""
+            background-color: #262626;
+            color: #ffffff;
+            font-family: Consolas;
+            font-size: 12px;
+        """)   
 
     def change_name(self):
         name_window = ChooseNameWindow()
@@ -2624,8 +2696,9 @@ for tex in assets:
     if isinstance(tex, unreal.Texture):
         if __name__ == "__main__":
             main_png_path = export_texture_to_png(tex)
-            app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+            #app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
             win = MainWindow(main_png_path)
             win.show()
-            app.setStyle("Fusion")
-            app.exec()
+            #win.setStyle("Fusion")
+            #app.setStyle("Fusion")
+            #app.exec()
