@@ -25,6 +25,13 @@ import math
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar
 from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF, QAction, QImage, QColor, QPixmap
 
+from PySide6.QtCore import QDate, QFile, Qt, QTextStream
+from PySide6.QtGui import (QAction, QFont, QIcon, QKeySequence,
+                           QTextCharFormat, QTextCursor, QTextTableFormat)
+from PySide6.QtPrintSupport import QPrintDialog, QPrinter
+from PySide6.QtWidgets import (QApplication, QDialog, QDockWidget,
+                               QFileDialog, QListWidget, QMainWindow,
+                               QMessageBox, QTextEdit)
 
 import time
 # import PIL 
@@ -198,16 +205,16 @@ class MainWindow(QMainWindow):
 
         self.chosen_name = None
 
-        self.saturation_panel = Slider(parent = self, name = "Saturation Slider", min = 0, max =100, default =100)
-        self.saturation_panel.show()
-        self.saturation_panel.value_changed.connect(self.adjust_saturation)
+        # self.saturation_panel = Slider(parent = self, name = "Saturation Slider", min = 0, max =100, default =100)
+        # self.saturation_panel.show()
+        # self.saturation_panel.value_changed.connect(self.adjust_saturation)
 
-        self.brightness_panel = Slider(self, "Brightness Slider" , 0, 199, 100)
-        self.brightness_panel.show()
-        self.brightness_panel.value_changed.connect(self.adjust_brightness)
+        # self.brightness_panel = Slider(self, "Brightness Slider" , 0, 199, 100)
+        # self.brightness_panel.show()
+        # self.brightness_panel.value_changed.connect(self.adjust_brightness)
 
-        self.tool_panel = ToolSectionMenu(parent=self)
-        self.tool_panel.show()
+        # self.tool_panel = ToolSectionMenu(parent=self)
+        # self.tool_panel.show()
 
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl++"), self, activated=self.zoom_in)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+="), self, activated=self.zoom_in)
@@ -215,13 +222,16 @@ class MainWindow(QMainWindow):
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+0"), self, activated=self.reset_zoom)
 
 
-        self.cyan_red_panel = Slider(self, "Colour Balance - Red " , 1, 100, 50)
-        self.cyan_red_panel.show()
-        self.cyan_red_panel.value_changed.connect(self.adjust_redness)
+        # self.cyan_red_panel = Slider(self, "Colour Balance - Red " , 1, 100, 50)
+        # self.cyan_red_panel.show()
+        # self.cyan_red_panel.value_changed.connect(self.adjust_redness)
 
-        self.magenta_green_panel = Slider(self, "Colour Balance - Green " , 1, 100, 50)
-        self.magenta_green_panel.show()
-        self.magenta_green_panel.value_changed.connect(self.adjust_greenness)
+        # self.magenta_green_panel = Slider(self, "Colour Balance - Green " , 1, 100, 50)
+        # self.magenta_green_panel.show()
+        # self.magenta_green_panel.value_changed.connect(self.adjust_greenness)
+
+
+
         # #debug buttons
 
         # self.add_texture_button = QPushButton("Add Texture")
@@ -245,6 +255,88 @@ class MainWindow(QMainWindow):
         self.CreateToolBar()
 
         self.base_image = self.base_pixmap.toImage()
+        self.base_image_altered = self.base_image
+
+        self.create_dock_windows()
+
+
+    def create_dock_windows(self):
+        dock = QDockWidget("Colour Dial", self)
+        dock.setAllowedAreas(Qt.DockWidgetArea.LeftDockWidgetArea
+                             | Qt.DockWidgetArea.RightDockWidgetArea
+                             | Qt.DockWidgetArea.TopDockWidgetArea)
+        self.dial = QDial()
+        dock.setWidget(self.dial)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
+
+        #stackedLayout = QStackedLayout()
+
+        dock = QDockWidget("Cyan - Red", self)
+        self.cyan_red_panel = Slider(self, "Colour Balance - Red " , 1, 100, 50)
+        self.cyan_red_panel.value_changed.connect(self.adjust_redness)
+        dock.setWidget(self.cyan_red_panel)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
+
+
+        dock = QDockWidget("Magenta - Green", self)
+        self.magenta_green_panel = Slider(self, "Colour Balance - Green " , 1, 100, 50)
+        self.magenta_green_panel.value_changed.connect(self.adjust_greenness)
+
+        dock.setWidget(self.magenta_green_panel)
+
+        # stackedLayout.addWidget(self.cyan_red_panel)
+        # stackedLayout.addWidget(self.magenta_green_panel)
+        # dock.setWidget(stackedLayout)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
+
+        dock = QDockWidget("Yellow - Blue", self)
+        self.yellow_blue_panel = Slider(self, "Colour Balance - Blue " , 0, 100, 50)
+        self.yellow_blue_panel.value_changed.connect(self.adjust_blueness)
+        dock.setWidget(self.yellow_blue_panel)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
+
+
+
+
+        dock = QDockWidget("Layers", self)
+        self.layers = QListWidget(dock)
+        self.layers.addItems((
+            "ADD TOP LAYER",
+            "ADD IN BETWEEN LAYERS",
+            "ADD BASE LAYER"))
+        dock.setWidget(self.layers)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
+
+
+
+ 
+        # dock = QDockWidget("Tool", self)
+        # self.layers = QListWidget(dock)
+        # self.layers.addItems((
+        #     "ADD TOP LAYER",
+        #     "ADD IN BETWEEN LAYERS",
+        #     "ADD BASE LAYER"))
+        # dock.setWidget(self.layers)
+        # self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock)
+
+        dock = QDockWidget("Tools", self)
+        self.tool_panel = ToolSectionMenu(parent=self)
+        dock.setWidget(self.tool_panel)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock)
+
+        dock = QDockWidget("Saturation", self)
+        self.saturation_panel = Slider(parent = self, name = "Saturation Slider", min = 0, max =100, default =100)
+        self.saturation_panel.value_changed.connect(self.adjust_saturation)
+        dock.setWidget(self.saturation_panel)
+        self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
+
+
+
+        dock = QDockWidget("Brightness", self)
+        self.brightness_panel = Slider(self, "Brightness Slider" , 0, 199, 100)
+        self.brightness_panel.value_changed.connect(self.adjust_brightness)
+        dock.setWidget(self.brightness_panel)
+        self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
     def adjust_redness(self,value):
         pass
@@ -297,8 +389,7 @@ class MainWindow(QMainWindow):
 
         self.magenta_green_panel.image_label.setPixmap(QPixmap.fromImage(image))
         
-        self.base_pixmap = QPixmap.fromImage(image)
-        
+        self.base_pixmap = QPixmap.fromImage(image)        
         updated_texture = TextureLayer(QPixmap.fromImage(image), QtCore.QPoint(0,0))
         self.texture_layers[0] = updated_texture
         self.active_tool_widget.texture_layers[0] = updated_texture
@@ -308,6 +399,36 @@ class MainWindow(QMainWindow):
 
         self.update()
 
+    def adjust_blueness(self,value):
+        pass
+        factor = value/100
+        image = self.base_image.convertToFormat(QImage.Format_ARGB32) 
+        for pixelY in range(image.height()):
+            for pixelX in range(image.width()):
+                pixel_color = QColor(image.pixel(pixelX,pixelY))
+                #R = pixel_color.red()
+                if value == 50:
+                    pass
+                else:
+                    B = pixel_color.blue()
+                    B = (B + (255-int(B))) * factor 
+                    pixel_color.setBlue(B)
+                    #do red logic tint
+                image.setPixelColor(pixelX,pixelY,pixel_color)
+
+
+        self.magenta_green_panel.image_label.setPixmap(QPixmap.fromImage(image))
+        
+        self.base_pixmap = QPixmap.fromImage(image)
+        
+        updated_texture = TextureLayer(QPixmap.fromImage(image), QtCore.QPoint(0,0))
+        self.texture_layers[0] = updated_texture
+        self.active_tool_widget.texture_layers[0] = updated_texture
+        self.active_tool_widget.update_overlay()
+
+        #self.base_image_altered = self.base_pixmap.toImage()
+
+        self.update()
 
 
     def adjust_saturation(self,value):
@@ -329,10 +450,13 @@ class MainWindow(QMainWindow):
         
         updated_texture = TextureLayer(QPixmap.fromImage(image), QtCore.QPoint(0,0))
         self.texture_layers[0] = updated_texture
-        self.active_tool_widget.texture_layers[0] = updated_texture
+        #self.active_tool_widget.texture_layers[0] = updated_texture
         self.active_tool_widget.update_overlay()
 
         #self.base_image = self.base_pixmap.toImage()
+        ##########################
+        self.base_image_altered = self.base_pixmap.toImage()
+
 
         self.update()
 
@@ -340,13 +464,26 @@ class MainWindow(QMainWindow):
     def adjust_brightness(self,value):
         factor = value/100
         image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+        altered_image = self.base_image_altered.convertToFormat(QImage.Format_ARGB32)
+        
+        # for pixelY in range(altered_image.height()):
+        #     for pixelX in range (altered_image.width()):
+        #         pixel_color = QColor(altered_image.pixel(pixelX,pixelY))
+        #         H,S,L,A = pixel_color.getHsl()
+
 
         for pixelY in range(image.height()):
             for pixelX in range (image.width()):
                 pixel_color = QColor(image.pixel(pixelX,pixelY))
-                H,S,L,A = pixel_color.getHsl()
-                L = int(L*factor)
-                pixel_color.setHsl(H,S,L,A)
+
+                pixel_color_alter = QColor(altered_image.pixel(pixelX,pixelY))
+                H,S,L,A = pixel_color_alter.getHsl()
+
+                H1,S1,L1,A1 = pixel_color.getHsl()
+                L1 = int(L*factor)
+                if L1>255:
+                    L1 = 255
+                pixel_color.setHsl(H,S,L1,A)
                 image.setPixelColor(pixelX,pixelY,pixel_color)
 
         self.brightness_panel.image_label.setPixmap(QPixmap.fromImage(image))
@@ -356,11 +493,12 @@ class MainWindow(QMainWindow):
         updated_texture = TextureLayer(QPixmap.fromImage(image), QtCore.QPoint(0,0))
         #update textures
         self.texture_layers[0] = updated_texture
-        self.active_tool_widget.texture_layers[0] = updated_texture
+        #self.active_tool_widget.texture_layers[0] = updated_texture
         self.active_tool_widget.update_overlay()
 
         #self.base_image = self.base_pixmap.toImage()
-
+        ########################
+        self.base_image_altered = self.base_pixmap.toImage()
         self.update()
 
     ##########################################
@@ -418,12 +556,27 @@ class MainWindow(QMainWindow):
 
         select_menu.addMenu(modify_menu)
 
+
+
+        help_menu = menu_bar.addMenu("Help")
+        help_action = QAction("Show Help", self)
+        help_action.triggered.connect(self.show_help)
+        help_menu.addAction(help_action)
+
+
         self.setStyleSheet("""
             background-color: #262626;
             color: #ffffff;
             font-family: Consolas;
             font-size: 12px;
         """)   
+    def show_help(self):
+        QMessageBox.about(self, "About Texture Editor",
+                          "This Texture Editor allows for the editting of "
+                          "textures within Unreal. Press the 'i' button for further "
+                          "information regarding your selected tool. Press 'file' to "
+                          "import and export textures.")
+        
 
     def change_name(self):
         name_window = ChooseNameWindow()
@@ -657,6 +810,7 @@ class Slider(QWidget):
         layout = QVBoxLayout()
         layout.addWidget(self.slider)
         layout.addWidget(self.image_label)
+
         self.setLayout(layout)
 
     def sliderChanged(self,value):
@@ -681,7 +835,7 @@ class Slider(QWidget):
         # #move_tool_class = MoveTool(parent=parent_window)
         # self.parent_window.active_tool_widget.texture_layers[0] = texture_layer2
 
-        # self.parent_window.active_tool_widget.update_overlay()
+        #self.parent_window.active_tool_widget.update_overlay()
         # print("base texture layer updated")
         # self.parent_window.update()
         self.value_changed.emit(value)
@@ -1173,15 +1327,13 @@ class LassoTool(QtWidgets.QWidget):
                 if len(self.points) <= 2:
                     self.points = []
                     self.update_overlay()
-                    return  # Not enough points to form a valid shape
+                    return 
 
-                # Proceed only if valid polygon
                 self.points.append(self.points[0])
                 new_polygon_f = QPolygonF(QPolygon(self.points))
                 new_path = QPainterPath()
                 new_path.addPolygon(new_polygon_f)
 
-                # Now safe to use new_path
                 if not self.making_removal and not self.making_additional_selection:
                     self.selections_paths.clear()
                     self.selections_paths.append(new_path)
@@ -1249,9 +1401,13 @@ class LassoTool(QtWidgets.QWidget):
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         # painter.drawPixmap(0, 0, self.image)
         # painter.drawPixmap(0, 0, self.overlay)
+        print("is painting")
 
-        for layer in self.parent_window.texture_layers[0:]:
+        for layer in self.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
+            print (layer)
+            print("hello")
+
         painter.drawPixmap(0, 0, self.overlay)
         
     def clear_overlay(self):
@@ -2696,9 +2852,5 @@ for tex in assets:
     if isinstance(tex, unreal.Texture):
         if __name__ == "__main__":
             main_png_path = export_texture_to_png(tex)
-            #app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
             win = MainWindow(main_png_path)
             win.show()
-            #win.setStyle("Fusion")
-            #app.setStyle("Fusion")
-            #app.exec()
