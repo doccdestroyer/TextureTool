@@ -255,7 +255,9 @@ class MainWindow(QMainWindow):
         self.CreateToolBar()
 
         self.base_image = self.base_pixmap.toImage()
-        self.base_image_altered = self.base_image
+        self.altered_image = self.base_image
+
+        self.saturation_value = 100
 
         self.create_dock_windows()
 
@@ -426,71 +428,37 @@ class MainWindow(QMainWindow):
         self.active_tool_widget.texture_layers[0] = updated_texture
         self.active_tool_widget.update_overlay()
 
-        #self.base_image_altered = self.base_pixmap.toImage()
+        #self.altered_image = self.base_pixmap.toImage()
 
         self.update()
-
 
     def adjust_saturation(self,value):
+        print("HELP HELP HELP")
+        unreal.log("help HELP HELP HELP HELP HELP")
         factor = value/100
         image = self.base_image.convertToFormat(QImage.Format_ARGB32)
-        
-        for pixelY in range(image.height()):
-            for pixelX in range(image.width()):
-                pixel_color = QColor(image.pixel(pixelX,pixelY))
-                H,S,L,A = pixel_color.getHsl()
-                S = int(S*factor)
-                pixel_color.setHsl(H,S,L,A)
-                image.setPixelColor(pixelX,pixelY,pixel_color)
-        
-        self.saturation_panel.image_label.setPixmap(QPixmap.fromImage(image))
-
-        self.base_pixmap = QPixmap.fromImage(image)
-        
-        
-        updated_texture = TextureLayer(QPixmap.fromImage(image), QtCore.QPoint(0,0))
-        self.texture_layers[0] = updated_texture
-        #self.active_tool_widget.texture_layers[0] = updated_texture
-        self.active_tool_widget.update_overlay()
-
-        #self.base_image = self.base_pixmap.toImage()
-        ##########################
-        self.base_image_altered = self.base_pixmap.toImage()
-
-
-        self.update()
-
-
-    def adjust_brightness(self,value):
-        factor = value/100
-        image = self.base_image.convertToFormat(QImage.Format_ARGB32)
-        altered_image = self.base_image_altered.convertToFormat(QImage.Format_ARGB32)
-        
-        # for pixelY in range(altered_image.height()):
-        #     for pixelX in range (altered_image.width()):
-        #         pixel_color = QColor(altered_image.pixel(pixelX,pixelY))
-        #         H,S,L,A = pixel_color.getHsl()
+        altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
 
 
         for pixelY in range(image.height()):
-            for pixelX in range (image.width()):
-                pixel_color = QColor(image.pixel(pixelX,pixelY))
+            for pixelX in range(image.width()):
 
                 pixel_color_alter = QColor(altered_image.pixel(pixelX,pixelY))
                 H,S,L,A = pixel_color_alter.getHsl()
 
+                pixel_color = QColor(image.pixel(pixelX,pixelY))
                 H1,S1,L1,A1 = pixel_color.getHsl()
-                L1 = int(L*factor)
-                if L1>255:
-                    L1 = 255
-                pixel_color.setHsl(H,S,L1,A)
-                image.setPixelColor(pixelX,pixelY,pixel_color)
+                S1 = int(S1*factor)
 
-        self.brightness_panel.image_label.setPixmap(QPixmap.fromImage(image))
+                pixel_color_alter.setHsl(H1,S1,L,A)
+                altered_image.setPixelColor(pixelX,pixelY,pixel_color_alter)
+        
+        self.saturation_panel.image_label.setPixmap(QPixmap.fromImage(altered_image))
 
-        self.base_pixmap = QPixmap.fromImage(image)
+        #self.base_pixmap = QPixmap.fromImage(image)
+        self.altered_pixmap = QPixmap.fromImage(altered_image)
 
-        updated_texture = TextureLayer(QPixmap.fromImage(image), QtCore.QPoint(0,0))
+        updated_texture = TextureLayer(QPixmap.fromImage(altered_image), QtCore.QPoint(0,0))
         #update textures
         self.texture_layers[0] = updated_texture
         #self.active_tool_widget.texture_layers[0] = updated_texture
@@ -498,8 +466,54 @@ class MainWindow(QMainWindow):
 
         #self.base_image = self.base_pixmap.toImage()
         ########################
-        self.base_image_altered = self.base_pixmap.toImage()
+        self.altered_image = self.altered_pixmap.toImage()
+
+        self.saturation_value = value
         self.update()
+
+    def adjust_brightness(self,value):
+            factor = value/100
+            image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+            altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
+            
+            # for pixelY in range(altered_image.height()):
+            #     for pixelX in range (altered_image.width()):
+            #         pixel_color = QColor(altered_image.pixel(pixelX,pixelY))
+            #         H,S,L,A = pixel_color.getHsl()
+
+
+            for pixelY in range(image.height()):
+                for pixelX in range (image.width()):
+
+                    pixel_color_alter = QColor(altered_image.pixel(pixelX,pixelY))
+                    H,S,L,A = pixel_color_alter.getHsl()
+
+
+                    pixel_color = QColor(image.pixel(pixelX,pixelY))
+                    H1,S1,L1,A1 = pixel_color.getHsl()
+                    L1 = int(L1*factor)
+                    if L1>255:
+                        L1 = 255
+
+                    pixel_color_alter.setHsl(H,S1,L1,A)
+                    altered_image.setPixelColor(pixelX,pixelY,pixel_color_alter)
+
+            self.brightness_panel.image_label.setPixmap(QPixmap.fromImage(altered_image))
+
+            #self.base_pixmap = QPixmap.fromImage(image)
+            self.altered_pixmap = QPixmap.fromImage(altered_image)
+
+            updated_texture = TextureLayer(QPixmap.fromImage(altered_image), QtCore.QPoint(0,0))
+            #update textures
+            self.texture_layers[0] = updated_texture
+            #self.active_tool_widget.texture_layers[0] = updated_texture
+            self.active_tool_widget.update_overlay()
+
+            #self.base_image = self.base_pixmap.toImage()
+            ########################
+            self.altered_image = self.altered_pixmap.toImage()
+            self.adjust_saturation(self.saturation_value)
+            self.update()
 
     ##########################################
     #                 TOOL BAR               #
