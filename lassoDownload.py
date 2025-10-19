@@ -204,7 +204,7 @@ class MainWindow(QMainWindow):
 
         self.active_tool_widget = MoveTool(parent_window=self)
         #self.layout.addWidget(self.active_tool_widget)
-        self.layout.insertWidget(0,self.active_tool_widget)
+        #self.layout.insertWidget(0,self.active_tool_widget)
         #self.setFixedSize((self.active_tool_widget.size())*2)
         self.setFixedSize(1600,850)
 
@@ -1244,9 +1244,9 @@ class ToolSectionMenu(QWidget):
         layout.addWidget(self.move_tool)
         layout.addWidget(self.transform_tool)
 
-        for btn in [self.pen_tool, self.rectangle_tool, self.ellipse_tool, self.lasso_tool, self.polygonal_tool, self.move_tool, self.transform_tool]:
-            self.radioButtonGroup.addButton(btn)
-            btn.clicked.connect(self.radioButtonGroupChanged)
+        for button in [self.pen_tool, self.rectangle_tool, self.ellipse_tool, self.lasso_tool, self.polygonal_tool, self.move_tool, self.transform_tool]:
+            self.radioButtonGroup.addButton(button)
+            button.clicked.connect(self.radioButtonGroupChanged)
 
         self.setStyleSheet("""
             background-color: #262626;
@@ -1881,13 +1881,11 @@ class LassoTool(QtWidgets.QWidget):
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
         # painter.drawPixmap(0, 0, self.image)
         # painter.drawPixmap(0, 0, self.overlay)
-        print("is painting")
 
         for layer in self.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
+
         painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
-
-
         painter.drawPixmap(0, 0, self.overlay)
         
     def clear_overlay(self):
@@ -1923,14 +1921,14 @@ class LassoTool(QtWidgets.QWidget):
         painter.end()
         self.update()
 
-    def commit_polygon_to_image(self,polygon):
-        painter = QtGui.QPainter(self.image)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.setBrush(QtGui.QColor(255, 0, 0, 50))
-        painter.setPen(QtGui.QPen(QtCore.Qt.red, 2))
-        painter.drawPolygon(polygon)
-        painter.end()
-        self.update()
+    # def commit_polygon_to_image(self,polygon):
+    #     painter = QtGui.QPainter(self.image)
+    #     painter.setRenderHint(QtGui.QPainter.Antialiasing)
+    #     painter.setBrush(QtGui.QColor(255, 0, 0, 50))
+    #     painter.setPen(QtGui.QPen(QtCore.Qt.red, 2))
+    #     painter.drawPolygon(polygon)
+    #     painter.end()
+    #     self.update()
 
 ###############################################################
 #CreatePolygonalLassoTool
