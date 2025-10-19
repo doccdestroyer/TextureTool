@@ -17,23 +17,23 @@
 import os
 import PySide6
 from PySide6 import QtWidgets, QtGui, QtCore
-from PySide6.QtWidgets import QPushButton, QWidget
+from PySide6.QtWidgets import QPushButton, QWidget, QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar, QColorDialog, QDockWidget, QListWidget, QMessageBox
 from PySide6.QtCore import Qt, Signal
 import unreal
 import math
 ###TODO ADJUST IMPORTS TO INCLUDE WHATS ONLY NECESARY
-from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar, QColorDialog
-from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF, QAction, QImage, QColor, QPixmap
+#from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar, QColorDialog
+from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF, QAction, QImage, QColor, QPixmap, QAction
 
-from PySide6.QtCore import QDate, QFile, Qt, QTextStream
-from PySide6.QtGui import (QAction, QFont, QIcon, QKeySequence,
-                           QTextCharFormat, QTextCursor, QTextTableFormat)
-from PySide6.QtPrintSupport import QPrintDialog, QPrinter
-from PySide6.QtWidgets import (QApplication, QDialog, QDockWidget,
-                               QFileDialog, QListWidget, QMainWindow,
-                               QMessageBox, QTextEdit)
 
-import time
+# from PySide6.QtGui import (QAction, QFont, QIcon, QKeySequence,
+#                            QTextCharFormat, QTextCursor, QTextTableFormat)
+#from PySide6.QtPrintSupport import QPrintDialog, QPrinter
+# from PySide6.QtWidgets import (QApplication, QDialog, QDockWidget,
+#                                QFileDialog, QListWidget, QMainWindow,
+#                                QMessageBox, QTextEdit)
+
+# import time
 # import PIL 
 # from PIL import Image
 
@@ -188,6 +188,9 @@ class MainWindow(QMainWindow):
         self.base_layer = TextureLayer(base_pixmap, QtCore.QPoint(0, 0))
 
         self.texture_layers.append(base_layer)
+
+        self.pen_overlay = QtGui.QPixmap(self.texture_layers[0].pixmap.size())
+        self.pen_overlay.fill(QtCore.Qt.transparent)
 
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setFocus()
@@ -1007,9 +1010,14 @@ class MainWindow(QMainWindow):
         final_image = QtGui.QImage(base_size, QtGui.QImage.Format_ARGB32)
         final_image.fill(QtCore.Qt.transparent)
 
+        pen_layer = TextureLayer(self.pen_overlay, QtCore.QPoint(100, 100))
+        self.texture_layers.append(pen_layer)
+
         painter = QtGui.QPainter(final_image)
         for layer in self.texture_layers:
             painter.drawPixmap(layer.position, layer.pixmap)
+
+
         painter.end()
 
         QtGui.QPixmap.fromImage(final_image).save(temp_path, "PNG")
@@ -1039,9 +1047,14 @@ class MainWindow(QMainWindow):
         final_image = QtGui.QImage(base_size, QtGui.QImage.Format_ARGB32)
         final_image.fill(QtCore.Qt.transparent)
 
+
+        pen_layer = TextureLayer(self.pen_overlay, QtCore.QPoint(100, 100))
+        self.texture_layers.append(pen_layer)
+
         painter = QtGui.QPainter(final_image)
         for layer in self.texture_layers[1:]:
             painter.drawPixmap(layer.position, layer.pixmap)
+
         painter.end()
 
         QtGui.QPixmap.fromImage(final_image).save(temp_path, "PNG")
@@ -1056,7 +1069,7 @@ class MainWindow(QMainWindow):
         asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
         asset_tools.import_asset_tasks([import_task])
 
-        imported_asset_path = f"{unreal_folder}Composite.png"
+        imported_asset_path = f"{unreal_folder}" + "/" + name + ".png"
         print("IMPORTED ASSET 1: ", imported_asset_path)
 
         time.sleep(1)
@@ -1064,13 +1077,14 @@ class MainWindow(QMainWindow):
 
         if unreal.EditorAssetLibrary.does_asset_exist(imported_asset_path):
             unreal.log("Succesfully imported into Unreal")
+            unreal.log(f"FIRST FUNCTION FILE PATH: ", imported_asset_path)
             return imported_asset_path
         else:
             unreal.log_error("Failed to import into Unreal")
             #return imported_asset_path
         
     def create_decal(self, unreal_folder, material_name):
-        merged_texture_path = self.export_flattened_additions(str(self.prompt_add_folder_path()))
+        merged_texture_path = self.export_flattened_additions(str(self.prompt_add_folder_path()),"TESTTEST")
         print("MERGED TEXTURE PATH: ", merged_texture_path)
 
         asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
@@ -1079,7 +1093,12 @@ class MainWindow(QMainWindow):
         decal_name = material_name
 
         #texture_path = merged_texture_path
-        texture = unreal.load_asset(merged_texture_path)
+        unreal.log(merged_texture_path)
+        unreal.log(merged_texture_path)
+        unreal.log(merged_texture_path)
+        unreal.log(merged_texture_path)
+
+        texture = unreal.load_asset(str(merged_texture_path))
 
         material = asset_tools.create_asset(decal_name, package_path, unreal.Material, material_factory)
 
@@ -1474,7 +1493,8 @@ class MoveTool(QtWidgets.QWidget):
 
         for layer in self.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
-    
+        painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
+        
     def update_overlay(self):
         self.update()
 
@@ -1500,6 +1520,9 @@ class PenTool(QtWidgets.QWidget):
         self.overlay = QtGui.QPixmap(self.image.size())
         self.overlay.fill(QtCore.Qt.transparent)
 
+
+        self.pen_overlay = parent_window.pen_overlay
+        
         self.points = []
         self.drawing = False
 
@@ -1550,6 +1573,8 @@ class PenTool(QtWidgets.QWidget):
             painter.drawPixmap(layer.position, layer.pixmap)
 
         painter.drawPixmap(0,0, self.overlay)
+        painter.drawPixmap(0,0, self.pen_overlay)
+
         #self.update_overlay()
 
 
@@ -1578,23 +1603,30 @@ class PenTool(QtWidgets.QWidget):
     def mouseMoveEvent(self, event):
         if self.drawing and not self.panning:
             point = self.get_scaled_point(event.position())
-            self.points.append(point)
-            self.update_overlay()
+            # self.points.append(point)
+            # self.update_overlay()
 
             if len(self.selections_paths) > 0:
                 for i, path in enumerate(list(self.selections_paths)):
                     if path.contains(point):
                         self.in_selection = True
+                        self.points.append(point)
+    
+                        self.update_overlay()
+
                     else:
                         self.in_selection = False
-            self.update_overlay()
-
+                        self.update_overlay()
+            else:
+                self.points.append(point)
+                self.update_overlay()
 
         if self.panning and self.last_pan_point:
             change = event.position().toPoint() - self.last_pan_point 
             self.parent_window.pan_offset += change                    
             self.last_pan_point = event.position().toPoint()
             self.update()
+        self.update()
             
 
 
@@ -1640,13 +1672,13 @@ class PenTool(QtWidgets.QWidget):
         self.update()
 
     def clear_overlay(self):
-        self.overlay.fill(QtCore.Qt.transparent)
+        self.pen_overlay.fill(QtCore.Qt.transparent)
         self.image = self.original_image.copy()
         self.points.clear()
         self.update()
 
     def commit_line_to_image(self, line):
-        painter = QtGui.QPainter(self.image)
+        painter = QtGui.QPainter(self.pen_overlay)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setPen(QtGui.QPen(QtCore.Qt.black, 2))
         painter.drawPolyline(line)
@@ -1853,8 +1885,8 @@ class LassoTool(QtWidgets.QWidget):
 
         for layer in self.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
-            print (layer)
-            print("hello")
+        painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
+
 
         painter.drawPixmap(0, 0, self.overlay)
         
@@ -2123,6 +2155,7 @@ class PolygonalTool(QtWidgets.QLabel):
 
         for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
+        painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
         painter.drawPixmap(0, 0, self.overlay)
         
     ###HERE NEEDS TO BE REMOVED
@@ -2546,6 +2579,7 @@ class RectangularTool(QtWidgets.QLabel):
 
         for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
+        painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
         painter.drawPixmap(0, 0, self.overlay)
 
     def clear_overlay(self):
@@ -2948,6 +2982,7 @@ class EllipticalTool(QtWidgets.QLabel):
 
         for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
+        painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
         painter.drawPixmap(0, 0, self.overlay)
         
     def clear_overlay(self):
@@ -3214,6 +3249,7 @@ class TransformTool(QWidget):
 
         for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
+        painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
         #painter.drawPixmap(0, 0, self.overlay)
         
     def clear_overlay(self):
