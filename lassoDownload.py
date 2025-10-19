@@ -22,7 +22,7 @@ from PySide6.QtCore import Qt, Signal
 import unreal
 import math
 ###TODO ADJUST IMPORTS TO INCLUDE WHATS ONLY NECESARY
-from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar
+from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar, QColorDialog
 from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF, QAction, QImage, QColor, QPixmap
 
 from PySide6.QtCore import QDate, QFile, Qt, QTextStream
@@ -158,6 +158,8 @@ class MainWindow(QMainWindow):
     def __init__(self, image_path):
         super().__init__()
         self.received_value = 100
+        
+        self.color = PySide6.QtGui.QColor.fromRgbF(0.000000, 0.000000, 0.000000, 1.000000)
 
         self.setWindowTitle("Selection Tools")
         self.image_path = image_path
@@ -253,7 +255,7 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(self.create_decal_button)
 
 
-        self.tool_description = "FUCK YOU"
+        self.tool_description = None
 
         self.CreateToolBar()
 
@@ -267,25 +269,40 @@ class MainWindow(QMainWindow):
 
         self.create_dock_windows()
 
+    def color_dialog(self):
+        self.color = QColorDialog.getColor()
+        unreal.log(self.color)
+        unreal.log({self.color.name()})
 
     def create_dock_windows(self):
-        dock = QDockWidget("Colour Dial", self)
+
+        #color_box = QColorDialog.getColor()
+
+        color_button = QPushButton("Pick Color")
+        color_button.setCheckable(True)
+        color_button.clicked.connect(self.color_dialog)
+        dock = QDockWidget("Colour", self)
         dock.setAllowedAreas(Qt.DockWidgetArea.LeftDockWidgetArea
                              | Qt.DockWidgetArea.RightDockWidgetArea
                              | Qt.DockWidgetArea.TopDockWidgetArea)
         self.setDockOptions(QMainWindow.DockOption.AllowNestedDocks)
+        color_button.setFixedSize(200,200)
 
-
-        self.dial = QDial()
+        color_button.setStyleSheet(f"""
+            background-color: {self.color.name()}
+            color: {self.color.name()};
+            font-family: Consolas;
+            font-size: 12px;
+        """) 
 
 
         # central_widget = QWidget()
         # layout = QVBoxLayout(central_widget)
 
-        dock.setWidget(self.dial)
+        dock.setWidget(color_button)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
 
-        #stackedLayout = QStackedLayout()
+        # #stackedLayout = QStackedLayout()
 
 
 
@@ -334,8 +351,18 @@ class MainWindow(QMainWindow):
         descript_dock = QDockWidget("Tool User Guide", self)
         self.tool_description_label = QLabel(self.tool_description)
         descript_dock.setWidget(self.tool_description_label)
-        descript_dock.setFixedSize(225,500)
+        descript_dock.setFixedSize(225,420)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, descript_dock)
+
+        descript_zoom_dock = QDockWidget("Zoom/Pan User Guide", self)
+        self.tool_zoom_label = QLabel("  Space    -  Hold, Drag to Pan\n\n" \
+        "  Ctrl +   -  Zoom In\n\n" \
+        "  Ctrl -   -  Zoom Out\n\n" \
+        "  Ctrl 0   -  Reset Zoom"\
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nn\n\n\n")
+        descript_zoom_dock.setWidget(self.tool_zoom_label)
+        descript_zoom_dock.setFixedSize(225,500)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, descript_zoom_dock)
 
         tool_dock = QDockWidget("Tools", self)
         self.tool_panel = ToolSectionMenu(parent=self)
@@ -346,10 +373,9 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, tool_dock)
 
 
-
-
         # Split dock1 to the right to show dock2 beside it
         self.splitDockWidget(descript_dock, tool_dock, Qt.Horizontal)
+
 
 
         dock = QDockWidget("Saturation", self)
@@ -1071,6 +1097,18 @@ class MainWindow(QMainWindow):
         mat_editor.recompile_material(material)
         unreal.EditorAssetLibrary.save_loaded_asset(material)
 
+# class Color(QWidget):
+#     def __init__(self,parent):
+#         parent_window = parent
+
+#         self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
+#         self.setFixedSize(300, 45)
+#         self.setWindowTitle("Colour")
+#         central_widget = QWidget()
+#         layout = QVBoxLayout(central_widget)
+#         color_box = QColorDialog.getColor()
+#         layout.addWidget(color_box)
+
 ###############################################################
 #                         SLIDER                              #
 ###############################################################
@@ -1156,19 +1194,19 @@ class ToolSectionMenu(QWidget):
         layout = QVBoxLayout(self)
 
         self.pen_tool = QRadioButton()
-        self.pen_tool.setText('Pen Tool')
+        self.pen_tool.setText('Pen')
         self.lasso_tool = QRadioButton()
-        self.lasso_tool.setText('Lasso Tool')
+        self.lasso_tool.setText('Lasso')
         self.rectangle_tool = QRadioButton()
-        self.rectangle_tool.setText('Rectangle Tool')
+        self.rectangle_tool.setText('Rectangle')
         self.ellipse_tool = QRadioButton()
-        self.ellipse_tool.setText('Ellipse Tool')
+        self.ellipse_tool.setText('Ellipse')
         self.polygonal_tool = QRadioButton()
-        self.polygonal_tool.setText('Polygonal Tool')
+        self.polygonal_tool.setText('Polygonal')
         self.move_tool = QRadioButton()
-        self.move_tool.setText('Move Tool')
+        self.move_tool.setText('Move')
         self.transform_tool = QRadioButton()
-        self.transform_tool.setText('Transform Tool')
+        self.transform_tool.setText('Transform')
 
         self.radioButtonGroup = QButtonGroup()
         self.radioButtonGroup.addButton(self.pen_tool)
