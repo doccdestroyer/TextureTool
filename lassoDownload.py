@@ -22,7 +22,7 @@ from PySide6.QtCore import Qt, Signal
 import unreal
 import math
 ###TODO ADJUST IMPORTS TO INCLUDE WHATS ONLY NECESARY
-from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar
+from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar
 from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF, QAction, QImage, QColor, QPixmap
 
 from PySide6.QtCore import QDate, QFile, Qt, QTextStream
@@ -200,8 +200,8 @@ class MainWindow(QMainWindow):
         self.active_tool_widget = MoveTool(parent_window=self)
         #self.layout.addWidget(self.active_tool_widget)
         self.layout.insertWidget(0,self.active_tool_widget)
-        self.setFixedSize((self.active_tool_widget.size())*2)
-        #self.setFixedSize(1200,850)
+        #self.setFixedSize((self.active_tool_widget.size())*2)
+        self.setFixedSize(1600,850)
 
         self.chosen_name = None
 
@@ -252,6 +252,9 @@ class MainWindow(QMainWindow):
         self.create_decal_button.clicked.connect(lambda: self.create_decal(self.prompt_add_folder_path(), "M_DecalTest69"))
         self.layout.addWidget(self.create_decal_button)
 
+
+        self.tool_description = "FUCK YOU"
+
         self.CreateToolBar()
 
         self.base_image = self.base_pixmap.toImage()
@@ -270,39 +273,50 @@ class MainWindow(QMainWindow):
         dock.setAllowedAreas(Qt.DockWidgetArea.LeftDockWidgetArea
                              | Qt.DockWidgetArea.RightDockWidgetArea
                              | Qt.DockWidgetArea.TopDockWidgetArea)
+        self.setDockOptions(QMainWindow.DockOption.AllowNestedDocks)
+
+
         self.dial = QDial()
+
+
+        # central_widget = QWidget()
+        # layout = QVBoxLayout(central_widget)
+
         dock.setWidget(self.dial)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
 
         #stackedLayout = QStackedLayout()
 
-        dock = QDockWidget("Cyan - Red", self)
+
+
+
+        central_widget = QWidget()
+        layout = QVBoxLayout(central_widget)
+
+        dock = QDockWidget("Colour Balance", self)
         self.cyan_red_panel = Slider(self, "Colour Balance - Red " , -180, 180, 0)
         self.cyan_red_panel.value_changed.connect(self.adjust_cyan)
-        dock.setWidget(self.cyan_red_panel)
-        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
+        #dock.setWidget(self.cyan_red_panel)
+        dock.setLayout(layout)
 
-
-        dock = QDockWidget("Magenta - Green", self)
         self.magenta_green_panel = Slider(self, "Colour Balance - Green " , 0, 100, 50)
         self.magenta_green_panel.value_changed.connect(self.adjust_greenness)
 
         # self.magenta_green_panel = Slider(self, "Colour Balance - Green " , -90, 90, 0)
         # self.magenta_green_panel.value_changed.connect(self.adjust_magneta)
 
-        dock.setWidget(self.magenta_green_panel)
 
-        # stackedLayout.addWidget(self.cyan_red_panel)
-        # stackedLayout.addWidget(self.magenta_green_panel)
-        # dock.setWidget(stackedLayout)
-        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
-
-        dock = QDockWidget("Yellow - Blue", self)
         self.yellow_blue_panel = Slider(self, "Colour Balance - Blue " , 0, 100, 50)
         self.yellow_blue_panel.value_changed.connect(self.adjust_blueness)
-        dock.setWidget(self.yellow_blue_panel)
-        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
 
+        layout.addWidget(self.cyan_red_panel)
+        layout.addWidget(self.magenta_green_panel)
+        layout.addWidget(self.yellow_blue_panel)
+
+        # self.setCentralWidget(central_widget)
+        dock.setWidget(central_widget)
+        #dock.setLayout(layout)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
 
 
 
@@ -317,20 +331,26 @@ class MainWindow(QMainWindow):
 
 
 
- 
-        # dock = QDockWidget("Tool", self)
-        # self.layers = QListWidget(dock)
-        # self.layers.addItems((
-        #     "ADD TOP LAYER",
-        #     "ADD IN BETWEEN LAYERS",
-        #     "ADD BASE LAYER"))
-        # dock.setWidget(self.layers)
-        # self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock)
+        descript_dock = QDockWidget("Tool User Guide", self)
+        self.tool_description_label = QLabel(self.tool_description)
+        descript_dock.setWidget(self.tool_description_label)
+        descript_dock.setFixedSize(225,500)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, descript_dock)
 
-        dock = QDockWidget("Tools", self)
+        tool_dock = QDockWidget("Tools", self)
         self.tool_panel = ToolSectionMenu(parent=self)
-        dock.setWidget(self.tool_panel)
-        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock)
+        #dock.setWidget(self.tool_panel)
+        #self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock)
+
+        tool_dock.setWidget(self.tool_panel)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, tool_dock)
+
+
+
+
+        # Split dock1 to the right to show dock2 beside it
+        self.splitDockWidget(descript_dock, tool_dock, Qt.Horizontal)
+
 
         dock = QDockWidget("Saturation", self)
         self.saturation_panel = Slider(parent = self, name = "Saturation Slider", min = 0, max =100, default =100)
@@ -346,6 +366,25 @@ class MainWindow(QMainWindow):
         dock.setWidget(self.brightness_panel)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
+        
+    # def update_tool_description(self):
+    #     self.tool_description = self.get_tool_description()
+    #     unreal.log(self.tool_description)
+    #     self.update()
+    #     return self.tool_description
+
+    # def get_tool_description(self):
+    #     if self.active_tool_widget == PenTool(self.image_path, self):
+    #         print("pen selected")
+    #         unreal.log("pem selected")
+    #         return ("THIS IS A PEN DESCRIPTION I BEG PLEASE WORK")
+    #     if self.active_tool_widget == MoveTool(parent_window=self):
+    #         print("penMOVE selected")
+    #         unreal.log("move selected")
+    #         return ("THIS IS A MOOOOOVE DESCRIPTION I BEG PLEASE WORK")
+    #     else:
+    #         return ("LOL")
+    #     unreal.log("UPDATED")
 
     def adjust_cyan(self,value):
         factor = value/10
@@ -1042,7 +1081,7 @@ class Slider(QWidget):
         self.parent_window = parent
 
         self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
-        self.setFixedSize(300, 100)
+        self.setFixedSize(300, 45)
         self.setWindowTitle(name)
 
         self.slider = QSlider(Qt.Horizontal)
@@ -1070,7 +1109,7 @@ class Slider(QWidget):
 
         layout = QVBoxLayout()
         layout.addWidget(self.slider)
-        layout.addWidget(self.image_label)
+        layout.addWidget(self.image_label) # <-- show preview REMOVE REMOVE REMOVE
 
         self.setLayout(layout)
 
@@ -1173,22 +1212,126 @@ class ToolSectionMenu(QWidget):
             #parent_layout.removeWidget(self.parent_window.image_label)
             #self.parent_window.image_label.deleteLater()
 
-        self.parent_window.active_tool_widget = None
+        # self.parent_window.active_tool_widget = None
 
         if button == self.pen_tool:
             self.parent_window.active_tool_widget = PenTool(self.parent_window.image_path, parent_window=self.parent_window)
+            self.parent_window.tool_description =  "\n Pen Tool\n\n\n"\
+                "  This Tool allows you to draw \n"\
+                "  on the image. \n\n"\
+                "  If you have had a prior \n"\
+                "  selection, you will only be \n"\
+                "  able to draw within that \n"\
+                "  selection.\n"\
+                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+
         elif button == self.rectangle_tool:
             self.parent_window.active_tool_widget = RectangularTool(self.parent_window.image_path, parent_window=self.parent_window)
+            self.parent_window.tool_description = "\n Rectangular Tool\n\n\n"\
+                "  This tool allows you to draw \n"\
+                "  rectangular selections by \n"\
+                "  clicking and dragging. \n\n"\
+                "  Press shift on initial click \n"\
+                "  to do an additional selection. \n\n"\
+                "  Press alt on initial click for \n"\
+                "  a removal of your previous \n"\
+                "  selection. \n\n"\
+                "  Hold shift whilst drawing to \n"\
+                "  lock the selection into a \n"\
+                "  square. \n\n"\
+                "  Hold alt whilst drawing to \n"\
+                "  lock the selection around the \n"\
+                "  starting point. \n\n"\
+                "  Press delete to remove the \n"\
+                "  entire selection.\n"\
+                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+
         elif button == self.ellipse_tool:
             self.parent_window.active_tool_widget = EllipticalTool(self.parent_window.image_path, parent_window=self.parent_window)
+            self.parent_window.tool_description = "\n Ellipse Tool\n\n\n"\
+                "  This tool allows you to draw \n"\
+                "  elliptical selections by \n"\
+                "  clicking and dragging. \n\n"\
+                "  Press shift on initial click \n"\
+                "  to do an additional selection. \n\n"\
+                "  Press alt on initial click for \n"\
+                "  a removal of your previous \n"\
+                "  selection. \n\n"\
+                "  Hold shift whilst drawing to \n"\
+                "  lock the selection into a \n"\
+                "  circle. \n\n"\
+                "  Hold alt whilst drawing to \n"\
+                "  lock the selection around the \n"\
+                "  starting point. \n\n"\
+                "  Press delete to remove the \n"\
+                "  entire selection.\n"\
+                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+
         elif button == self.lasso_tool:
             self.parent_window.active_tool_widget = LassoTool(self.parent_window.image_path, parent_window=self.parent_window)
+            self.parent_window.tool_description = "\n Lasso Tool\n\n\n"\
+                "  This tool allows you to make \n"\
+                "  freehand selections.\n\n"\
+                "  Press shift on the initial click \n"\
+                "  to do an additional selection.\n\n"\
+                "  Press alt on initial click to do \n"\
+                "  a removal of your previous \n"\
+                "  selection. \n\n"\
+                "  Press delete to remove the \n"\
+                "  entire selection.\n"\
+                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+
+
+
         elif button == self.polygonal_tool:
             self.parent_window.active_tool_widget = PolygonalTool(self.parent_window.image_path, parent_window=self.parent_window)
+            self.parent_window.tool_description = "\n Polygonal Lasso Tool \n\n\n"\
+                "  This tool allows you to make \n"\
+                "  polygonal selections by \n"\
+                "  drawing point by point,\n"\
+                "  ending the selection when \n"\
+                "  you make contact with the \n"\
+                "  original position.\n\n"\
+                "  Press shift on the initial click \n"\
+                "  to do an additional selection. \n\n"\
+                "  Press alt on initial click to do \n"\
+                "  a removal of your previous \n"\
+                "  selection.\n\n"\
+                "  Press delete to delete the \n"\
+                "  previous point if applicable \n"\
+                "  or to remove the entire \n"\
+                "  selection\n"\
+                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+
+
         elif button == self.move_tool:
             self.parent_window.active_tool_widget = MoveTool(parent_window=self.parent_window)
+            self.parent_window.tool_description = "\n Move Tool \n\n\n" \
+                "  This tool allows you to \n"\
+                "  select and move any layer.\n\n"\
+                "  Left click and drag in\n"\
+                "  the bounds of any image\n\n"\
+                "  Left click and drag on the \n"\
+                "  to move it \n"\
+                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
         elif button == self.transform_tool:
             self.parent_window.active_tool_widget = TransformTool(parent_window=self.parent_window)
+            self.parent_window.tool_description =  "\n Transform Tool\n\n\n"\
+                "  This Tool allows you to  \n"\
+                "  manipulate the selected  \n"\
+                "  layer. \n\n"\
+                "  Left click and drag in the  \n"\
+                "  image to move it.\n\n"\
+                "  Left click and drag on the  \n"\
+                "  border of the image to scale  \n"\
+                "  it. Go along the central point  \n"\
+                "  of the image in order to flip  \n"\
+                "  the image. \n\n"\
+                "  eft click and drag on the  \n"\
+                "  outside of the image to  \n"\
+                "  rotate\n\n"\
+                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+
 
         if self.parent_window.active_tool_widget:
             parent_layout.insertWidget(0,self.parent_window.active_tool_widget)
@@ -1198,6 +1341,12 @@ class ToolSectionMenu(QWidget):
                 self.parent_window.active_tool_widget.setCursor(QtCore.Qt.ArrowCursor)
             else: 
                 self.parent_window.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
+        
+
+        self.parent_window.tool_description_label.setText(self.parent_window.tool_description)
+
+        #self.parent_window.get_tool_description()
+        self.parent_window.update()
 
 ###############################################################
 #                     PEN DEBUG TOOL                          #
@@ -1824,7 +1973,6 @@ class PolygonalTool(QtWidgets.QLabel):
                         self.merged_selection_path = QPainterPath()
                         self.image = self.original_image.copy()
 
-                        
                         self.clear_overlay()
                         self.update()
 
@@ -1838,8 +1986,6 @@ class PolygonalTool(QtWidgets.QLabel):
                             selections.append(QtGui.QPolygon(self.points))
                         else:
                             selections = [QtGui.QPolygon(self.points)]
-
-
 
                         new_polygon_f = QPolygonF(QPolygon(self.points))
                         new_path = QPainterPath()
@@ -1901,17 +2047,9 @@ class PolygonalTool(QtWidgets.QLabel):
                                     break
                                 if not merged_any_polygons:
                                     self.selections_paths.append(new_path)
-
-
                             self.clear_overlay()
-
-
                     else:
                         self.points.append(point)
-
-
-
-                
                 self.update_overlay()
 
     def mouseMoveEvent(self, event):
@@ -2291,15 +2429,11 @@ class RectangularTool(QtWidgets.QLabel):
             self.drawing = False
             self.update_overlay()
 
-
             #convert rectanlge into polygon
             # new_polygon_f = QPolygonF(QPolygon(QtCore.QRect(self.start_point, self.release_point)))
             # new_path = QPainterPath()
             # new_path.addPolygon(new_polygon_f)
                 
-
-
-
             if not self.making_removal and not self.making_additional_selection:
                 self.selections_paths.clear()
                 self.selections_paths.append(new_path)
