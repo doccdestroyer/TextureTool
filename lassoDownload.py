@@ -23,7 +23,7 @@ import unreal
 import math
 ###TODO ADJUST IMPORTS TO INCLUDE WHATS ONLY NECESARY
 #from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar, QColorDialog
-from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF, QAction, QImage, QColor, QPixmap, QAction
+from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF, QAction, QImage, QColor, QPixmap, QAction, QTransform
 
 
 # from PySide6.QtGui import (QAction, QFont, QIcon, QKeySequence,
@@ -115,11 +115,12 @@ class ChooseNameWindow(QMainWindow):
 
         self.setStyleSheet("""
             background-color: #262626;
-            color: #eb6b06;
+            color: #ffffff;
             font-family: Consolas;
             font-size: 12px;
-        """)
-
+            selection-background-color: #424242;                  
+        """)  
+ 
         self.setCentralWidget(container)
 
         self.name = None
@@ -846,6 +847,35 @@ class MainWindow(QMainWindow):
         path.addPolygon(polygon)
         self.selections_paths.append(path)
         self.active_tool_widget.update_overlay()
+    
+    def contract_selections(self):
+        self.alter_selections_scale(9/10)
+
+    def expand_selections(self):
+        self.alter_selections_scale(10/9)
+
+    def alter_selections_scale(self,scale_factor):
+        new_selections_paths = []
+        for path in self.selections_paths:
+            all_polys = path.toFillPolygons()
+            for poly_f in all_polys:
+                transform = QTransform()
+                center = poly_f.boundingRect().center()
+                transform.translate(center.x(), center.y())
+                transform.scale(scale_factor, scale_factor)
+                transform.translate(-center.x(), -center.y())
+
+                new_poly_f = transform.map(poly_f)
+
+                new_path = QPainterPath()
+                new_path.addPolygon(new_poly_f)
+
+                new_selections_paths.append(new_path)
+
+        self.selections_paths = new_selections_paths
+        self.update()
+        self.active_tool_widget.update_overlay()
+        self.tool_panel.radioButtonGroupChanged()
 
     def CreateToolBar(self):
         menu_bar = self.menuBar()
@@ -903,6 +933,8 @@ class MainWindow(QMainWindow):
 
         select_menu.addMenu(modify_menu)
 
+        expand_action.triggered.connect(lambda: self.expand_selections())
+        contract_action.triggered.connect(lambda: self.contract_selections())
 
 
         help_menu = menu_bar.addMenu("Help")
@@ -916,7 +948,10 @@ class MainWindow(QMainWindow):
             color: #ffffff;
             font-family: Consolas;
             font-size: 12px;
-        """)   
+            padding: 4px;
+            selection-background-color: #424242;                  
+        """)  
+ 
     def show_help(self):
         QMessageBox.about(self, "About Texture Editor",
                           "This Texture Editor allows for the editting of "
@@ -1172,7 +1207,9 @@ class Slider(QWidget):
             color: #ffffff;
             font-family: Consolas;
             font-size: 12px;
-        """)
+            selection-background-color: #424242;                  
+        """)  
+ 
 
         ################for layer in self.texture_layers: ADD ONCE LAYER SELECTION IS A THING
         self.original_pixmap = self.parent_window.base_pixmap
@@ -1271,7 +1308,9 @@ class ToolSectionMenu(QWidget):
             color: #ffffff;
             font-family: Consolas;
             font-size: 12px;
-        """)
+            selection-background-color: #424242;                  
+        """)  
+ 
         self.pen_tool.setChecked(True)
         self.radioButtonGroupChanged()
 
