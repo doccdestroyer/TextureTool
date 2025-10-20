@@ -3612,7 +3612,7 @@ class TransformTool(QWidget):
                 self.point = self.get_scaled_point(event.position())
                 for layer in reversed(self.parent_window.texture_layers):
                     self.rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
-                    expanded_rectangle = self.expand_rectangle(self.rectangle, 1.2)
+                    expanded_rectangle = self.expand_rectangle(self.rectangle, 2)
                     # expanded_rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
                     # expanded_rectangle.setWidth(expanded_rectangle.width()*2)
                     # expanded_rectangle.setHeight(expanded_rectangle.height()*2)
@@ -3653,10 +3653,7 @@ class TransformTool(QWidget):
             self.update()
         if self.scaling:
             hover_point = self.get_scaled_point(event.position())
-            # center_point = self.rectangle.center()
-            # self.center_point = self.rectangle.center()
 
-            #  distance(hover and centre) / (distance point and centre) = scale factor
             self.x_hover_difference = (self.center_point.x()-hover_point.x())
             self.y_hover_difference = (self.center_point.y()-hover_point.y())
             hover_variance = max(abs(self.x_hover_difference), abs(self.y_hover_difference))
@@ -3669,32 +3666,35 @@ class TransformTool(QWidget):
             
 
 
-
-
-
-
             height_difference = self.dragging_pixmap.height()*self.image_scale_factor - self.dragging_pixmap.height()
             width_difference =  self.dragging_pixmap.width()*self.image_scale_factor -  self.dragging_pixmap.width()
-            self.dragging_pixmap = self.dragging_pixmap.scaled(self.dragging_pixmap.width()*self.image_scale_factor,self.dragging_pixmap.height()*self.image_scale_factor)
-            # print (self.dragging_pixmap.height())
-            # transform = QTransform()
+            
+            
+            
+
+
+            base_image = self.dragging_pixmap.toImage()
+            convert = base_image.convertToFormat(QImage.Format_ARGB32)
+            pillow_image = ImageQt.fromqimage(convert)            
+        
+            resized_image = pillow_image.resize((int(pillow_image.size[0]*self.image_scale_factor), int(pillow_image.size[1]*self.image_scale_factor)))
+            unreal.log(print("image scaled"))
+
+
+            new_qimage = ImageQt.ImageQt(resized_image).convertToFormat(QImage.Format_ARGB32)
+            new_image = QPixmap.fromImage(new_qimage)
+
+
+            #self.dragging_pixmap = self.dragging_pixmap.scaled(self.dragging_pixmap.width()*self.image_scale_factor,self.dragging_pixmap.height()*self.image_scale_factor)
+            self.dragging_pixmap = new_image
+
+
+
+
             bounds_rectangle = QtCore.QRect(self.dragging_layer.position, self.dragging_pixmap.size())
 
-            center = bounds_rectangle.center()
-            #new_position = QtCore.QPoint(self.dragging_layer.position.x() + (width_difference/2), self.dragging_layer.position.y() +(height_difference/2))
-            
-            
-            #new_position = QtCore.QPoint(center.x() + width_difference/2, center.y() + height_difference/2)
             new_position = QtCore.QPoint(self.center_point.x() - width_difference/2, self.center_point.y() - height_difference/2)
-            #new_position = self.center_point
 
-            # transform.translate(center.x(), center.y())
-            # transform.scale(self.scale_factor, self.scale_factor)
-            # transform.translate(-center.x(), -center.y())
-
-            # self.dragging_pixmap = transform.map(self.dragging_pixmap)
-            #print("INDEX: ", (self.parent_window.texture_layers.index(self.dragging_layer)))
-            unreal.log(print("NEW POSITION: ", new_position))
 
             new_layer = TextureLayer(self.dragging_pixmap, new_position)
 
