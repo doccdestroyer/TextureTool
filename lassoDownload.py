@@ -34,7 +34,7 @@ from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF, QAction, QImage, Q
 #                                QMessageBox, QTextEdit)
 
 # import time
-# import PIL 
+import PIL 
 from PIL import Image
 
 
@@ -936,6 +936,32 @@ class MainWindow(QMainWindow):
 
 
 
+
+        edit_menu = menu_bar.addMenu("Edit")
+
+        flip_horizontal = QAction("Flip Base Layer Horizontal", self)
+        flip_vertical = QAction("Flip Base Layer Vertcial", self)
+
+        edit_menu.addAction(flip_horizontal)
+        edit_menu.addAction(flip_vertical)
+
+
+        flip_horizontal.triggered.connect(lambda: self.flip_horizontal())
+        flip_vertical.triggered.connect(lambda: self.flip_vertical())
+
+
+        flip_all_horizontal = QAction("Flip All Layers Horizontal", self)
+        flip_all_vertical = QAction("Flip All Layers Vertcial", self)
+
+        edit_menu.addAction(flip_all_horizontal)
+        edit_menu.addAction(flip_all_vertical)
+
+
+        flip_all_horizontal.triggered.connect(lambda: self.flip_all_horizontal())
+        flip_all_vertical.triggered.connect(lambda: self.flip_all_horizontal())
+
+
+
         select_menu = menu_bar.addMenu("Select")
 
         select_all_action = QAction("Select All", self)
@@ -977,10 +1003,59 @@ class MainWindow(QMainWindow):
             selection-background-color: #424242;                  
         """)  
  
+    def flip_horizontal(self):
+        self.flip_base_layer(-1,1)
+
+
+    def flip_vertical(self):
+        self.flip_base_layer(1,-1)
+
+    def flip_base_layer(self,x,y):
+        layer_pixmap = self.texture_layers[0].pixmap
+        layer_position = self.texture_layers[0].position
+
+        flipped_pixmap = layer_pixmap.transformed(QTransform().scale(x, y))
+        flipped_position = QtCore.QPoint(layer_position.x()*x, layer_position.y()*y)
+
+        new_layer = TextureLayer(flipped_pixmap, flipped_position)
+        self.texture_layers[0] = new_layer
+
+    def flip_all_layers(self,x,y):
+        for layer in self.texture_layers:
+            layer_pixmap = layer.pixmap
+            layer_position = layer.position
+
+            index = self.texture_layers.index(layer)
+            flipped_pixmap = layer_pixmap.transformed(QTransform().scale(x, y))
+            flipped_position = QtCore.QPoint(layer_position.x()*x, layer_position.y()*y)
+
+            new_layer = TextureLayer(flipped_pixmap, flipped_position)
+            self.texture_layers[index] = new_layer
+
+    def flip_all_horizontal(self):
+        # for layer in self.texture_layers:
+        #     layer_pixmap = layer.pixmap
+        #     index = self.texture_layers.index(layer)
+        #     flipped = layer_pixmap.transformed(QTransform().scale(-1, 1))
+        #     new_layer = TextureLayer(flipped, QtCore.QPoint(0, 0))
+        #     self.texture_layers[index] = new_layer
+        self.flip_all_layers(-1,1)
+
+
+    def flip_all_vertical(self):
+        # for layer in self.texture_layers:
+        #     layer_pixmap = layer.pixmap
+        #     index = self.texture_layers.index(layer)
+        #     flipped = layer_pixmap.transformed(QTransform().scale(1, -1))
+        #     new_layer = TextureLayer(flipped, QtCore.QPoint(0, 0))
+        #     self.texture_layers[index] = new_layer
+        self.flip_all_layers(1,-1)
+
+
     def show_help(self):
         QMessageBox.about(self, "About Texture Editor",
                           "This Texture Editor allows for the editting of "
-                          "textures within Unreal. Press the 'i' button for further "
+                          "textures within Unreal. Select a tool for further "
                           "information regarding your selected tool. Press 'file' to "
                           "import and export textures.")
         
@@ -1193,18 +1268,6 @@ class MainWindow(QMainWindow):
 
         mat_editor.recompile_material(material)
         unreal.EditorAssetLibrary.save_loaded_asset(material)
-
-# class Color(QWidget):
-#     def __init__(self,parent):
-#         parent_window = parent
-
-#         self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
-#         self.setFixedSize(300, 45)
-#         self.setWindowTitle("Colour")
-#         central_widget = QWidget()
-#         layout = QVBoxLayout(central_widget)
-#         color_box = QColorDialog.getColor()
-#         layout.addWidget(color_box)
 
 ###############################################################
 #                         SLIDER                              #
