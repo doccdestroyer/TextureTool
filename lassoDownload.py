@@ -829,12 +829,12 @@ class MainWindow(QMainWindow):
                 self.low_res_image = self.base_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
-                image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
+                #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
 
 
-                # altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
+                altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
 
-                pillow_image = ImageQt.fromqimage(image)
+                pillow_image = ImageQt.fromqimage(altered_image)
 
                 # for pixelY in range(altered_image.height()):
                 #     for pixelX in range (altered_image.width()):
@@ -850,7 +850,7 @@ class MainWindow(QMainWindow):
                 new_qimage = new_qimage.scaled(display_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
-                self.base_pixmap = QPixmap.fromImage(image)
+                #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
                 updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
@@ -865,7 +865,7 @@ class MainWindow(QMainWindow):
                 #####self.adjust_saturation(self.saturation_value)
                 self.update()
             else:
-                image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+                #image = self.base_image.convertToFormat(QImage.Format_ARGB32)
                 altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
                 pillow_image = ImageQt.fromqimage(altered_image)
 
@@ -883,7 +883,7 @@ class MainWindow(QMainWindow):
                 new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
 
 
-                self.base_pixmap = QPixmap.fromImage(image)
+                #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
                 updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
