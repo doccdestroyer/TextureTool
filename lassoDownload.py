@@ -430,6 +430,20 @@ class MainWindow(QMainWindow):
         dock.setWidget(self.contrast_panel)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
+
+
+
+        dock = QDockWidget("Gamma", self)
+        self.gamma_panel = Slider(self, "Gamma Slider" , 0, 199, 100)
+        self.gamma_panel.value_changed.connect(self.adjust_contrast)
+        dock.setWidget(self.gamma_panel)
+        self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
+
+
+
+
+
+
         dock = QDockWidget("Apply Sliders", self)
         self.apply_button = QPushButton("APPLY")
         self.apply_button.setCheckable(True)
@@ -3598,9 +3612,10 @@ class TransformTool(QWidget):
                 self.point = self.get_scaled_point(event.position())
                 for layer in reversed(self.parent_window.texture_layers):
                     self.rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
-                    expanded_rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
-                    expanded_rectangle.setWidth(expanded_rectangle.width()*2)
-                    expanded_rectangle.setHeight(expanded_rectangle.height()*2)
+                    expanded_rectangle = self.expand_rectangle(self.rectangle, 1.2)
+                    # expanded_rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
+                    # expanded_rectangle.setWidth(expanded_rectangle.width()*2)
+                    # expanded_rectangle.setHeight(expanded_rectangle.height()*2)
 
                     if self.rectangle.contains(self.point):
                         if layer == self.parent_window.texture_layers[0]:
@@ -3617,14 +3632,13 @@ class TransformTool(QWidget):
                             self.update_overlay()
                             break
                     elif expanded_rectangle.contains(self.point):
-                        print ("YOU DID IT YOU DID IT")
+                        unreal.log ("YOU DID IT YOU DID IT")
                         self.scaling = True
                         self.rotating = False
-                    else: #currently set to scaling settings which will need ot be changed once ui and indication is clearer
-                        print ("ROTATION")
-                        self.rotating = False
-                        self.scaling = True
-
+                    # else: #currently set to scaling settings which will need ot be changed once ui and indication is clearer
+                    #     unreal.log ("ROTATION")
+                    #     self.scaling = False
+                    #     self.rotating = True
 
                             
     def mouseMoveEvent(self,event):
@@ -3647,9 +3661,42 @@ class TransformTool(QWidget):
             self.y_main_difference = (center_point.y()-self.point.y())
             main_variance = max(abs(self.x_main_difference), abs(self.y_main_difference))
 
-            self.scale_factor = hover_variance/main_variance
+            self.image_scale_factor = hover_variance/main_variance
             
 
+
+
+
+
+
+            height_difference = self.dragging_pixmap.height()*self.image_scale_factor - self.dragging_pixmap.height()
+            width_difference =  self.dragging_pixmap.width()*self.image_scale_factor -  self.dragging_pixmap.width()
+            self.dragging_pixmap = self.dragging_pixmap.scaled(self.dragging_pixmap.width()*self.image_scale_factor,self.dragging_pixmap.height()*self.image_scale_factor)
+            # print (self.dragging_pixmap.height())
+            # transform = QTransform()
+            bounds_rectangle = QtCore.QRect(self.dragging_layer.position, self.dragging_pixmap.size())
+
+            center = bounds_rectangle.center()
+            #new_position = QtCore.QPoint(self.dragging_layer.position.x() + (width_difference/2), self.dragging_layer.position.y() +(height_difference/2))
+            
+            
+            #new_position = QtCore.QPoint(center.x() + width_difference/2, center.y() + height_difference/2)
+            new_position = self.center_point
+
+            # transform.translate(center.x(), center.y())
+            # transform.scale(self.scale_factor, self.scale_factor)
+            # transform.translate(-center.x(), -center.y())
+
+            # self.dragging_pixmap = transform.map(self.dragging_pixmap)
+            #print("INDEX: ", (self.parent_window.texture_layers.index(self.dragging_layer)))
+            unreal.log(print("NEW POSITION: ", new_position))
+
+            new_layer = TextureLayer(self.dragging_pixmap, new_position)
+
+            self.parent_window.texture_layers[(self.parent_window.texture_layers.index(self.dragging_layer))] = new_layer
+            self.dragging_layer = self.parent_window.texture_layers[(self.parent_window.texture_layers.index(new_layer))]
+
+            self.update_overlay()
             # for layer in self.parent_window.texture_layers:
             #     if self.dragging_layer == layer:
 
@@ -3668,16 +3715,29 @@ class TransformTool(QWidget):
                 self.panning = False
                 self.setCursor(QtCore.Qt.ArrowCursor)
             if self.scaling:
-                print (self.dragging_pixmap.height())
-                self.dragging_pixmap = self.dragging_pixmap.scaled(self.dragging_pixmap.height()*self.scale_factor, self.dragging_pixmap.width()*self.scale_factor)
-                print (self.dragging_pixmap.height())
+                # print (self.dragging_pixmap.height())
+                height_difference = self.dragging_pixmap.height()*self.image_scale_factor - self.dragging_pixmap.height()
+                width_difference =  self.dragging_pixmap.width()*self.image_scale_factor -  self.dragging_pixmap.width()
+                self.dragging_pixmap = self.dragging_pixmap.scaled(self.dragging_pixmap.width()*self.image_scale_factor,self.dragging_pixmap.height()*self.image_scale_factor)
+                # print (self.dragging_pixmap.height())
+                # transform = QTransform()
+                bounds_rectangle = QtCore.QRect(self.dragging_layer.position, self.dragging_pixmap.size())
 
+                center = bounds_rectangle.center()
+                #new_position = QtCore.QPoint(self.dragging_layer.position.x() + (width_difference/2), self.dragging_layer.position.y() +(height_difference/2))
+                new_position = QtCore.QPoint(center.x() + width_difference/2, center.y() + height_difference/2)
+                # transform.translate(center.x(), center.y())
+                # transform.scale(self.scale_factor, self.scale_factor)
+                # transform.translate(-center.x(), -center.y())
 
+                # self.dragging_pixmap = transform.map(self.dragging_pixmap)
                 #print("INDEX: ", (self.parent_window.texture_layers.index(self.dragging_layer)))
+                unreal.log(print("NEW POSITION: ", new_position))
 
-                new_layer = TextureLayer(self.dragging_pixmap, self.center_point)
+                new_layer = TextureLayer(self.dragging_pixmap, new_position)
 
                 self.parent_window.texture_layers[(self.parent_window.texture_layers.index(self.dragging_layer))] = new_layer
+                self.dragging_layer = self.parent_window.texture_layers[(self.parent_window.texture_layers.index(new_layer))]
                 print("NEW LAYER DELT WITH")
                 self.scaling = False
                 self.update_overlay()
@@ -3720,6 +3780,17 @@ class TransformTool(QWidget):
         self.dragging_pixmap.fill(QtCore.Qt.transparent)
         self.update()
 
+    def expand_rectangle(self,rectangle,scale_factor):
+        transform = QTransform()
+        center = rectangle.center()
+        transform.translate(center.x(), center.y())
+        transform.scale(scale_factor, scale_factor)
+        transform.translate(-center.x(), -center.y())
+        new_rectangle = QPolygon.boundingRect(transform.map(rectangle))
+        return new_rectangle
+
+        # self.active_tool_widget.update_overlay()
+        # self.tool_panel.radioButtonGroupChanged()
 
     def update_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
