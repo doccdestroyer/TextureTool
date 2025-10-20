@@ -1520,7 +1520,6 @@ class PenTool(QtWidgets.QWidget):
         self.overlay = QtGui.QPixmap(self.image.size())
         self.overlay.fill(QtCore.Qt.transparent)
 
-
         self.pen_overlay = parent_window.pen_overlay
         
         self.points = []
@@ -1563,16 +1562,17 @@ class PenTool(QtWidgets.QWidget):
             self.setCursor(QtCore.Qt.CrossCursor)
         
     def paintEvent(self, event):
+        unreal.log("is painting")
         painter = QtGui.QPainter(self)
         painter.translate(self.parent_window.pan_offset)     
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
-        painter.drawPixmap(0, 0, self.image)
+        #painter.drawPixmap(0, 0, self.image)
         #painter.drawPixmap(0, 0, self.overlay)
 
         for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
 
-        painter.drawPixmap(0,0, self.overlay)
+        #painter.drawPixmap(0,0, self.overlay)
         painter.drawPixmap(0,0, self.pen_overlay)
 
         #self.update_overlay()
@@ -1706,7 +1706,8 @@ class LassoTool(QtWidgets.QWidget):
             #self.setText("Image failed to load")
             #self.setAlignment(QtCore.Qt.AlignCenter)
             return
-        
+
+
         #self.setPixmap(self.image)
         self.points = []
         self.drawing = False
