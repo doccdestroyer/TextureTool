@@ -433,7 +433,7 @@ class MainWindow(QMainWindow):
 
 
 
-        dock = QDockWidget("Gamma", self)
+        dock = QDockWidget("Gamma DOES NOT WORK YET", self)
         self.gamma_panel = Slider(self, "Gamma Slider" , 0, 199, 100)
         self.gamma_panel.value_changed.connect(self.adjust_contrast)
         dock.setWidget(self.gamma_panel)
@@ -1432,7 +1432,7 @@ class MainWindow(QMainWindow):
             new_path += str(item)
             new_path += ("/")
             
-        print(new_path)
+        # print(new_path)
 
         if new_path:
             return new_path
@@ -3616,8 +3616,10 @@ class TransformTool(QWidget):
                     # expanded_rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
                     # expanded_rectangle.setWidth(expanded_rectangle.width()*2)
                     # expanded_rectangle.setHeight(expanded_rectangle.height()*2)
+                    self.center_point = self.rectangle.center()
 
                     if self.rectangle.contains(self.point):
+
                         if layer == self.parent_window.texture_layers[0]:
                             break #NEW NEW NEW  
                         else:
@@ -3629,16 +3631,18 @@ class TransformTool(QWidget):
                             self.overlay = QtGui.QPixmap(self.dragging_layer.pixmap.size())
                             self.dragging_pixmap = self.dragging_layer.pixmap
                             self.scaling = False
+                            self.rotating = False
+
                             self.update_overlay()
                             break
                     elif expanded_rectangle.contains(self.point):
                         unreal.log ("YOU DID IT YOU DID IT")
                         self.scaling = True
                         self.rotating = False
-                    # else: #currently set to scaling settings which will need ot be changed once ui and indication is clearer
-                    #     unreal.log ("ROTATION")
-                    #     self.scaling = False
-                    #     self.rotating = True
+                    else: #currently set to scaling settings which will need ot be changed once ui and indication is clearer
+                        unreal.log ("ROTATION")
+                        self.scaling = False
+                        self.rotating = True
 
                             
     def mouseMoveEvent(self,event):
@@ -3649,16 +3653,16 @@ class TransformTool(QWidget):
             self.update()
         if self.scaling:
             hover_point = self.get_scaled_point(event.position())
-            center_point = self.rectangle.center()
-            self.center_point = self.rectangle.center()
+            # center_point = self.rectangle.center()
+            # self.center_point = self.rectangle.center()
 
             #  distance(hover and centre) / (distance point and centre) = scale factor
-            self.x_hover_difference = (center_point.x()-hover_point.x())
-            self.y_hover_difference = (center_point.y()-hover_point.y())
+            self.x_hover_difference = (self.center_point.x()-hover_point.x())
+            self.y_hover_difference = (self.center_point.y()-hover_point.y())
             hover_variance = max(abs(self.x_hover_difference), abs(self.y_hover_difference))
 
-            self.x_main_difference = (center_point.x()-self.point.x())
-            self.y_main_difference = (center_point.y()-self.point.y())
+            self.x_main_difference = (self.center_point.x()-self.point.x())
+            self.y_main_difference = (self.center_point.y()-self.point.y())
             main_variance = max(abs(self.x_main_difference), abs(self.y_main_difference))
 
             self.image_scale_factor = hover_variance/main_variance
@@ -3681,7 +3685,8 @@ class TransformTool(QWidget):
             
             
             #new_position = QtCore.QPoint(center.x() + width_difference/2, center.y() + height_difference/2)
-            new_position = self.center_point
+            new_position = QtCore.QPoint(self.center_point.x() - width_difference/2, self.center_point.y() - height_difference/2)
+            #new_position = self.center_point
 
             # transform.translate(center.x(), center.y())
             # transform.scale(self.scale_factor, self.scale_factor)
@@ -3700,6 +3705,33 @@ class TransformTool(QWidget):
             # for layer in self.parent_window.texture_layers:
             #     if self.dragging_layer == layer:
 
+        elif self.rotating:
+            hover_point = self.get_scaled_point(event.position())
+            a = self.point.x(), self.point.y()
+            b = self.center_point.x(), self.center_point.y()
+            c = hover_point.x(), hover_point.y()
+            rotation_angle = math.degrees(math.atan2(c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0]))
+            if rotation_angle <0:
+                rotation_angle += 360
+            
+            base_image = self.dragging_pixmap.toImage()
+            convert = base_image.convertToFormat(QImage.Format_ARGB32)
+            pillow_image = ImageQt.fromqimage(convert)            
+        
+            rotated_image = pillow_image.rotate(360 - rotation_angle, expand = True)
+            unreal.log(print("image rotated"))
+            unreal.log(print(rotation_angle))
+
+            new_qimage = ImageQt.ImageQt(rotated_image).convertToFormat(QImage.Format_ARGB32)
+            new_image = QPixmap.fromImage(new_qimage)
+
+            
+            new_layer = TextureLayer(new_image, self.dragging_layer.position)
+
+            self.parent_window.texture_layers[(self.parent_window.texture_layers.index(self.dragging_layer))] = new_layer
+            self.dragging_layer = self.parent_window.texture_layers[(self.parent_window.texture_layers.index(new_layer))]
+            self.update_overlay()
+
                     
         elif self.dragging_layer:
             new_position = self.get_scaled_point(event.position()) - self.drag_start_offset
@@ -3716,31 +3748,35 @@ class TransformTool(QWidget):
                 self.setCursor(QtCore.Qt.ArrowCursor)
             if self.scaling:
                 # print (self.dragging_pixmap.height())
-                height_difference = self.dragging_pixmap.height()*self.image_scale_factor - self.dragging_pixmap.height()
-                width_difference =  self.dragging_pixmap.width()*self.image_scale_factor -  self.dragging_pixmap.width()
-                self.dragging_pixmap = self.dragging_pixmap.scaled(self.dragging_pixmap.width()*self.image_scale_factor,self.dragging_pixmap.height()*self.image_scale_factor)
-                # print (self.dragging_pixmap.height())
-                # transform = QTransform()
-                bounds_rectangle = QtCore.QRect(self.dragging_layer.position, self.dragging_pixmap.size())
+                # height_difference = self.dragging_pixmap.height()*self.image_scale_factor - self.dragging_pixmap.height()
+                # width_difference =  self.dragging_pixmap.width()*self.image_scale_factor -  self.dragging_pixmap.width()
+                # self.dragging_pixmap = self.dragging_pixmap.scaled(self.dragging_pixmap.width()*self.image_scale_factor,self.dragging_pixmap.height()*self.image_scale_factor)
+                # # print (self.dragging_pixmap.height())
+                # # transform = QTransform()
+                # bounds_rectangle = QtCore.QRect(self.dragging_layer.position, self.dragging_pixmap.size())
 
-                center = bounds_rectangle.center()
-                #new_position = QtCore.QPoint(self.dragging_layer.position.x() + (width_difference/2), self.dragging_layer.position.y() +(height_difference/2))
-                new_position = QtCore.QPoint(center.x() + width_difference/2, center.y() + height_difference/2)
-                # transform.translate(center.x(), center.y())
-                # transform.scale(self.scale_factor, self.scale_factor)
-                # transform.translate(-center.x(), -center.y())
+                # center = bounds_rectangle.center()
+                # #new_position = QtCore.QPoint(self.dragging_layer.position.x() + (width_difference/2), self.dragging_layer.position.y() +(height_difference/2))
+                # new_position = QtCore.QPoint(center.x() + width_difference/2, center.y() + height_difference/2)
+                # # transform.translate(center.x(), center.y())
+                # # transform.scale(self.scale_factor, self.scale_factor)
+                # # transform.translate(-center.x(), -center.y())
 
-                # self.dragging_pixmap = transform.map(self.dragging_pixmap)
-                #print("INDEX: ", (self.parent_window.texture_layers.index(self.dragging_layer)))
-                unreal.log(print("NEW POSITION: ", new_position))
+                # # self.dragging_pixmap = transform.map(self.dragging_pixmap)
+                # #print("INDEX: ", (self.parent_window.texture_layers.index(self.dragging_layer)))
+                # unreal.log(print("NEW POSITION: ", new_position))
 
-                new_layer = TextureLayer(self.dragging_pixmap, new_position)
+                # new_layer = TextureLayer(self.dragging_pixmap, new_position)
 
-                self.parent_window.texture_layers[(self.parent_window.texture_layers.index(self.dragging_layer))] = new_layer
-                self.dragging_layer = self.parent_window.texture_layers[(self.parent_window.texture_layers.index(new_layer))]
+                # self.parent_window.texture_layers[(self.parent_window.texture_layers.index(self.dragging_layer))] = new_layer
+                # self.dragging_layer = self.parent_window.texture_layers[(self.parent_window.texture_layers.index(new_layer))]
                 print("NEW LAYER DELT WITH")
                 self.scaling = False
+                self.rectangle = None
+                self.point = None
+                self.center_point = None
                 self.update_overlay()
+            # elif self.rotating:
 
 
  
