@@ -291,14 +291,18 @@ class MainWindow(QMainWindow):
         self.create_dock_windows()
 
     def color_dialog(self):
-        color = QColorDialog.getColor()
-        self.color_name = color.name()
+        self.color = QColorDialog.getColor()
+
+
+        self.color_name = self.color.name()
         self.color_button.setStyleSheet(f"""
             background-color: {self.color_name};
             color: #ffffff;
             font-family: Consolas;
             font-size: 12px;
         """) 
+        self.active_tool_widget.update_overlay()
+        self.update()
 
 
     def create_dock_windows(self):
@@ -1350,7 +1354,7 @@ class ToolSectionMenu(QWidget):
         # self.parent_window.active_tool_widget = None
 
         if button == self.pen_tool:
-            self.parent_window.active_tool_widget = PenTool(self.parent_window.image_path, parent_window=self.parent_window)
+            self.parent_window.active_tool_widget = PenTool(self.parent_window.image_path, parent_window=self.parent_window, color = self.parent_window.color)
             self.parent_window.tool_description =  "\n Pen Tool\n\n\n"\
                 "  This Tool allows you to draw \n"\
                 "  on the image. \n\n"\
@@ -1580,9 +1584,10 @@ class MoveTool(QtWidgets.QWidget):
 #                     PEN DEBUG TOOL                          #
 ###############################################################
 class PenTool(QtWidgets.QWidget):
-    def __init__(self, image_path, parent_window=None):
+    def __init__(self, image_path, parent_window=None, color=QtGui.QColor.fromRgbF(0.000000, 0.000000, 0.000000, 1.000000)):
         super().__init__()
 
+        self.pen_color = color
 
         self.parent_window = parent_window
 
@@ -1715,6 +1720,7 @@ class PenTool(QtWidgets.QWidget):
             if self.panning:
                 self.panning = False
                 self.setCursor(QtCore.Qt.CrossCursor)
+        
 
     def update_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
@@ -1744,6 +1750,7 @@ class PenTool(QtWidgets.QWidget):
                 painter.setBrush(fill_brush)
                 painter.drawPolygon(poly_q)
 
+        self.pen_color = self.parent_window.color
         painter.end()
         self.update()
 
@@ -1756,7 +1763,7 @@ class PenTool(QtWidgets.QWidget):
     def commit_line_to_image(self, line):
         painter = QtGui.QPainter(self.pen_overlay)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.setPen(QtGui.QPen(QtCore.Qt.black, 2))
+        painter.setPen(QtGui.QPen(self.pen_color, 2))
         painter.drawPolyline(line)
         painter.end()
         self.update()
