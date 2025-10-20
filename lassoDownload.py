@@ -35,7 +35,7 @@ from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF, QAction, QImage, Q
 
 # import time
 # import PIL 
-# from PIL import Image
+from PIL import Image
 
 
 
@@ -151,6 +151,23 @@ class ChooseNameWindow(QMainWindow):
         ChooseNameWindow.window.setObjectName("ToolWindow")
         unreal.parent_external_window_to_slate(ChooseNameWindow.window.winId())
 
+class TestWidget(QWidget):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent_window = parent
+
+        im = Image.new("RGBA", (600, 600), 0x04030201)
+        data = im.tobytes('raw', 'RGBA')
+        #color_box = QColorDialog.getColor()
+        image = QImage(data, im.size[0], im.size[1], QImage.Format_ARGB32)
+        pix = QPixmap.fromImage(image)
+        lbl = QLabel()
+        lbl.setPixmap(pix)
+        # lbl.show()
+
+        layout = QVBoxLayout()
+        layout.addWidget(lbl) 
+        self.setLayout(layout)
 
 ###############################################################
 #                        MAIN WINDOW                          #
@@ -274,27 +291,30 @@ class MainWindow(QMainWindow):
         self.create_dock_windows()
 
     def color_dialog(self):
-        self.color = QColorDialog.getColor()
-        unreal.log(self.color)
-        unreal.log({self.color.name()})
+        color = QColorDialog.getColor()
+        self.color_name = color.name()
+        self.color_button.setStyleSheet(f"""
+            background-color: {self.color_name};
+            color: #ffffff;
+            font-family: Consolas;
+            font-size: 12px;
+        """) 
+
 
     def create_dock_windows(self):
-
-        #color_box = QColorDialog.getColor()
-
-        color_button = QPushButton("Pick Color")
-        color_button.setCheckable(True)
-        color_button.clicked.connect(self.color_dialog)
+        self.color_button = QPushButton("Pick Color")
+        self.color_button.setCheckable(True)
+        self.color_button.clicked.connect(self.color_dialog)
         dock = QDockWidget("Colour", self)
         dock.setAllowedAreas(Qt.DockWidgetArea.LeftDockWidgetArea
                              | Qt.DockWidgetArea.RightDockWidgetArea
                              | Qt.DockWidgetArea.TopDockWidgetArea)
         self.setDockOptions(QMainWindow.DockOption.AllowNestedDocks)
-        color_button.setFixedSize(200,200)
+        self.color_button.setFixedSize(320,200)
 
-        color_button.setStyleSheet(f"""
-            background-color: {self.color.name()}
-            color: {self.color.name()};
+        self.color_button.setStyleSheet(f"""
+            background-color: #000000;
+            color: #ffffff;
             font-family: Consolas;
             font-size: 12px;
         """) 
@@ -303,12 +323,13 @@ class MainWindow(QMainWindow):
         # central_widget = QWidget()
         # layout = QVBoxLayout(central_widget)
 
-        dock.setWidget(color_button)
+        dock.setWidget(self.color_button)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
 
         # #stackedLayout = QStackedLayout()
 
-
+        self.clr_label = QLabel()
+        self.clr_label.setText(self.color.name())
 
 
         central_widget = QWidget()
