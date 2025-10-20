@@ -1032,6 +1032,16 @@ class MainWindow(QMainWindow):
             new_layer = TextureLayer(flipped_pixmap, flipped_position)
             self.texture_layers[index] = new_layer
 
+
+        #flip pen overlay
+        layer_pixmap = self.pen_overlay
+        flipped_pixmap = layer_pixmap.transformed(QTransform().scale(x, y))
+        new_layer = flipped_pixmap
+        self.pen_overlay = new_layer
+        self.tool_panel.radioButtonGroupChanged()
+        self.active_tool_widget.update_overlay()
+
+
     def flip_all_horizontal(self):
         # for layer in self.texture_layers:
         #     layer_pixmap = layer.pixmap
