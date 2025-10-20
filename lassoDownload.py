@@ -833,6 +833,20 @@ class MainWindow(QMainWindow):
     ##########################################
     #                 TOOL BAR               #
     ##########################################
+    def clear_selections(self):
+        self.selections_paths.clear()
+        self.active_tool_widget.clear_overlay()
+
+    def select_all(self):
+        self.selections_paths.clear()
+        layer = self.texture_layers[0]
+        rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
+        polygon = QPolygonF(QPolygon(rectangle))
+        path = QPainterPath()
+        path.addPolygon(polygon)
+        self.selections_paths.append(path)
+        self.active_tool_widget.update_overlay()
+
     def CreateToolBar(self):
         menu_bar = self.menuBar()
 
@@ -871,9 +885,13 @@ class MainWindow(QMainWindow):
 
         select_all_action = QAction("Select All", self)
         clear_selections_action = QAction("Clear Selections", self)
-        
+
         select_menu.addAction(select_all_action)
         select_menu.addAction(clear_selections_action)
+
+        clear_selections_action.triggered.connect(lambda: self.clear_selections())
+        select_all_action.triggered.connect(lambda: self.select_all())
+
 
         modify_menu = QMenu("Modify", self)
 
@@ -1398,7 +1416,6 @@ class ToolSectionMenu(QWidget):
                 self.parent_window.active_tool_widget.setCursor(QtCore.Qt.ArrowCursor)
             else: 
                 self.parent_window.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
-        
 
         self.parent_window.tool_description_label.setText(self.parent_window.tool_description)
 
@@ -1572,11 +1589,10 @@ class PenTool(QtWidgets.QWidget):
         for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
 
-        #painter.drawPixmap(0,0, self.overlay)
+        painter.drawPixmap(0,0, self.overlay)
         painter.drawPixmap(0,0, self.pen_overlay)
 
         #self.update_overlay()
-
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
@@ -1780,7 +1796,7 @@ class LassoTool(QtWidgets.QWidget):
                     self.selections_paths.clear()
                     #selections.clear()
                     self.merged_selection_path = QPainterPath()
-                    self.image = self.original_image.copy()
+                    #self.image = self.original_image.copy()
                     self.clear_overlay()
                 self.drawing = True
                 self.points = [(self.get_scaled_point(event.position()))]
@@ -1891,6 +1907,7 @@ class LassoTool(QtWidgets.QWidget):
         
     def clear_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
+        #self.points.clear()
         self.update()
 
 
