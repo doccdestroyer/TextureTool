@@ -176,7 +176,7 @@ class MainWindow(QMainWindow):
     def __init__(self, image_path):
         super().__init__()
         self.received_value = 100
-        
+        self.pen_size = 2
         self.color = PySide6.QtGui.QColor.fromRgbF(0.000000, 0.000000, 0.000000, 1.000000)
 
         self.setWindowTitle("Selection Tools")
@@ -2661,7 +2661,6 @@ class PenTool(QtWidgets.QWidget):
         super().__init__()
 
         self.pen_color = color
-
         self.parent_window = parent_window
 
 
@@ -2705,12 +2704,21 @@ class PenTool(QtWidgets.QWidget):
         self.update()
 
     def keyPressEvent(self, event):
+        unreal.log(event.key())
+
         if event.key() == QtCore.Qt.Key_Space:
             self.panning = True
             self.setCursor(QtCore.Qt.OpenHandCursor)
         if event.key() == QtCore.Qt.Key_Delete:
             self.clear_overlay()
             self.update_overlay()
+
+        if event.key() == 91:
+            unreal.log(print("HELLO"))
+            self.parent_window.pen_size -= 5
+        if event.key() == 93:
+            unreal.log(print("goodbye"))
+            self.parent_window.pen_size += 5
 
     def keyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
@@ -2837,7 +2845,7 @@ class PenTool(QtWidgets.QWidget):
     def commit_line_to_image(self, line):
         painter = QtGui.QPainter(self.pen_overlay)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.setPen(QtGui.QPen(self.pen_color, 2))
+        painter.setPen(QtGui.QPen(self.pen_color, self.parent_window.pen_size))
         painter.drawPolyline(line)
         painter.end()
         self.update()
