@@ -949,7 +949,7 @@ class MainWindow(QMainWindow):
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
-                self.low_res_image = self.base_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.altered_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
@@ -1028,7 +1028,7 @@ class MainWindow(QMainWindow):
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
-                self.low_res_image = self.base_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.altered_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
@@ -1144,7 +1144,7 @@ class MainWindow(QMainWindow):
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
-                self.low_res_image = self.base_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.altered_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
