@@ -291,6 +291,7 @@ class MainWindow(QMainWindow):
         self.contrast_value = 100
         self.create_dock_windows()
         self.use_low_res = True
+        self.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
 
 
     def color_dialog(self):
@@ -318,6 +319,15 @@ class MainWindow(QMainWindow):
                              | Qt.DockWidgetArea.TopDockWidgetArea)
         self.setDockOptions(QMainWindow.DockOption.AllowNestedDocks)
         self.color_button.setFixedSize(320,200)
+
+        self.setStyleSheet("""
+            background-color: #2c2c2c;
+            color: #ffffff;
+            font-family: Consolas;
+            font-size: 12px;
+            selection-background-color: #424242;                  
+        """)  
+ 
 
         self.color_button.setStyleSheet(f"""
             background-color: #000000;
@@ -809,13 +819,13 @@ class MainWindow(QMainWindow):
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
-                self.low_res_image = self.base_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.base_image.scaled(800, 800, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
 
 
-                altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
+                altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
 
                 pillow_image = ImageQt.fromqimage(altered_image)
 
@@ -848,6 +858,8 @@ class MainWindow(QMainWindow):
                 #####self.adjust_saturation(self.saturation_value)
                 self.update()
             else:
+                self.setCursor(QtCore.Qt.ForbiddenCursor)
+
                 #image = self.base_image.convertToFormat(QImage.Format_ARGB32)
                 altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
                 pillow_image = ImageQt.fromqimage(altered_image)
@@ -878,7 +890,7 @@ class MainWindow(QMainWindow):
                 #self.adjust_saturation(self.saturation_value)
                 self.contrast_panel.reset(100)
                 self.contrast_value = 100
-        
+                self.tool_panel.radioButtonGroupChanged()
                 self.update()
 
     def adjust_saturation(self,value):
@@ -886,13 +898,13 @@ class MainWindow(QMainWindow):
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
-                self.low_res_image = self.base_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.base_image.scaled(800, 800, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
 
 
-                altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
+                altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
 
                 pillow_image = ImageQt.fromqimage(altered_image)
 
@@ -925,6 +937,8 @@ class MainWindow(QMainWindow):
                 #####self.adjust_saturation(self.saturation_value)
                 self.update()
             else:
+                self.setCursor(QtCore.Qt.ForbiddenCursor)
+
                 #image = self.base_image.convertToFormat(QImage.Format_ARGB32)
                 altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
                 pillow_image = ImageQt.fromqimage(altered_image)
@@ -955,7 +969,8 @@ class MainWindow(QMainWindow):
                 #self.adjust_saturation(self.saturation_value)
                 self.saturation_panel.reset(100)
                 self.saturation_value = 100
-        
+                self.tool_panel.radioButtonGroupChanged()
+
                 self.update()
 
     # def adjust_saturation(self,value):
@@ -999,13 +1014,13 @@ class MainWindow(QMainWindow):
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
-                self.low_res_image = self.base_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.base_image.scaled(800, 800, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
 
 
-                altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
+                altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
 
                 pillow_image = ImageQt.fromqimage(altered_image)
 
@@ -1042,7 +1057,9 @@ class MainWindow(QMainWindow):
                 ####self.altered_image = self.altered_pixmap.toImage()
                 #####self.adjust_saturation(self.saturation_value)
                 self.update()
-            else:
+            else:          
+                self.setCursor(QtCore.Qt.ForbiddenCursor)
+      
                 #image = self.base_image.convertToFormat(QImage.Format_ARGB32)
                 altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
                 pillow_image = ImageQt.fromqimage(altered_image)
@@ -1076,15 +1093,21 @@ class MainWindow(QMainWindow):
                 #self.adjust_saturation(self.saturation_value)
                 self.brightness_panel.reset(100)
                 self.brightness_value = 100
-        
+                self.tool_panel.radioButtonGroupChanged()
+
                 self.update()
 
 
     def apply_full_resolution_adjustments(self):
         self.use_low_res = False
-        self.adjust_brightness(self.brightness_value)
-        self.adjust_saturation(self.saturation_value)
-        self.adjust_contrast(self.contrast_value)
+        self.active_tool_widget.setCursor(QtCore.Qt.ForbiddenCursor)
+        if self.brightness_value != 100:
+            self.adjust_brightness(self.brightness_value)
+        if self.saturation_value != 100:
+            self.adjust_saturation(self.saturation_value)
+        if self.contrast_value != 100:
+            self.adjust_contrast(self.contrast_value)
+   
         self.use_low_res = True
 
         # Optionally update the full-res altered_image
@@ -1308,16 +1331,31 @@ class MainWindow(QMainWindow):
         help_action.triggered.connect(self.show_help)
         help_menu.addAction(help_action)
 
-
-        self.setStyleSheet("""
-            background-color: #262626;
+        menu_bar.setStyleSheet("""
+            background-color: #252525;
             color: #ffffff;
             font-family: Consolas;
             font-size: 12px;
-            padding: 4px;
             selection-background-color: #424242;                  
         """)  
  
+        modify_menu.setStyleSheet("""
+            background-color: #252525;
+            color: #ffffff;
+            font-family: Consolas;
+            font-size: 12px;
+            selection-background-color: #424242;                  
+        """)  
+
+        export_menu.setStyleSheet("""
+            background-color: #252525;
+            color: #ffffff;
+            font-family: Consolas;
+            font-size: 12px;
+            selection-background-color: #424242;                  
+        """)  
+ 
+
     def flip_horizontal(self):
         self.flip_base_layer(-1,1)
 
@@ -1616,7 +1654,7 @@ class Slider(QWidget):
         self.texture_layers = parent.texture_layers
 
         self.setStyleSheet("""
-            background-color: #262626;
+            background-color: #474747;
             color: #ffffff;
             font-family: Consolas;
             font-size: 12px;
