@@ -2074,6 +2074,7 @@ class PenTool(QtWidgets.QWidget):
             self.setCursor(QtCore.Qt.OpenHandCursor)
         if event.key() == QtCore.Qt.Key_Delete:
             self.clear_overlay()
+            self.update_overlay()
 
     def keyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
