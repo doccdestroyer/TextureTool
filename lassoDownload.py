@@ -286,9 +286,9 @@ class MainWindow(QMainWindow):
         self.saturation_value = 100
         self.green_value = 50
         self.blue_value = 50
-        self.red_value = 50
         self.brightness_value = 100
         self.contrast_value = 100
+        self.redness_value = 0
         self.create_dock_windows()
         self.use_low_res = True
         self.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
@@ -1005,7 +1005,7 @@ class MainWindow(QMainWindow):
                 self.texture_layers[0] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
-                self.contrast_value = value
+                self.redness_value = value
                 #self.base_image = self.base_pixmap.toImage()
                 ########################
                 ####self.altered_image = self.altered_pixmap.toImage()
@@ -1023,8 +1023,23 @@ class MainWindow(QMainWindow):
                 #         pixel_color = QColor(altered_image.pixel(pixelX,pixelY))
                 #         H,S,L,A = pixel_color.getHsl()
 
-                contrast_enhancer = ImageEnhance.Contrast(pillow_image)
-                pillow_image = contrast_enhancer.enhance(factor)
+
+                if value < 0:
+                    colorize_ops = ImageOps.colorize(pillow_image.convert('L'), mid = 'aqua', black = 'black', white = 'white').convert('RGBA')
+                    #coloured_image = ImageQt.ImageQt(colorize_ops)
+                    colorize_ops = colorize_ops.convert('RGBA')
+                    pillow_image = pillow_image.convert('RGBA')
+                    pillow_image = Image.blend(pillow_image,colorize_ops,factor)
+                    #pillow_image = colorize_ops
+
+                elif value >0:
+                    colorize_ops = ImageOps.colorize(pillow_image.convert('L'), mid = 'red', black = 'black', white = 'white')
+                    colorize_ops = colorize_ops.convert('RGBA')
+                    pillow_image = pillow_image.convert('RGBA')
+                    #coloured_image = ImageQt.ImageQt(colorize_ops)
+                    pillow_image = Image.blend(pillow_image,colorize_ops,factor) 
+                    #pillow_image = colorize_ops
+
 
                 new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
 
@@ -1042,8 +1057,8 @@ class MainWindow(QMainWindow):
                 ########################
                 self.altered_image = self.altered_pixmap.toImage()
                 #self.adjust_saturation(self.saturation_value)
-                self.contrast_panel.reset(100)
-                self.contrast_value = 100
+                self.cyan_red_panel.reset(0)
+                self.redness_value = 0
                 self.tool_panel.radioButtonGroupChanged()
                 self.update()
 
@@ -1466,6 +1481,9 @@ class MainWindow(QMainWindow):
         self.adjust_brightness(self.brightness_value)
         self.adjust_saturation(self.saturation_value)
         self.adjust_contrast(self.contrast_value)
+        self.adjust_redness(self.redness_value)
+
+
 
         self.setCursor(QtCore.Qt.ArrowCursor)
         self.tool_panel.radioButtonGroupChanged()
