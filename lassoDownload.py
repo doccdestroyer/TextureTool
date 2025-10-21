@@ -358,6 +358,51 @@ class MainWindow(QMainWindow):
         #dock.setWidget(self.cyan_red_panel)
         dock.setLayout(layout)
 
+
+        self.cyan_red_panel.setStyleSheet("""
+                QSlider::groove:horizontal {
+                    border: 1px solid #999999;
+                    height: 5px;
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00FFFF, stop:1 #FF0000);
+
+                }
+
+                QSlider::handle:horizontal {
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
+                    border: 1px solid #5c5c5c;
+                    width: 10px;
+                    margin: -2px 0;
+                    border-radius: 3px;
+                }
+            """)
+
+
+        # self.cyan_red_panel.setStyleSheet("""
+        #     background-color: #252525;
+        #     color: #ffffff;
+        #     font-family: Consolas;
+        #     background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00FFFF, stop:1 #FF0000);
+        #     font-size: 12px;
+                                          
+        #     QSlider::groove:horizontal {
+        #         border: 1px solid #999999;
+        #         height: 8px;
+        #         background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00FFFF, stop:1 #00FFFF);
+        #         margin: 2px 0;
+        #     }
+        # """)  
+ 
+
+        # self.cyan_red_panel.setStyleSheet("""
+        #     QSlider::groove:horizontal {
+        #         border: 1px solid #999999;
+        #         height: 8px;
+        #         background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00FFFF, stop:1 #FF0000);
+        #         margin: 2px 0;
+        #     }
+        # """)
+
+
         self.magenta_green_panel = Slider(self, "Colour Balance - Green " , 0, 100, 50)
         self.magenta_green_panel.value_changed.connect(self.adjust_greenness)
 
@@ -365,9 +410,42 @@ class MainWindow(QMainWindow):
         # self.magenta_green_panel.value_changed.connect(self.adjust_magneta)
 
 
+        self.magenta_green_panel.setStyleSheet("""
+                QSlider::groove:horizontal {
+                    border: 1px solid #999999;
+                    height: 5px;
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #FF00FF, stop:1 #00FF00);
+
+                }
+
+                QSlider::handle:horizontal {
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
+                    border: 1px solid #5c5c5c;
+                    width: 10px;
+                    margin: -2px 0;
+                    border-radius: 3px;
+                }
+            """)
         self.yellow_blue_panel = Slider(self, "Colour Balance - Blue " , 0, 100, 50)
         self.yellow_blue_panel.value_changed.connect(self.adjust_blueness)
 
+        self.yellow_blue_panel.setStyleSheet("""
+                QSlider::groove:horizontal {
+                    border: 1px solid #999999;
+                    height: 5px;
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #FFFF00, stop:1 #0000FF);
+
+                }
+
+                QSlider::handle:horizontal {
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
+                    border: 1px solid #5c5c5c;
+                    width: 10px;
+                    margin: -2px 0;
+                    border-radius: 3px;
+                }
+            """)
+        
         layout.addWidget(self.cyan_red_panel)
         layout.addWidget(self.magenta_green_panel)
         layout.addWidget(self.yellow_blue_panel)
@@ -426,6 +504,23 @@ class MainWindow(QMainWindow):
         dock.setWidget(self.saturation_panel)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
+        self.saturation_panel.setStyleSheet("""
+                QSlider::groove:horizontal {
+                    border: 1px solid #999999;
+                    height: 5px;
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #818181, stop:1 #FF0000);
+
+                }
+
+                QSlider::handle:horizontal {
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
+                    border: 1px solid #5c5c5c;
+                    width: 10px;
+                    margin: -2px 0;
+                    border-radius: 3px;
+                }
+            """)
+
 
 
         dock = QDockWidget("Brightness", self)
@@ -434,6 +529,25 @@ class MainWindow(QMainWindow):
         dock.setWidget(self.brightness_panel)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
+
+        self.brightness_panel.setStyleSheet("""
+                QSlider::groove:horizontal {
+                    border: 1px solid #999999;
+                    height: 5px;
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #000000, stop:1 #FFFFFF);
+
+                }
+
+                QSlider::handle:horizontal {
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
+                    border: 1px solid #5c5c5c;
+                    width: 10px;
+                    margin: -2px 0;
+                    border-radius: 3px;
+                }
+            """)
+
+ 
         dock = QDockWidget("Contrast", self)
         self.contrast_panel = Slider(self, "Contrast Slider" , 0, 199, 100)
         self.contrast_panel.value_changed.connect(self.adjust_contrast)
@@ -441,6 +555,22 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
 
+        self.contrast_panel.setStyleSheet("""
+                QSlider::groove:horizontal {
+                    border: 1px solid #999999;
+                    height: 5px;
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #818181, stop:1 #000000);
+
+                }
+
+                QSlider::handle:horizontal {
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
+                    border: 1px solid #5c5c5c;
+                    width: 10px;
+                    margin: -2px 0;
+                    border-radius: 3px;
+                }
+            """)
 
 
         dock = QDockWidget("Gamma DOES NOT WORK YET", self)
@@ -819,7 +949,7 @@ class MainWindow(QMainWindow):
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
-                self.low_res_image = self.base_image.scaled(800, 800, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.base_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
@@ -898,7 +1028,7 @@ class MainWindow(QMainWindow):
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
-                self.low_res_image = self.base_image.scaled(800, 800, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.base_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
@@ -1014,7 +1144,7 @@ class MainWindow(QMainWindow):
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
-                self.low_res_image = self.base_image.scaled(800, 800, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.base_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
@@ -1101,12 +1231,19 @@ class MainWindow(QMainWindow):
     def apply_full_resolution_adjustments(self):
         self.use_low_res = False
         self.setCursor(QtCore.Qt.ForbiddenCursor)
-        if self.brightness_value != 100:
-            self.adjust_brightness(self.brightness_value)
-        if self.saturation_value != 100:
-            self.adjust_saturation(self.saturation_value)
-        if self.contrast_value != 100:
-            self.adjust_contrast(self.contrast_value)
+
+        # if self.brightness_value != 100:
+        #     self.adjust_brightness(self.brightness_value)
+        # if self.saturation_value != 100:
+        #     self.adjust_saturation(self.saturation_value)
+        # if self.contrast_value != 100:
+        #     self.adjust_contrast(self.contrast_value)
+
+        self.adjust_brightness(self.brightness_value)
+        self.adjust_saturation(self.saturation_value)
+        self.adjust_contrast(self.contrast_value)
+
+        self.setCursor(QtCore.Qt.ArrowCursor)
         self.tool_panel.radioButtonGroupChanged()
         self.use_low_res = True
 
@@ -1650,17 +1787,34 @@ class Slider(QWidget):
         self.slider.setMaximum(max)
         self.slider.setSliderPosition(default)
         self.slider.valueChanged.connect(self.sliderChanged)
+        # self.slider.sliderReleased.connect(self.slider_released)
 
         self.texture_layers = parent.texture_layers
 
         self.setStyleSheet("""
-            background-color: #474747;
+            background-color: #252525;
             color: #ffffff;
             font-family: Consolas;
             font-size: 12px;
-            selection-background-color: #424242;                  
         """)  
  
+        # self.setStyleSheet("""
+        #     QSlider::groove:horizontal {
+        #         border: 1px solid #999999;
+        #         height: 8px;
+        #         background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00FFFF, stop:1 #FF0000);
+
+        #     }
+
+        #     QSlider::handle:horizontal {
+        #         background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
+        #         border: 1px solid #5c5c5c;
+        #         width: 10px;
+        #         margin: -2px 0;
+        #         border-radius: 3px;
+        #     }
+        # """)
+
 
         ################for layer in self.texture_layers: ADD ONCE LAYER SELECTION IS A THING
         self.original_pixmap = self.parent_window.base_pixmap
@@ -1672,7 +1826,7 @@ class Slider(QWidget):
 
         layout = QVBoxLayout()
         layout.addWidget(self.slider)
-        layout.addWidget(self.image_label) # <-- show preview REMOVE REMOVE REMOVE
+        #layout.addWidget(self.image_label) # <-- show preview REMOVE REMOVE REMOVE
 
         self.setLayout(layout)
 
@@ -1705,6 +1859,10 @@ class Slider(QWidget):
         # print("base texture layer updated")
         # self.parent_window.update()
         self.value_changed.emit(value)
+    
+    # def slider_released(self):
+    #     self.setCursor(QtCore.Qt.ForbiddenCursor)
+    #     self.parent_window.use_low_res = False
 
     
 ###############################################################
