@@ -2432,7 +2432,8 @@ class ToolSectionMenu(QWidget):
                 "  If you have had a prior \n"\
                 "  selection, you will only be \n"\
                 "  able to draw within that \n"\
-                "  selection.\n"\
+                "  selection.\n\n"\
+                "  Press [ or ] to scale the pen."\
                 "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 
         elif button == self.rectangle_tool:
