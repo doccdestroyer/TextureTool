@@ -1100,14 +1100,14 @@ class MainWindow(QMainWindow):
 
     def apply_full_resolution_adjustments(self):
         self.use_low_res = False
-        self.active_tool_widget.setCursor(QtCore.Qt.ForbiddenCursor)
+        self.setCursor(QtCore.Qt.ForbiddenCursor)
         if self.brightness_value != 100:
             self.adjust_brightness(self.brightness_value)
         if self.saturation_value != 100:
             self.adjust_saturation(self.saturation_value)
         if self.contrast_value != 100:
             self.adjust_contrast(self.contrast_value)
-   
+        self.tool_panel.radioButtonGroupChanged()
         self.use_low_res = True
 
         # Optionally update the full-res altered_image
@@ -1735,6 +1735,9 @@ class ToolSectionMenu(QWidget):
         self.move_tool.setText('Move')
         self.transform_tool = QRadioButton()
         self.transform_tool.setText('Transform')
+        self.fill_tool = QRadioButton()
+        self.fill_tool.setText('Fill')
+
 
         self.radioButtonGroup = QButtonGroup()
         self.radioButtonGroup.addButton(self.pen_tool)
@@ -1744,6 +1747,7 @@ class ToolSectionMenu(QWidget):
         self.radioButtonGroup.addButton(self.polygonal_tool)
         self.radioButtonGroup.addButton(self.move_tool)
         self.radioButtonGroup.addButton(self.transform_tool)
+        self.radioButtonGroup.addButton(self.fill_tool)
 
         layout.addWidget(self.pen_tool)
         layout.addWidget(self.lasso_tool)
@@ -1752,8 +1756,10 @@ class ToolSectionMenu(QWidget):
         layout.addWidget(self.polygonal_tool)
         layout.addWidget(self.move_tool)
         layout.addWidget(self.transform_tool)
+        layout.addWidget(self.fill_tool)
 
-        for button in [self.pen_tool, self.rectangle_tool, self.ellipse_tool, self.lasso_tool, self.polygonal_tool, self.move_tool, self.transform_tool]:
+
+        for button in [self.pen_tool, self.rectangle_tool, self.ellipse_tool, self.lasso_tool, self.polygonal_tool, self.move_tool, self.transform_tool, self.fill_tool]:
             self.radioButtonGroup.addButton(button)
             button.clicked.connect(self.radioButtonGroupChanged)
 
@@ -1899,14 +1905,16 @@ class ToolSectionMenu(QWidget):
                 "  outside of the image to  \n"\
                 "  rotate\n\n"\
                 "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-
+        elif button == self.fill_tool:
+            self.parent_window.active_tool_widget = BucketTool(self.parent_window.image_path, parent_window=self.parent_window)
+            self.parent_window.tool_description = "\n Bucket Tool\n\n\n"\
 
         if self.parent_window.active_tool_widget:
             parent_layout.insertWidget(0,self.parent_window.active_tool_widget)
             #parent_layout.insertWidget(1,self.parent_window.add_texture_button)
             self.parent_window.active_tool_widget.show()
             if self.parent_window.active_tool_widget == self.move_tool or  self.parent_window.active_tool_widget == self.transform_tool:
-                self.parent_window.active_tool_widget.setCursor(QtCore.Qt.ArrowCursor)
+                self.parent_window.setCursor(QtCore.Qt.ArrowCursor)
             else: 
                 self.parent_window.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
 
@@ -3588,6 +3596,169 @@ class EllipticalTool(QtWidgets.QLabel):
                 painter.setPen(QtCore.Qt.NoPen)
                 painter.setBrush(fill_brush)
                 painter.drawPolygon(poly_q)
+###############################################################
+#                        BUCKET TOOL                          #
+###############################################################
+class BucketTool(QWidget):
+    pass
+    # def __init__(self, image_path, parent_window=None):
+    #     super().__init__()
+    #     self.parent_window = parent_window
+
+    #     self.panning = False
+    #     self.last_pan_point = None
+
+    #     self.setFocusPolicy(QtCore.Qt.StrongFocus)
+    #     self.setFocus()
+
+    #     self.texture_layers = parent_window.texture_layers
+
+    #     self.in_selection = False
+
+    #     self.point = None
+    #     self.drawing = False
+
+    #     self.image = self.parent_window.texture_layers[0].pixmap
+    #     if self.image.isNull():
+    #         raise ValueError("Failed to load image")
+    #     self.original_image = self.image.copy()
+    #     self.overlay = QtGui.QPixmap(self.image.size())
+    #     self.overlay.fill(QtCore.Qt.transparent)
+    #     self.pen_overlay = parent_window.pen_overlay
+
+    #     self.original_image = self.image.copy()
+    #     self.overlay = QtGui.QPixmap(self.image.size())
+    #     self.overlay.fill(QtCore.Qt.transparent)
+
+    #     self.merged_selection_path = parent_window.merged_selection_path
+    #     self.selections_paths = parent_window.selections_paths
+    #     self.update_overlay()
+
+    # def get_scaled_point(self, pos):         
+    #     scale = self.parent_window.scale_factor
+    #     pan = self.parent_window.pan_offset
+    #     return QtCore.QPoint(int((pos.x() - pan.x()) / scale), int((pos.y() - pan.y()) / scale))
+
+    # def set_scale_factor(self, scale):
+    #     self.parent_window.scale_factor = scale
+    #     new_size = self.original_image.size() * scale
+    #     self.resize(new_size)
+    #     self.update()
+
+    # def paintEvent(self, event):
+    #     unreal.log("is painting")
+    #     painter = QtGui.QPainter(self)
+    #     painter.translate(self.parent_window.pan_offset)     
+    #     painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
+    #     #painter.drawPixmap(0, 0, self.image)
+    #     #painter.drawPixmap(0, 0, self.overlay)
+
+    #     for layer in self.parent_window.texture_layers[0:]:
+    #         painter.drawPixmap(layer.position, layer.pixmap)
+
+    #     painter.drawPixmap(0,0, self.overlay)
+    #     painter.drawPixmap(0,0, self.pen_overlay) 
+
+    # def mousePressEvent(self, event):
+    #     if event.button() == QtCore.Qt.LeftButton:
+    #         point = self.get_scaled_point(event.position())
+    #         for i, path in enumerate(list(self.selections_paths)):
+    #                 if path.contains(point):
+    #                     self.in_selection = True
+    #                 else:
+    #                     self.in_selection = False
+    #         if (len(self.selections_paths) > 0 and self.in_selection) or len(self.selections_paths)==0:
+    #             if self.panning:
+    #                 self.last_pan_point = event.position().toPoint()
+    #                 self.setCursor(QtCore.Qt.ClosedHandCursor)
+    #                 self.drawing = False
+    #             else:
+    #                 point = self.get_scaled_point(event.position())
+    #                 self.drawing = True
+    #                 if self.selections_paths == []:
+    #                     self.parent_window.select_all()
+
+
+
+
+    #                 self.commit_line_to_image(QtGui.QPolygon(self.point))
+    #                 self.update_overlay()
+    #                 self.drawing = False
+    #         else:
+    #             return
+        
+
+
+        
+    # def update_overlay(self):
+    #     self.overlay.fill(QtCore.Qt.transparent)
+    #     painter = QtGui.QPainter(self.overlay)
+    #     painter.setRenderHint(QtGui.QPainter.Antialiasing)
+    #     outline_pen = QtGui.QPen(QtCore.Qt.red, 2)
+    #     fill_brush = QtGui.QBrush(QtGui.QColor(255, 0, 0, 50))
+
+    #     if self.in_selection or len(self.selections_paths)<1:
+    #         if self.point:
+    #             pen = QtGui.QPen(QtCore.Qt.black, 3)
+    #             painter.setPen(pen)
+    #             painter.drawPolyline(QtGui.QPolygon(self.points))
+    #             self.commit_line_to_image(QtGui.QPolygon(self.points))
+
+    #     #elif not self.in_selection and len(self.selections_paths)>0:
+    #         #self.drawing = False
+
+    #     for path in self.selections_paths:
+    #         all_polys = path.toFillPolygons()
+    #         for poly_f in all_polys:
+    #             poly_q = QtGui.QPolygon([QtCore.QPoint(int(round(p.x())), int(round(p.y()))) for p in poly_f])
+    #             painter.setPen(outline_pen)
+    #             painter.setBrush(QtCore.Qt.NoBrush)
+    #             painter.drawPolygon(poly_q)
+    #             painter.setPen(QtCore.Qt.NoPen)
+    #             painter.setBrush(fill_brush)
+    #             painter.drawPolygon(poly_q)
+
+    #     if self.drawing:
+    #         for path in self.selections_paths:
+    #             all_polys = path.toFillPolygons()
+    #             for poly_f in all_polys:
+    #                 poly_q = QtGui.QPolygon([QtCore.QPoint(int(round(p.x())), int(round(p.y()))) for p in poly_f])
+    #                 painter.setPen(outline_pen)
+    #                 painter.setBrush(QtCore.Qt.NoBrush)
+    #                 painter.drawPolygon(poly_q)
+    #                 painter.setBrush(outline_pen)
+    #                 painter.drawPolygon(poly_q)
+
+    #     self.pen_color = self.parent_window.color
+    #     painter.end()
+    #     self.update()
+
+    # def clear_overlay(self):
+    #     self.pen_overlay.fill(QtCore.Qt.transparent)
+    #     self.image = self.original_image.copy()
+    #     self.points.clear()
+    #     self.update()
+
+    # def commit_line_to_image(self, line):
+    #     painter = QtGui.QPainter(self.pen_overlay)
+    #     outline_pen = QtGui.QPen(QtCore.Qt.red, 2)
+
+
+    #     for path in self.selections_paths:
+    #         all_polys = path.toFillPolygons()
+    #         for poly_f in all_polys:
+    #             poly_q = QtGui.QPolygon([QtCore.QPoint(int(round(p.x())), int(round(p.y()))) for p in poly_f])
+    #             painter.setPen(outline_pen)
+    #             painter.setBrush(QtCore.Qt.NoBrush)
+    #             painter.drawPolygon(poly_q)
+    #             painter.setBrush(outline_pen)
+    #             painter.drawPolygon(poly_q)
+
+    #     painter.setRenderHint(QtGui.QPainter.Antialiasing)
+    #     painter.setPen(QtGui.QPen(self.pen_color, 2))
+    #     painter.drawPolyline(line)
+    #     painter.end()
+    #     self.update()
 
 ###############################################################
 #                     TRANSFORM TOOL                          #
