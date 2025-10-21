@@ -2297,12 +2297,14 @@ class Slider(QWidget):
         self.original_image = self.original_pixmap.toImage()
 
         self.image_label = QLabel()
-       # self.image_label.setPixmap(self.original_pixmap)
+        
+        
+        #self.image_label.setPixmap(self.original_pixmap) #####################################################
 
 
         layout = QVBoxLayout()
         layout.addWidget(self.slider)
-        #layout.addWidget(self.image_label) # <-- show preview REMOVE REMOVE REMOVE
+        #layout.addWidget(self.image_label) ##################################################################
 
         self.setLayout(layout)
 
