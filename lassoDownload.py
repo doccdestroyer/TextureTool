@@ -283,9 +283,10 @@ class MainWindow(QMainWindow):
         self.base_image = self.base_pixmap.toImage()
         self.altered_image = self.base_image
 
+
+        self.resolution = 800
+
         self.saturation_value = 100
-        self.green_value = 50
-        self.blue_value = 50
         self.brightness_value = 100
         self.contrast_value = 100
         self.redness_value = 0
@@ -614,6 +615,48 @@ class MainWindow(QMainWindow):
     #         return ("LOL")
     #     unreal.log("UPDATED")
 
+    def adjust_all_but_self(self, current_adjustment):
+        sliders_changed = 0
+        self.adjust_resolution(sliders_changed)
+
+        if current_adjustment != "redness" and self.redness_value != 0:
+            self.adjust_redness(self.redness_value)
+            sliders_changed += 1
+            self.adjust_resolution(sliders_changed)
+        if current_adjustment != "blueness" and self.blueness_value != 0:
+            self.adjust_blueness(self.blueness_value)
+            sliders_changed += 1
+            self.adjust_resolution(sliders_changed)
+        if current_adjustment != "greenness" and self.greenness_value != 0:
+            self.adjust_greenness(self.greenness_value)
+            sliders_changed += 1
+            self.adjust_resolution(sliders_changed)
+        if current_adjustment != "brightness" and self.brightness_value != 100:
+            self.adjust_brightness(self.brightness_value)
+            sliders_changed += 1
+            self.adjust_resolution(sliders_changed)
+        if current_adjustment != "contrast" and self.contrast_value != 100:
+            self.adjust_contrast(self.contrast_value)
+            sliders_changed += 1
+            self.adjust_resolution(sliders_changed)
+        if current_adjustment != "saturation" and self.saturation_value != 100:
+            self.adjust_saturation(self.saturation_value)
+            sliders_changed += 1
+            self.adjust_resolution(sliders_changed)
+        self.altered_image = self.base_image
+
+    def adjust_resolution(self,sliders_changed):
+        if sliders_changed > 6:
+            self.resolution = 128
+        elif sliders_changed > 4:
+            self.resolution = 256
+        elif sliders_changed > 2:
+            self.resolution = 512
+        else:
+            self.resolution = 600
+
+
+
     def adjust_cyan(self,value):
         factor = value/10
         image = self.base_image.convertToFormat(QImage.Format_ARGB32) 
@@ -839,7 +882,7 @@ class MainWindow(QMainWindow):
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
-                self.low_res_image = self.altered_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
@@ -894,7 +937,16 @@ class MainWindow(QMainWindow):
                 self.texture_layers[0] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
-                self.magenta_green_panel = value
+                
+
+                self.altered_image = new_qimage
+
+                if value != self.greenness_value:
+                    self.adjust_all_but_self("greenness")
+                    self.altered_image = self.base_image
+
+                self.greenness_value= value
+
                 #self.base_image = self.base_pixmap.toImage()
                 ########################
                 ####self.altered_image = self.altered_pixmap.toImage()
@@ -1008,7 +1060,7 @@ class MainWindow(QMainWindow):
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
-                self.low_res_image = self.altered_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
@@ -1063,11 +1115,21 @@ class MainWindow(QMainWindow):
                 self.texture_layers[0] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
-                self.blueness_value = value
                 #self.base_image = self.base_pixmap.toImage()
                 ########################
                 ####self.altered_image = self.altered_pixmap.toImage()
                 #####self.adjust_saturation(self.saturation_value)
+
+                self.altered_image = new_qimage
+
+                if value != self.blueness_value:
+
+                    self.adjust_all_but_self("blueness")
+                    self.altered_image = self.base_image
+
+
+                self.blueness_value = value
+
                 self.update()
             else:
                 self.setCursor(QtCore.Qt.ForbiddenCursor)
@@ -1183,7 +1245,7 @@ class MainWindow(QMainWindow):
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
-                self.low_res_image = self.altered_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
@@ -1238,8 +1300,19 @@ class MainWindow(QMainWindow):
                 self.texture_layers[0] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
+
+
+                self.altered_image = new_qimage
+
+
+                if value != self.redness_value:
+                    self.adjust_all_but_self("redness")
+                    self.altered_image = self.base_image
+
+
                 self.redness_value = value
-                #self.base_image = self.base_pixmap.toImage()
+
+                self.update()                #self.base_image = self.base_pixmap.toImage()
                 ########################
                 ####self.altered_image = self.altered_pixmap.toImage()
                 #####self.adjust_saturation(self.saturation_value)
@@ -1301,7 +1374,7 @@ class MainWindow(QMainWindow):
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
-                self.low_res_image = self.altered_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
@@ -1333,6 +1406,15 @@ class MainWindow(QMainWindow):
                 self.texture_layers[0] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
+
+
+                self.altered_image = new_qimage
+
+                if value != self.contrast_value:
+                    self.adjust_all_but_self("contrast")
+                    self.altered_image = self.base_image
+
+
                 self.contrast_value = value
                 #self.base_image = self.base_pixmap.toImage()
                 ########################
@@ -1380,7 +1462,7 @@ class MainWindow(QMainWindow):
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
-                self.low_res_image = self.altered_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
@@ -1412,6 +1494,16 @@ class MainWindow(QMainWindow):
                 self.texture_layers[0] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
+
+
+
+                self.altered_image = new_qimage
+
+                if value != self.saturation_value:
+                    self.adjust_all_but_self("saturation")
+                    self.altered_image = self.base_image
+
+
                 self.saturation_value = value
                 #self.base_image = self.base_pixmap.toImage()
                 ########################
@@ -1459,7 +1551,7 @@ class MainWindow(QMainWindow):
             factor = value/100
             if self.use_low_res:
 
-                self.low_res_image = self.altered_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
 
@@ -1616,7 +1708,7 @@ class MainWindow(QMainWindow):
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
-                self.low_res_image = self.altered_image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
@@ -1652,6 +1744,16 @@ class MainWindow(QMainWindow):
                 self.texture_layers[0] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
+
+
+
+                self.altered_image = new_qimage
+
+                if value != self.brightness_value:
+                    self.adjust_all_but_self("brightness")
+                    self.altered_image = self.base_image
+
+
                 self.brightness_value = value
 
                 #self.base_image = self.base_pixmap.toImage()
@@ -4479,11 +4581,13 @@ class TransformTool(QWidget):
                 self.point = self.get_scaled_point(event.position())
                 for layer in reversed(self.parent_window.texture_layers):
                     self.rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
+                    unreal.log(print(self.rectangle))
                     expanded_rectangle = self.expand_rectangle(self.rectangle, 2)
                     # expanded_rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
                     # expanded_rectangle.setWidth(expanded_rectangle.width()*2)
                     # expanded_rectangle.setHeight(expanded_rectangle.height()*2)
                     self.center_point = self.rectangle.center()
+                    unreal.log(print(self.center_point))
 
                     if self.rectangle.contains(self.point):
 
