@@ -3005,7 +3005,7 @@ class LassoTool(QtWidgets.QWidget):
                                         continue
                                     if self.selections_paths[i].intersects(other_path):
                                         self.selections_paths[i] = self.selections_paths[i].subtracted(other_path)
-                                        self.selections_paths.pop(j)
+                                        self.selections_paths.pop(k)
                                         changed = True
                                         break
                         if not removed_from_merge:
@@ -3225,9 +3225,19 @@ class PolygonalTool(QtWidgets.QLabel):
                         else:
                             selections = [QtGui.QPolygon(self.points)]
 
-                        new_polygon_f = QPolygonF(QPolygon(self.points))
+
+                        
+                        new_polygon = QPolygonF(QPolygon(self.points))
+
+                        polygon_path = QtGui.QPainterPath()
+                        polygon_path.addPolygon(new_polygon)
+                        new_polygon = polygon_path.toFillPolygon()
+
+                        new_polygon_f = QtGui.QPolygonF(map_points_of_polygon(new_polygon, 100))
                         new_path = QPainterPath()
                         new_path.addPolygon(new_polygon_f)
+
+                        unreal.log(print(new_path))
 
                         if not self.making_removal and not self.making_additional_selection and isComplete:
                             self.selections_paths.clear()
