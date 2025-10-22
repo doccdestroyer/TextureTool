@@ -2846,7 +2846,9 @@ class PenTool(QtWidgets.QWidget):
     def commit_line_to_image(self, line):
         painter = QtGui.QPainter(self.pen_overlay)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.setPen(QtGui.QPen(self.pen_color, self.parent_window.pen_size))
+        drawing_pen = QtGui.QPen(self.pen_color, self.parent_window.pen_size)
+        drawing_pen.setCapStyle(Qt.RoundCap)
+        painter.setPen(drawing_pen)
         painter.drawPolyline(line)
         painter.end()
         self.update()
