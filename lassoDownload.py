@@ -1845,7 +1845,7 @@ class MainWindow(QMainWindow):
         self.adjust_contrast(self.contrast_value)
         self.adjust_brightness(self.brightness_value)
 
-
+        self.base_image = self.altered_image
         self.setCursor(QtCore.Qt.ArrowCursor)
         self.tool_panel.radioButtonGroupChanged()
         self.use_low_res = True
