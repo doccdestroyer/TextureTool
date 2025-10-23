@@ -590,6 +590,11 @@ class MainWindow(QMainWindow):
         dock.setWidget(self.gamma_panel)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
+
+
+
+
+
         dock = QDockWidget("Apply Sliders", self)
         self.apply_button = QPushButton("Apply")
         self.apply_button.setCheckable(True)
@@ -665,6 +670,28 @@ class MainWindow(QMainWindow):
             self.resolution = 128
         else:
             self.resolution = 400
+        self.adjust_apply_button_colour(sliders_changed)
+
+    def adjust_apply_button_colour(self, sliders_changed_amount):
+        unreal.log(print("sliders changed"))
+        if sliders_changed_amount > 0:
+            self.apply_button.setStyleSheet("""
+                background-color: #A1A1A1;
+                color: #ffffff;
+                font-family: Consolas;
+                font-size: 12px;
+                selection-background-color: #424242;                  
+            """)             
+        else:
+            self.apply_button.setStyleSheet("""
+                background-color: #2c2c2c;
+                color: #ffffff;
+                font-family: Consolas;
+                font-size: 12px;
+                selection-background-color: #424242;                  
+            """)   
+        self.update()          
+
 
 
 
@@ -1859,6 +1886,7 @@ class MainWindow(QMainWindow):
         self.setCursor(QtCore.Qt.ArrowCursor)
         self.tool_panel.radioButtonGroupChanged()
         self.use_low_res = True
+        self.adjust_apply_button_colour(0)
 
     def apply_1k_resolution_adjustments(self, bool):
         self.use_low_res = bool
