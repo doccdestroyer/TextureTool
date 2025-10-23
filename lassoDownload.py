@@ -35,7 +35,7 @@ from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF, QAction, QImage, Q
 
 import time
 import PIL 
-from PIL import Image, ImageEnhance, ImageOps, ImageQt
+from PIL import Image, ImageEnhance, ImageOps, ImageQt, ImageFilter
 
 
 
@@ -175,6 +175,7 @@ class TestWidget(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self, image_path):
         super().__init__()
+        self.layers = ""
         self.received_value = 100
         self.pen_size = 2
         self.color = PySide6.QtGui.QColor.fromRgbF(0.000000, 0.000000, 0.000000, 1.000000)
@@ -204,7 +205,10 @@ class MainWindow(QMainWindow):
         # base_pixmap = base_pixmap.scaled(base_pixmap)
         base_layer = TextureLayer(base_pixmap, QtCore.QPoint(0, 0))
         self.base_layer = TextureLayer(base_pixmap, QtCore.QPoint(0, 0))
-
+        self.selected_layer = base_layer
+        self.current_image = self.selected_layer.pixmap.toImage()
+        self.selected_layer_index = 0
+        self.original_image_location = self.selected_layer.position
         self.texture_layers.append(base_layer)
 
         self.pen_overlay = QtGui.QPixmap(self.texture_layers[0].pixmap.size())
@@ -297,6 +301,30 @@ class MainWindow(QMainWindow):
         self.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
 
 
+
+    def change_layer(self, item):
+        self.apply_full_resolution_adjustments()
+        print(f"Selected item: {item.text()}")
+        unreal.log(print(f"Selected item: {item.text()}"))
+        if item.text() == "Base Layer":
+            self.selected_layer = self.texture_layers[0]
+            self.selected_layer_index = 0
+        elif item.text() == "Layer 1":
+            self.selected_layer = self.texture_layers[1]
+            self.selected_layer_index = 1
+        elif item.text() == "Layer 2": 
+            self.selected_layer = self.texture_layers[2] 
+            self.selected_layer_index = 2
+        elif item.text() == "Layer 3": 
+            self.selected_layer = self.texture_layers[3]
+            self.selected_layer_index = 3
+        elif item.text() == "Layer 4":   
+            self.selected_layer = self.texture_layers[4]
+            self.selected_layer_index = 4
+        else:
+            pass
+        self.current_image = self.selected_layer.pixmap.toImage()
+        
     def color_dialog(self):
         self.color = QColorDialog.getColor()
 
@@ -464,10 +492,21 @@ class MainWindow(QMainWindow):
 
         dock = QDockWidget("Layers", self)
         self.layers = QListWidget(dock)
-        self.layers.addItems((
-            "ADD TOP LAYER",
-            "ADD IN BETWEEN LAYERS",
-            "ADD BASE LAYER"))
+
+        i = 0
+        for layer in self.texture_layers:
+            if i == 0:
+                self.layers.addItem("Base Layer")
+            else:
+                self.layers.addItem("Layer "+ str(i))
+            i+=1
+
+        # self.layers.addItems((
+        #     "Layer 2",
+        #     "Layer 1",
+        #     "Base Layer"))
+        self.layers.itemClicked.connect(self.change_layer)
+
         dock.setWidget(self.layers)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
 
@@ -584,10 +623,10 @@ class MainWindow(QMainWindow):
             """)
 
 
-        dock = QDockWidget("Gamma DOES NOT WORK YET", self)
-        self.gamma_panel = Slider(self, "Gamma Slider" , 0, 199, 100)
-        self.gamma_panel.value_changed.connect(self.adjust_gamma)
-        dock.setWidget(self.gamma_panel)
+        dock = QDockWidget("Gaussian Blur", self)
+        self.guassian_panel = Slider(self, "Gaussian Slider" , 0, 100, 0)
+        self.guassian_panel.value_changed.connect(self.adjust_gaussian)
+        dock.setWidget(self.guassian_panel)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
 
@@ -657,7 +696,7 @@ class MainWindow(QMainWindow):
             self.adjust_saturation(self.saturation_value)
             sliders_changed += 1
             self.adjust_resolution(sliders_changed)
-        self.altered_image = self.base_image
+        self.altered_image = self.current_image
 
     def adjust_resolution(self,sliders_changed):
         if sliders_changed > 6:
@@ -697,7 +736,7 @@ class MainWindow(QMainWindow):
 
     def adjust_cyan(self,value):
         factor = value/10
-        image = self.base_image.convertToFormat(QImage.Format_ARGB32) 
+        image = self.current_image.convertToFormat(QImage.Format_ARGB32) 
         altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
 
         for pixelY in range(image.height()):
@@ -759,8 +798,8 @@ class MainWindow(QMainWindow):
         self.altered_pixmap = QPixmap.fromImage(altered_image)
 
         updated_texture = TextureLayer(QPixmap.fromImage(altered_image), QtCore.QPoint(0,0))
-        self.texture_layers[0] = updated_texture
-        self.active_tool_widget.texture_layers[0] = updated_texture
+        #index = self.texture_layers.index(self.selected_layer)
+        self.texture_layers[self.selected_layer_index] = updated_texture
         self.active_tool_widget.update_overlay()
 
         #self.altered_image = self.base_pixmap.toImage()
@@ -919,6 +958,8 @@ class MainWindow(QMainWindow):
             factor = abs(value)/100
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+                self.original_image_location = self.selected_layer.position
+                #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
                 self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
@@ -963,16 +1004,17 @@ class MainWindow(QMainWindow):
 
                 new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
 
-                display_size = self.base_image.size()  # QImage.size() gives QSize
+                display_size = self.current_image.size()  # QImage.size() gives QSize
                 new_qimage = new_qimage.scaled(display_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
-                self.texture_layers[0] = updated_texture
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
                 
@@ -981,7 +1023,7 @@ class MainWindow(QMainWindow):
 
                 if value != self.greenness_value:
                     self.adjust_all_but_self("greenness")
-                    self.altered_image = self.base_image
+                    self.altered_image = self.current_image
 
                 self.greenness_value= value
 
@@ -1026,9 +1068,10 @@ class MainWindow(QMainWindow):
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
-                self.texture_layers[0] = updated_texture
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
 
@@ -1097,6 +1140,8 @@ class MainWindow(QMainWindow):
             factor = abs(value)/100
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+                self.original_image_location = self.selected_layer.position
+                #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
                 self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
@@ -1141,16 +1186,17 @@ class MainWindow(QMainWindow):
 
                 new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
 
-                display_size = self.base_image.size()  # QImage.size() gives QSize
+                display_size = self.current_image.size()  # QImage.size() gives QSize
                 new_qimage = new_qimage.scaled(display_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
-                self.texture_layers[0] = updated_texture
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
                 #self.base_image = self.base_pixmap.toImage()
@@ -1163,7 +1209,7 @@ class MainWindow(QMainWindow):
                 if value != self.blueness_value:
 
                     self.adjust_all_but_self("blueness")
-                    self.altered_image = self.base_image
+                    self.altered_image = self.current_image
 
 
                 self.blueness_value = value
@@ -1205,9 +1251,10 @@ class MainWindow(QMainWindow):
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
-                self.texture_layers[0] = updated_texture
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
 
@@ -1220,6 +1267,86 @@ class MainWindow(QMainWindow):
                 self.tool_panel.radioButtonGroupChanged()
                 self.update()
 
+    def adjust_gaussian(self,value):
+            factor = value/100
+            if self.use_low_res:
+                #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+                self.original_image_location = self.selected_layer.position
+                #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+
+                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
+
+                #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
+
+
+                altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
+
+                pillow_image = ImageQt.fromqimage(altered_image)
+
+
+                image_gaussblur = pillow_image.filter(ImageFilter.GaussianBlur(radius = (value/10)))
+                new_qimage = ImageQt.ImageQt(image_gaussblur).convertToFormat(QImage.Format_ARGB32)
+
+                display_size = self.current_image.size()  # QImage.size() gives QSize
+                new_qimage = new_qimage.scaled(display_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
+
+                #self.base_pixmap = QPixmap.fromImage(image)
+                self.altered_pixmap = QPixmap.fromImage(new_qimage)
+
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
+                #update textures
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
+                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.active_tool_widget.update_overlay()
+
+
+
+                self.altered_image = new_qimage
+
+                if value != self.self.gaussian_value:
+                    self.adjust_all_but_self("gaussian")
+                    self.altered_image = self.base_image
+
+
+                self.gaussian_value = value
+                #self.base_image = self.base_pixmap.toImage()
+                ########################
+                ####self.altered_image = self.altered_pixmap.toImage()
+                #####self.adjust_saturation(self.saturation_value)
+                self.update()
+            else:
+                self.setCursor(QtCore.Qt.ForbiddenCursor)
+
+                #image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+                altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
+                pillow_image = ImageQt.fromqimage(altered_image)
+
+                image_gaussblur = pillow_image.filter(ImageFilter.GaussianBlur(radius = (value/10)))
+                new_qimage = ImageQt.ImageQt(image_gaussblur).convertToFormat(QImage.Format_ARGB32)
+
+
+                #self.base_pixmap = QPixmap.fromImage(image)
+                self.altered_pixmap = QPixmap.fromImage(new_qimage)
+
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
+                #update textures
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
+                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.active_tool_widget.update_overlay()
+
+                #self.base_image = self.base_pixmap.toImage()
+                ########################
+                self.altered_image = self.altered_pixmap.toImage()
+                #self.adjust_saturation(self.saturation_value)
+                self.saturation_panel.reset(100)
+                self.saturation_value = 100
+                self.tool_panel.radioButtonGroupChanged()
+
+                self.update()
     # def adjust_blueness(self,value):
     #     self.blue_value = value
     #     factor = value/100
@@ -1282,6 +1409,8 @@ class MainWindow(QMainWindow):
             factor = abs(value)/100
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+                self.original_image_location = self.selected_layer.position
+                #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
                 self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
@@ -1326,16 +1455,17 @@ class MainWindow(QMainWindow):
 
                 new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
 
-                display_size = self.base_image.size()  # QImage.size() gives QSize
+                display_size = self.current_image.size()  # QImage.size() gives QSize
                 new_qimage = new_qimage.scaled(display_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
-                self.texture_layers[0] = updated_texture
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
 
@@ -1345,7 +1475,7 @@ class MainWindow(QMainWindow):
 
                 if value != self.redness_value:
                     self.adjust_all_but_self("redness")
-                    self.altered_image = self.base_image
+                    self.altered_image = self.current_image
 
 
                 self.redness_value = value
@@ -1391,9 +1521,10 @@ class MainWindow(QMainWindow):
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
-                self.texture_layers[0] = updated_texture
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
 
@@ -1414,7 +1545,9 @@ class MainWindow(QMainWindow):
             factor = value/100
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
-
+                self.original_image_location = self.selected_layer.position
+                #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+                print(self.original_image_location)
                 self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
@@ -1435,16 +1568,17 @@ class MainWindow(QMainWindow):
 
                 new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
 
-                display_size = self.base_image.size()  # QImage.size() gives QSize
+                display_size = self.current_image.size()  # QImage.size() gives QSize
                 new_qimage = new_qimage.scaled(display_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
-                self.texture_layers[0] = updated_texture
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
 
@@ -1453,7 +1587,7 @@ class MainWindow(QMainWindow):
 
                 if value != self.contrast_value:
                     self.adjust_all_but_self("contrast")
-                    self.altered_image = self.base_image
+                    self.altered_image = self.current_image
 
 
                 self.contrast_value = value
@@ -1464,6 +1598,7 @@ class MainWindow(QMainWindow):
                 self.update()
             else:
                 self.setCursor(QtCore.Qt.ForbiddenCursor)
+                self.original_image_location = self.selected_layer.position
 
                 #image = self.base_image.convertToFormat(QImage.Format_ARGB32)
                 altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
@@ -1483,9 +1618,10 @@ class MainWindow(QMainWindow):
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
-                self.texture_layers[0] = updated_texture
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
 
@@ -1501,6 +1637,8 @@ class MainWindow(QMainWindow):
     def adjust_saturation(self,value):
             factor = value/100
             if self.use_low_res:
+                #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+                self.original_image_location = self.selected_layer.position
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
                 self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -1523,16 +1661,17 @@ class MainWindow(QMainWindow):
 
                 new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
 
-                display_size = self.base_image.size()  # QImage.size() gives QSize
+                display_size = self.current_image.size()  # QImage.size() gives QSize
                 new_qimage = new_qimage.scaled(display_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
-                self.texture_layers[0] = updated_texture
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
 
@@ -1542,7 +1681,7 @@ class MainWindow(QMainWindow):
 
                 if value != self.saturation_value:
                     self.adjust_all_but_self("saturation")
-                    self.altered_image = self.base_image
+                    self.altered_image = self.current_image
 
 
                 self.saturation_value = value
@@ -1572,9 +1711,10 @@ class MainWindow(QMainWindow):
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
-                self.texture_layers[0] = updated_texture
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
 
@@ -1591,6 +1731,8 @@ class MainWindow(QMainWindow):
     def adjust_gamma(self,value):
             factor = value/100
             if self.use_low_res:
+                #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+                self.original_image_location = self.selected_layer.position
 
                 self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
@@ -1617,7 +1759,7 @@ class MainWindow(QMainWindow):
                 contrast_image = contrast_enhancer.enhance(factor)
                 new_qimage = ImageQt.ImageQt(contrast_image).convertToFormat(QImage.Format_ARGB32)
 
-                display_size = self.base_image.size()  
+                display_size = self.current_image.size()  
                 # new_qimage = new_qimage.scaled(display_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
                 for pixelY in range(new_qimage.height()):
@@ -1659,10 +1801,10 @@ class MainWindow(QMainWindow):
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
-                self.texture_layers[0] = updated_texture
-                #self.active_tool_widget.texture_layers[0] = updated_texture
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture                #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
 
                 #self.saturation_value = value
@@ -1693,9 +1835,10 @@ class MainWindow(QMainWindow):
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
-                self.texture_layers[0] = updated_texture
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
 
@@ -1708,6 +1851,8 @@ class MainWindow(QMainWindow):
                 self.tool_panel.radioButtonGroupChanged()
 
                 self.update()
+
+
     # def adjust_saturation(self,value):
     #     factor = value/100
     #     image = self.base_image.convertToFormat(QImage.Format_ARGB32)
@@ -1748,6 +1893,8 @@ class MainWindow(QMainWindow):
             factor = value/100
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+                self.original_image_location = self.selected_layer.position
+                #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
 
                 self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
@@ -1769,7 +1916,7 @@ class MainWindow(QMainWindow):
 
                 new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
 
-                display_size = self.base_image.size() 
+                display_size = self.current_image.size() 
                 new_qimage = new_qimage.scaled(display_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
 
@@ -1780,9 +1927,10 @@ class MainWindow(QMainWindow):
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
-                self.texture_layers[0] = updated_texture
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
 
@@ -1792,7 +1940,7 @@ class MainWindow(QMainWindow):
 
                 if value != self.brightness_value:
                     self.adjust_all_but_self("brightness")
-                    self.altered_image = self.base_image
+                    self.altered_image = self.current_image
 
 
                 self.brightness_value = value
@@ -1826,9 +1974,10 @@ class MainWindow(QMainWindow):
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
-                self.texture_layers[0] = updated_texture
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
 
@@ -1851,6 +2000,7 @@ class MainWindow(QMainWindow):
         self.contrast_panel.reset(100)
         self.brightness_panel.reset(100)
         self.adjust_apply_button_colour(0)
+        self.apply_full_resolution_adjustments()
         self.update()
 
     def force_resolution_to_medium(self, bool):
@@ -1883,7 +2033,7 @@ class MainWindow(QMainWindow):
         self.adjust_contrast(self.contrast_value)
         self.adjust_brightness(self.brightness_value)
 
-        self.base_image = self.altered_image
+        self.current_image = self.altered_image
         self.setCursor(QtCore.Qt.ArrowCursor)
         self.tool_panel.radioButtonGroupChanged()
         self.use_low_res = True
@@ -1906,7 +2056,7 @@ class MainWindow(QMainWindow):
         self.adjust_saturation(self.saturation_value)
         self.adjust_contrast(self.contrast_value)
         self.adjust_brightness(self.brightness_value)
-        self.altered_image = self.base_image
+        self.altered_image = self.current_image
 
         self.setCursor(QtCore.Qt.ArrowCursor)
         self.tool_panel.radioButtonGroupChanged()
@@ -1937,7 +2087,7 @@ class MainWindow(QMainWindow):
     #         self.base_pixmap = QPixmap.fromImage(image)
     #         self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
-    #         updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), QtCore.QPoint(0,0))
+    #         updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
     #         #update textures
     #         self.texture_layers[0] = updated_texture
     #         #self.active_tool_widget.texture_layers[0] = updated_texture
@@ -2291,6 +2441,8 @@ class MainWindow(QMainWindow):
 
         if self.active_tool_widget:
             self.active_tool_widget.update()
+
+        self.layers.addItem("Layer "+ str(len(self.texture_layers)-1))
         self.update()
 
 
@@ -2354,6 +2506,7 @@ class MainWindow(QMainWindow):
             unreal.log("Succesfully imported into Unreal")
         else:
             unreal.log_error("Failed to import into Unreal")
+        exit()
 
     def export_flattened_additions(self, unreal_folder, name):
         temp_dir = os.path.join(unreal.Paths.project_intermediate_dir(), "TempExports")
@@ -2399,7 +2552,8 @@ class MainWindow(QMainWindow):
         else:
             unreal.log_error("Failed to import into Unreal")
             #return imported_asset_path
-        
+        exit()
+
     def create_decal(self, unreal_folder, material_name):
         merged_texture_path = self.export_flattened_additions(str(self.prompt_add_folder_path()),"TESTTEST")
         print("MERGED TEXTURE PATH: ", merged_texture_path)
@@ -2886,6 +3040,36 @@ class PenTool(QtWidgets.QWidget):
         self.merged_selection_path = parent_window.merged_selection_path
         self.selections_paths = parent_window.selections_paths
         self.update_overlay()
+
+
+#HERE HERE HERE HERE LAYERS
+
+
+    #     if hasattr(self.parent_window, "Layers"):
+    #         self.parent_window.layout.removeWidget(parent_window.layers)
+    #         # self.parent_window.layers.deleteLater()
+
+    #     dock = QDockWidget("Layers", self)
+    #     parent_window.layers = QListWidget(dock)
+
+    # ####needs to be initalised with a tool and needs to update when the widget is cchanged w radio button
+    #     i = 0
+    #     for layer in parent_window.texture_layers:
+    #         if i == 0:
+    #             parent_window.layers.addItem("Base Layer")
+    #         else:
+    #             parent_window.layers.addItem("Layer "+ str(i))
+    #         i+=1
+
+    #     # self.layers.addItems((
+    #     #     "Layer 2",
+    #     #     "Layer 1",
+    #     #     "Base Layer"))
+    #     parent_window.layers.itemClicked.connect(parent_window.change_layer)
+
+    #     dock.setWidget(parent_window.layers)
+    #     parent_window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
+
 
     def get_scaled_point(self, pos):         
         scale = self.parent_window.scale_factor
@@ -4673,7 +4857,7 @@ class TransformTool(QWidget):
                 for layer in reversed(self.parent_window.texture_layers):
                     self.rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
                     unreal.log(print(self.rectangle))
-                    expanded_rectangle = self.expand_rectangle(self.rectangle, 2)
+                    expanded_rectangle = self.expand_rectangle(self.rectangle, 1.2)
                     # expanded_rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
                     # expanded_rectangle.setWidth(expanded_rectangle.width()*2)
                     # expanded_rectangle.setHeight(expanded_rectangle.height()*2)
@@ -4690,7 +4874,7 @@ class TransformTool(QWidget):
                             #     self.clear_dragging_layer()
                             self.dragging_layer = layer
                             self.drag_start_offset = self.point - layer.position
-                            self.overlay = QtGui.QPixmap(self.dragging_layer.pixmap.size())
+                            #self.overlay = QtGui.QPixmap(self.dragging_layer.pixmap.size())
                             self.dragging_pixmap = self.dragging_layer.pixmap
                             self.scaling = False
                             self.rotating = False
@@ -4715,6 +4899,7 @@ class TransformTool(QWidget):
                         unreal.log ("ROTATION")
                         self.scaling = False
                         self.rotating = True
+                    #self.overlay = QtGui.QPixmap(self.dragging_pixmap.size())
 
                             
     def mouseMoveEvent(self,event):
@@ -4880,16 +5065,17 @@ class TransformTool(QWidget):
         for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
         painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
-        #painter.drawPixmap(0, 0, self.overlay)
+        painter.drawPixmap(0, 0, self.overlay)
         
     def clear_overlay(self):
-        self.overlay.fill(QtCore.Qt.transparent)
-        self.update()
+        # self.overlay.fill(QtCore.Qt.transparent)
+        # self.update()
+        pass
 
     def clear_dragging_layer(self):
-        self.dragging_pixmap.fill(QtCore.Qt.transparent)
-        self.update()
-
+        # self.dragging_pixmap.fill(QtCore.Qt.transparent)
+        # self.update()
+        pass
     def expand_rectangle(self,rectangle,scale_factor):
         transform = QTransform()
         center = rectangle.center()
@@ -4903,17 +5089,24 @@ class TransformTool(QWidget):
         # self.tool_panel.radioButtonGroupChanged()
 
     def update_overlay(self):
+        
         self.overlay.fill(QtCore.Qt.transparent)
         painter = QtGui.QPainter(self.overlay)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        outline_pen = QtGui.QPen(QtCore.Qt.blue, 5)
+        painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
+
+        outline_pen =QtGui.QPen(QtGui.QColor(0, 0, 255, 255), 5)
 
         if self.dragging_layer:
-            painter = QtGui.QPainter(self.dragging_layer.pixmap)
+            
+            painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+            painter = QtGui.QPainter(self.overlay)
             painter.setPen(QtGui.QPen(outline_pen))
-            rect = QtCore.QRect(0, 0, self.dragging_layer.pixmap.width()-1, self.dragging_layer.pixmap.height()-1)
+            rect = QtCore.QRect(self.dragging_pixmap.rect())
+            unreal.log(rect)
             painter.drawRect(rect)
-            painter.end()
+            painter.drawRect(10, 10, 100, 100)
 
 
         painter.end()
