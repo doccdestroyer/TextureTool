@@ -283,8 +283,8 @@ class MainWindow(QMainWindow):
         self.base_image = self.base_pixmap.toImage()
         self.altered_image = self.base_image
 
-
-        self.resolution = 800
+        self.use_low_res = True
+        self.resolution = 400
 
         self.saturation_value = 100
         self.brightness_value = 100
@@ -358,7 +358,7 @@ class MainWindow(QMainWindow):
         dock = QDockWidget("Colour Balance", self)
         self.cyan_red_panel = Slider(self, "Colour Balance - Red " , -80, 80, 0)
         self.cyan_red_panel.value_changed.connect(self.adjust_redness)
-        #dock.setWidget(self.cyan_red_panel)
+        self.cyan_red_panel.has_released_slider.connect(self.apply_1k_resolution_adjustments)
         dock.setLayout(layout)
 
 
@@ -408,6 +408,7 @@ class MainWindow(QMainWindow):
 
         self.magenta_green_panel = Slider(self, "Colour Balance - Green " , -80, 80, 0)
         self.magenta_green_panel.value_changed.connect(self.adjust_greenness)
+        self.magenta_green_panel.has_released_slider.connect(self.apply_1k_resolution_adjustments)
 
         # self.magenta_green_panel = Slider(self, "Colour Balance - Green " , -90, 90, 0)
         # self.magenta_green_panel.value_changed.connect(self.adjust_magneta)
@@ -431,6 +432,7 @@ class MainWindow(QMainWindow):
             """)
         self.yellow_blue_panel = Slider(self, "Colour Balance - Blue " , -80, 80, 0)
         self.yellow_blue_panel.value_changed.connect(self.adjust_blueness)
+        self.yellow_blue_panel.has_released_slider.connect(self.apply_1k_resolution_adjustments)
 
         self.yellow_blue_panel.setStyleSheet("""
                 QSlider::groove:horizontal {
@@ -504,6 +506,8 @@ class MainWindow(QMainWindow):
         dock = QDockWidget("Saturation", self)
         self.saturation_panel = Slider(parent = self, name = "Saturation Slider", min = 0, max =100, default =100)
         self.saturation_panel.value_changed.connect(self.adjust_saturation)
+        self.saturation_panel.has_released_slider.connect(self.apply_1k_resolution_adjustments)
+
         dock.setWidget(self.saturation_panel)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
@@ -529,6 +533,8 @@ class MainWindow(QMainWindow):
         dock = QDockWidget("Brightness", self)
         self.brightness_panel = Slider(self, "Brightness Slider" , 0, 199, 100)
         self.brightness_panel.value_changed.connect(self.adjust_brightness)
+        self.brightness_panel.has_released_slider.connect(self.apply_1k_resolution_adjustments)
+
         dock.setWidget(self.brightness_panel)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
@@ -554,6 +560,8 @@ class MainWindow(QMainWindow):
         dock = QDockWidget("Contrast", self)
         self.contrast_panel = Slider(self, "Contrast Slider" , 0, 199, 100)
         self.contrast_panel.value_changed.connect(self.adjust_contrast)
+        self.contrast_panel.has_released_slider.connect(self.apply_1k_resolution_adjustments)
+
         dock.setWidget(self.contrast_panel)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
@@ -647,13 +655,15 @@ class MainWindow(QMainWindow):
 
     def adjust_resolution(self,sliders_changed):
         if sliders_changed > 6:
-            self.resolution = 128
+            self.resolution = 32
         elif sliders_changed > 4:
-            self.resolution = 256
+            self.resolution = 64
         elif sliders_changed > 2:
-            self.resolution = 512
+            self.resolution = 86
+        elif sliders_changed > 1:
+            self.resolution = 128
         else:
-            self.resolution = 600
+            self.resolution = 400
 
 
 
@@ -1368,6 +1378,9 @@ class MainWindow(QMainWindow):
                 self.tool_panel.radioButtonGroupChanged()
                 self.update()
 
+    def print_value(self,value):
+        unreal.log("hello")
+        unreal.log(print("VALUE WHEN RELEASE: ", value))
 
     def adjust_contrast(self,value):
             factor = value/100
@@ -1802,6 +1815,18 @@ class MainWindow(QMainWindow):
                 self.update()
 
 
+    def force_resolution_to_medium(self, bool):
+        unreal.log(print("fumction run"))
+        self.resolution = 1024
+        self.adjust_redness(self.redness_value)
+        self.adjust_greenness(self.greenness_value)
+        self.adjust_blueness(self.blueness_value)
+        self.adjust_saturation(self.saturation_value)
+        self.adjust_contrast(self.contrast_value)
+        self.adjust_brightness(self.brightness_value)
+        self.tool_panel.radioButtonGroupChanged()
+
+
     def apply_full_resolution_adjustments(self):
         self.use_low_res = False
         self.setCursor(QtCore.Qt.ForbiddenCursor)
@@ -1813,17 +1838,39 @@ class MainWindow(QMainWindow):
         # if self.contrast_value != 100:
         #     self.adjust_contrast(self.contrast_value)
 
-        self.adjust_brightness(self.brightness_value)
-        self.adjust_saturation(self.saturation_value)
-        self.adjust_contrast(self.contrast_value)
         self.adjust_redness(self.redness_value)
         self.adjust_greenness(self.greenness_value)
         self.adjust_blueness(self.blueness_value)
+        self.adjust_saturation(self.saturation_value)
+        self.adjust_contrast(self.contrast_value)
+        self.adjust_brightness(self.brightness_value)
 
 
         self.setCursor(QtCore.Qt.ArrowCursor)
         self.tool_panel.radioButtonGroupChanged()
         self.use_low_res = True
+
+    def apply_1k_resolution_adjustments(self, bool):
+        self.use_low_res = bool
+        self.setCursor(QtCore.Qt.ForbiddenCursor)
+        self.resolution = 1000
+        # if self.brightness_value != 100:
+        #     self.adjust_brightness(self.brightness_value)
+        # if self.saturation_value != 100:
+        #     self.adjust_saturation(self.saturation_value)
+        # if self.contrast_value != 100:
+        #     self.adjust_contrast(self.contrast_value)
+
+        self.adjust_redness(self.redness_value)
+        self.adjust_greenness(self.greenness_value)
+        self.adjust_blueness(self.blueness_value)
+        self.adjust_saturation(self.saturation_value)
+        self.adjust_contrast(self.contrast_value)
+        self.adjust_brightness(self.brightness_value)
+        self.altered_image = self.base_image
+
+        self.setCursor(QtCore.Qt.ArrowCursor)
+        self.tool_panel.radioButtonGroupChanged()
 
         # Optionally update the full-res altered_image
         #self.altered_image = self.altered_pixmap.toImage()
@@ -2352,6 +2399,7 @@ class MainWindow(QMainWindow):
 ###############################################################
 class Slider(QWidget):
     value_changed = Signal(int)
+    has_released_slider = Signal(bool)
     def __init__(self, parent, name, min, max, default):
         super().__init__(parent)
         self.parent_window = parent
@@ -2365,6 +2413,7 @@ class Slider(QWidget):
         self.slider.setMaximum(max)
         self.slider.setSliderPosition(default)
         self.slider.valueChanged.connect(self.sliderChanged)
+        self.slider.sliderReleased.connect(self.slider_been_released)
         # self.slider.sliderReleased.connect(self.slider_released)
 
         self.texture_layers = parent.texture_layers
@@ -2440,9 +2489,13 @@ class Slider(QWidget):
         # self.parent_window.update()
         self.value_changed.emit(value)
     
-    # def slider_released(self):
-    #     self.setCursor(QtCore.Qt.ForbiddenCursor)
-    #     self.parent_window.use_low_res = False
+    def slider_been_released(self):
+        unreal.log(print("hi"))
+        # self.setCursor(QtCore.Qt.ForbiddenCursor)
+        # self.parent_window.use_low_res = False
+        self.has_released_slider.emit(True)
+
+        #self.has_released_slider.emit(True)
 
     
 ###############################################################
@@ -2829,7 +2882,6 @@ class PenTool(QtWidgets.QWidget):
             self.setCursor(QtCore.Qt.CrossCursor)
         
     def paintEvent(self, event):
-        unreal.log("is painting")
         painter = QtGui.QPainter(self)
         painter.translate(self.parent_window.pan_offset)     
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
