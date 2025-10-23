@@ -590,19 +590,20 @@ class MainWindow(QMainWindow):
         dock.setWidget(self.gamma_panel)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
-
-
-
-
-
         dock = QDockWidget("Apply Sliders", self)
-        self.apply_button = QPushButton("APPLY")
+        self.apply_button = QPushButton("Apply")
         self.apply_button.setCheckable(True)
         self.apply_button.clicked.connect(self.apply_full_resolution_adjustments)
-        self.apply_button.setFixedSize(320,50)
-
-
+        self.apply_button.setFixedSize(157,50)
         dock.setWidget(self.apply_button)
+        self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
+
+        dock = QDockWidget("Reset Sliders", self)
+        self.reset_button = QPushButton("Reset")
+        self.reset_button.setCheckable(True)
+        self.reset_button.clicked.connect(self.reset_sliders)
+        self.reset_button.setFixedSize(157,50)
+        dock.setWidget(self.reset_button)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
     # def update_tool_description(self):
     #     self.tool_description = self.get_tool_description()
@@ -1815,6 +1816,15 @@ class MainWindow(QMainWindow):
                 self.update()
 
 
+    def reset_sliders(self):
+        self.magenta_green_panel.reset(0)
+        self.cyan_red_panel.reset(0)
+        self.yellow_blue_panel.reset(0)
+        self.saturation_panel.reset(100)
+        self.contrast_panel.reset(100)
+        self.brightness_panel.reset(100)
+        self.update()
+
     def force_resolution_to_medium(self, bool):
         unreal.log(print("fumction run"))
         self.resolution = 1024
@@ -2405,7 +2415,7 @@ class Slider(QWidget):
         self.parent_window = parent
 
         self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
-        self.setFixedSize(300, 45)
+        self.setFixedSize(320, 45)
         self.setWindowTitle(name)
 
         self.slider = QSlider(Qt.Horizontal)
