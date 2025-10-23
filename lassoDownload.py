@@ -630,7 +630,7 @@ class MainWindow(QMainWindow):
     #     unreal.log("UPDATED")
 
     def adjust_all_but_self(self, current_adjustment):
-        sliders_changed = 0
+        sliders_changed = 1
         self.adjust_resolution(sliders_changed)
 
         if current_adjustment != "redness" and self.redness_value != 0:
@@ -673,15 +673,15 @@ class MainWindow(QMainWindow):
         self.adjust_apply_button_colour(sliders_changed)
 
     def adjust_apply_button_colour(self, sliders_changed_amount):
-        unreal.log(print("sliders changed"))
         if sliders_changed_amount > 0:
             self.apply_button.setStyleSheet("""
-                background-color: #A1A1A1;
+                background-color: #7A7A7A;
                 color: #ffffff;
                 font-family: Consolas;
                 font-size: 12px;
                 selection-background-color: #424242;                  
-            """)             
+            """)    
+
         else:
             self.apply_button.setStyleSheet("""
                 background-color: #2c2c2c;
@@ -1850,6 +1850,7 @@ class MainWindow(QMainWindow):
         self.saturation_panel.reset(100)
         self.contrast_panel.reset(100)
         self.brightness_panel.reset(100)
+        self.adjust_apply_button_colour(0)
         self.update()
 
     def force_resolution_to_medium(self, bool):
