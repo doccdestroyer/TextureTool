@@ -295,17 +295,19 @@ class MainWindow(QMainWindow):
         self.use_low_res = True
         self.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
 
+        self.item = None
 
 
     def change_layer(self, item):
         self.apply_full_resolution_adjustments()
-
+        # self.item = item        
         print("LAYER CHANGED")
-
-        for i in range (0, len(self.texture_layers)):
+        print("item: ", item)
+        for i in range (1, len(self.texture_layers)):
             if item.text() == "Base Layer":
                 self.selected_layer = self.texture_layers[0]
                 self.selected_layer_index = 0
+                self.item = item
             else:
                 if item.text() == ("Layer " + str(i)):
                     self.selected_layer = self.texture_layers[i]
@@ -476,9 +478,23 @@ class MainWindow(QMainWindow):
         #dock.setLayout(layout)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
 
+        central_widget = QWidget()
+        layout = QVBoxLayout(central_widget)
 
+        internal_layout = QHBoxLayout(central_widget)
 
         dock = QDockWidget("Layers", self)
+        self.new_layer_button = QPushButton("Add New Layer")
+        self.new_layer_button.setCheckable(True)
+        self.new_layer_button.clicked.connect(self.add_layer)
+        internal_layout.addWidget(self.new_layer_button)
+
+        self.delete_layer_button = QPushButton("Delete Current Layer")
+        self.delete_layer_button.setCheckable(True)
+        self.delete_layer_button.clicked.connect(self.delete_current_layer)
+        internal_layout.addWidget(self.delete_layer_button)
+
+
         self.layers = QListWidget(dock)
 
         i = 0
@@ -495,7 +511,10 @@ class MainWindow(QMainWindow):
         #     "Base Layer"))
         self.layers.itemClicked.connect(self.change_layer)
 
-        dock.setWidget(self.layers)
+        layout.addLayout(internal_layout)
+        layout.addWidget(self.layers)
+
+        dock.setWidget(central_widget)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
 
 
@@ -671,6 +690,15 @@ class MainWindow(QMainWindow):
     #     else:
     #         return ("LOL")
     #     unreal.log("UPDATED")
+
+    def add_layer(self):
+        pass
+    def delete_current_layer(self):
+        if self.selected_layer_index != 0:
+            self.texture_layers.remove(self.texture_layers[self.selected_layer_index])
+            self.change_layer(self.item)
+            self.rewrite_layers()
+            self.update()
 
     def adjust_all_but_self(self, current_adjustment):
         sliders_changed = 1
@@ -2468,6 +2496,16 @@ class MainWindow(QMainWindow):
 
         self.layers.addItem("Layer "+ str(len(self.texture_layers)-1))
         self.update()
+
+    def rewrite_layers(self):
+        self.layers.clear()
+        i = 0
+        for layer in self.texture_layers:
+            if i == 0:
+                self.layers.addItem("Base Layer")
+            else:
+                self.layers.addItem("Layer "+ str(i))
+            i+=1
 
 
     def zoom_changed(self, value):
