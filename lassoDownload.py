@@ -527,7 +527,7 @@ class MainWindow(QMainWindow):
 
         descript_zoom_dock = QDockWidget("Zoom/Pan User Guide", self)
         self.tool_zoom_label = QLabel("  Space    -  Hold, Drag to Pan\n\n" \
-        "  Ctrl +   -  Zoom In\n\n" \
+        "  Ctrl +   -  \n\n" \
         "  Ctrl -   -  Zoom Out\n\n" \
         "  Ctrl 0   -  Reset Zoom"\
         "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nn\n\n\n")
@@ -692,7 +692,17 @@ class MainWindow(QMainWindow):
     #     unreal.log("UPDATED")
 
     def add_layer(self):
-        pass
+        #new_pixmap = QtGui.QPixmap(self.base_image.size())
+        new_pixmap = QtGui.QPixmap()
+        new_layer = TextureLayer(new_pixmap, QtCore.QPoint(0, 0))
+        self.texture_layers.append(new_layer)
+
+        if self.active_tool_widget:
+            self.active_tool_widget.update()
+
+        self.layers.addItem("Layer "+ str(len(self.texture_layers)-1))
+        self.update()
+
     def delete_current_layer(self):
         if self.selected_layer_index != 0:
             self.texture_layers.remove(self.texture_layers[self.selected_layer_index])
