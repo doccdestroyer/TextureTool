@@ -91,7 +91,7 @@ class ChooseNameWindow(QMainWindow):
         super().__init__()           
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
-
+        self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
         #self.mainWindow= QMainWindow()
         #self.mainWindow.setParent(self)
         self.button = QPushButton("Apply Name Change")
@@ -138,13 +138,6 @@ class ChooseNameWindow(QMainWindow):
         return self.name
 
     def launchWindow(self):
-        if QApplication.instance():
-            for win in (QApplication.allWindows()):
-                if 'toolWindow' in win.objectName(): 
-                    win.destroy()
-        else:
-            QApplication(sys.argv)
-
         ChooseNameWindow.window = ChooseNameWindow()
         ChooseNameWindow.window.show()
         ChooseNameWindow.window.setWindowTitle("WINDOW Demo")
@@ -179,6 +172,7 @@ class MainWindow(QMainWindow):
         self.received_value = 100
         self.pen_size = 2
         self.color = PySide6.QtGui.QColor.fromRgbF(0.000000, 0.000000, 0.000000, 1.000000)
+        self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
 
         self.setWindowTitle("Selection Tools")
         self.image_path = image_path
@@ -296,6 +290,7 @@ class MainWindow(QMainWindow):
         self.redness_value = 0
         self.greenness_value = 0
         self.blueness_value = 0
+        self.gaussian_value = 0
         self.create_dock_windows()
         self.use_low_res = True
         self.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
@@ -304,27 +299,20 @@ class MainWindow(QMainWindow):
 
     def change_layer(self, item):
         self.apply_full_resolution_adjustments()
-        print(f"Selected item: {item.text()}")
-        unreal.log(print(f"Selected item: {item.text()}"))
-        if item.text() == "Base Layer":
-            self.selected_layer = self.texture_layers[0]
-            self.selected_layer_index = 0
-        elif item.text() == "Layer 1":
-            self.selected_layer = self.texture_layers[1]
-            self.selected_layer_index = 1
-        elif item.text() == "Layer 2": 
-            self.selected_layer = self.texture_layers[2] 
-            self.selected_layer_index = 2
-        elif item.text() == "Layer 3": 
-            self.selected_layer = self.texture_layers[3]
-            self.selected_layer_index = 3
-        elif item.text() == "Layer 4":   
-            self.selected_layer = self.texture_layers[4]
-            self.selected_layer_index = 4
-        else:
-            pass
+
+        print("LAYER CHANGED")
+
+        for i in range (0, len(self.texture_layers)):
+            if item.text() == "Base Layer":
+                self.selected_layer = self.texture_layers[0]
+                self.selected_layer_index = 0
+            else:
+                if item.text() == ("Layer " + str(i)):
+                    self.selected_layer = self.texture_layers[i]
+                    self.selected_layer_index = i
         self.current_image = self.selected_layer.pixmap.toImage()
-        
+        self.altered_image = self.current_image
+
     def color_dialog(self):
         self.color = QColorDialog.getColor()
 
@@ -349,7 +337,7 @@ class MainWindow(QMainWindow):
                              | Qt.DockWidgetArea.RightDockWidgetArea
                              | Qt.DockWidgetArea.TopDockWidgetArea)
         self.setDockOptions(QMainWindow.DockOption.AllowNestedDocks)
-        self.color_button.setFixedSize(320,200)
+        self.color_button.setFixedSize(330,100)
 
         self.setStyleSheet("""
             background-color: #2c2c2c;
@@ -624,11 +612,27 @@ class MainWindow(QMainWindow):
 
 
         dock = QDockWidget("Gaussian Blur", self)
-        self.guassian_panel = Slider(self, "Gaussian Slider" , 0, 100, 0)
-        self.guassian_panel.value_changed.connect(self.adjust_gaussian)
-        dock.setWidget(self.guassian_panel)
+        self.gaussian_panel = Slider(self, "Gaussian Slider" , 0, 100, 0)
+        self.gaussian_panel.value_changed.connect(self.adjust_gaussian)
+        dock.setWidget(self.gaussian_panel)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
+        self.gaussian_panel.setStyleSheet("""
+                QSlider::groove:horizontal {
+                    border: 1px solid #999999;
+                    height: 5px;
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #000000, stop:1 #FFFFFF);
+
+                }
+
+                QSlider::handle:horizontal {
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
+                    border: 1px solid #5c5c5c;
+                    width: 10px;
+                    margin: -2px 0;
+                    border-radius: 3px;
+                }
+            """)
 
 
 
@@ -638,7 +642,7 @@ class MainWindow(QMainWindow):
         self.apply_button = QPushButton("Apply")
         self.apply_button.setCheckable(True)
         self.apply_button.clicked.connect(self.apply_full_resolution_adjustments)
-        self.apply_button.setFixedSize(157,50)
+        self.apply_button.setFixedSize(157,25)
         dock.setWidget(self.apply_button)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
@@ -646,7 +650,7 @@ class MainWindow(QMainWindow):
         self.reset_button = QPushButton("Reset")
         self.reset_button.setCheckable(True)
         self.reset_button.clicked.connect(self.reset_sliders)
-        self.reset_button.setFixedSize(157,50)
+        self.reset_button.setFixedSize(157,25)
         dock.setWidget(self.reset_button)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
     # def update_tool_description(self):
@@ -696,6 +700,8 @@ class MainWindow(QMainWindow):
             self.adjust_saturation(self.saturation_value)
             sliders_changed += 1
             self.adjust_resolution(sliders_changed)
+        if current_adjustment != "gaussian" and self.gaussian_value != -1:
+            self.adjust_gaussian(self.gaussian_value)
         self.altered_image = self.current_image
 
     def adjust_resolution(self,sliders_changed):
@@ -1268,7 +1274,7 @@ class MainWindow(QMainWindow):
                 self.update()
 
     def adjust_gaussian(self,value):
-            factor = value/100
+            factor = value/10
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
                 self.original_image_location = self.selected_layer.position
@@ -1285,7 +1291,7 @@ class MainWindow(QMainWindow):
                 pillow_image = ImageQt.fromqimage(altered_image)
 
 
-                image_gaussblur = pillow_image.filter(ImageFilter.GaussianBlur(radius = (value/10)))
+                image_gaussblur = pillow_image.filter(ImageFilter.GaussianBlur(radius = factor-1))
                 new_qimage = ImageQt.ImageQt(image_gaussblur).convertToFormat(QImage.Format_ARGB32)
 
                 display_size = self.current_image.size()  # QImage.size() gives QSize
@@ -1306,7 +1312,7 @@ class MainWindow(QMainWindow):
 
                 self.altered_image = new_qimage
 
-                if value != self.self.gaussian_value:
+                if value != self.gaussian_value:
                     self.adjust_all_but_self("gaussian")
                     self.altered_image = self.base_image
 
@@ -1342,8 +1348,8 @@ class MainWindow(QMainWindow):
                 ########################
                 self.altered_image = self.altered_pixmap.toImage()
                 #self.adjust_saturation(self.saturation_value)
-                self.saturation_panel.reset(100)
-                self.saturation_value = 100
+                self.gaussian_panel.reset(0)
+                self.gaussian_value = 0
                 self.tool_panel.radioButtonGroupChanged()
 
                 self.update()
@@ -1999,6 +2005,7 @@ class MainWindow(QMainWindow):
         self.saturation_panel.reset(100)
         self.contrast_panel.reset(100)
         self.brightness_panel.reset(100)
+        self.gaussian_panel.reset(0)
         self.adjust_apply_button_colour(0)
         self.apply_full_resolution_adjustments()
         self.update()
@@ -2012,6 +2019,7 @@ class MainWindow(QMainWindow):
         self.adjust_saturation(self.saturation_value)
         self.adjust_contrast(self.contrast_value)
         self.adjust_brightness(self.brightness_value)
+        self.adjust_gaussian(self.gaussian_value)
         self.tool_panel.radioButtonGroupChanged()
 
 
@@ -2032,6 +2040,7 @@ class MainWindow(QMainWindow):
         self.adjust_saturation(self.saturation_value)
         self.adjust_contrast(self.contrast_value)
         self.adjust_brightness(self.brightness_value)
+        self.adjust_gaussian(self.gaussian_value)
 
         self.current_image = self.altered_image
         self.setCursor(QtCore.Qt.ArrowCursor)
@@ -2056,6 +2065,7 @@ class MainWindow(QMainWindow):
         self.adjust_saturation(self.saturation_value)
         self.adjust_contrast(self.contrast_value)
         self.adjust_brightness(self.brightness_value)
+        self.adjust_gaussian(self.gaussian_value)
         self.altered_image = self.current_image
 
         self.setCursor(QtCore.Qt.ArrowCursor)
@@ -2228,8 +2238,8 @@ class MainWindow(QMainWindow):
 
         edit_menu = menu_bar.addMenu("Edit")
 
-        flip_horizontal = QAction("Flip Base Layer Horizontal", self)
-        flip_vertical = QAction("Flip Base Layer Vertcial", self)
+        flip_horizontal = QAction("Flip Current Layer Horizontal", self)
+        flip_vertical = QAction("Flip Current Layer Vertcial", self)
 
         edit_menu.addAction(flip_horizontal)
         edit_menu.addAction(flip_vertical)
@@ -2308,21 +2318,21 @@ class MainWindow(QMainWindow):
  
 
     def flip_horizontal(self):
-        self.flip_base_layer(-1,1)
+        self.flip_selected_layer(-1,1)
 
 
     def flip_vertical(self):
-        self.flip_base_layer(1,-1)
+        self.flip_selected_layer(1,-1)
 
-    def flip_base_layer(self,x,y):
-        layer_pixmap = self.texture_layers[0].pixmap
-        layer_position = self.texture_layers[0].position
+    def flip_selected_layer(self,x,y):
+        layer_pixmap = self.selected_layer.pixmap
+        layer_position = self.selected_layer.position
 
         flipped_pixmap = layer_pixmap.transformed(QTransform().scale(x, y))
         flipped_position = QtCore.QPoint(layer_position.x()*x, layer_position.y()*y)
 
         new_layer = TextureLayer(flipped_pixmap, flipped_position)
-        self.texture_layers[0] = new_layer
+        self.texture_layers[self.selected_layer_index] = new_layer
 
     def flip_all_layers(self,x,y):
         for layer in self.texture_layers:
@@ -2380,7 +2390,6 @@ class MainWindow(QMainWindow):
         name_window.show()
         name_window.setWindowTitle("Name File")
         name_window.setObjectName("NamerWindow")
-        unreal.parent_external_window_to_slate(name_window.winId())
         looping = True
         while looping:
             QApplication.processEvents()
@@ -2506,7 +2515,8 @@ class MainWindow(QMainWindow):
             unreal.log("Succesfully imported into Unreal")
         else:
             unreal.log_error("Failed to import into Unreal")
-        exit()
+        time.sleep(1)
+        self.close()
 
     def export_flattened_additions(self, unreal_folder, name):
         temp_dir = os.path.join(unreal.Paths.project_intermediate_dir(), "TempExports")
@@ -2551,8 +2561,9 @@ class MainWindow(QMainWindow):
             return imported_asset_path
         else:
             unreal.log_error("Failed to import into Unreal")
-            #return imported_asset_path
-        exit()
+            #return imported_asset_path]
+        time.sleep(1)
+        self.close()
 
     def create_decal(self, unreal_folder, material_name):
         merged_texture_path = self.export_flattened_additions(str(self.prompt_add_folder_path()),"TESTTEST")
@@ -2598,7 +2609,7 @@ class Slider(QWidget):
         self.parent_window = parent
 
         self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
-        self.setFixedSize(320, 45)
+        self.setFixedSize(320, 25)
         self.setWindowTitle(name)
 
         self.slider = QSlider(Qt.Horizontal)
@@ -2890,9 +2901,9 @@ class ToolSectionMenu(QWidget):
                 "  outside of the image to  \n"\
                 "  rotate\n\n"\
                 "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-        elif button == self.fill_tool:
-            self.parent_window.active_tool_widget = BucketTool(self.parent_window.image_path, parent_window=self.parent_window)
-            self.parent_window.tool_description = "\n Bucket Tool\n\n\n"\
+        # elif button == self.fill_tool:
+        #     self.parent_window.active_tool_widget = BucketTool(self.parent_window.image_path, parent_window=self.parent_window)
+        #     self.parent_window.tool_description = "\n Bucket Tool\n\n\n"\
 
         if self.parent_window.active_tool_widget:
             parent_layout.insertWidget(0,self.parent_window.active_tool_widget)
