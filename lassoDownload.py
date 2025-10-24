@@ -3229,15 +3229,21 @@ class PenTool(QtWidgets.QWidget):
                 for i, path in enumerate(list(self.selections_paths)):
                     if path.contains(point):
                         self.in_selection = True
-                        self.points.append(point)
-    
-                        self.update_overlay()
-
                     else:
-                        self.in_selection = False
-                        # self.commit_line_to_image()
-                        # self.points.clear()
-                        self.update_overlay()
+                        if self.in_selection == True:
+                            pass
+                        else:
+                            self.in_selection = False
+
+                if self.in_selection:
+                    self.points.append(point)
+
+                    self.update_overlay()
+                else:
+                    self.commit_line_to_image(QtGui.QPolygon(self.points))
+                    self.points.clear()
+                    self.update_overlay()
+                self.in_selection = False
             else:
                 self.points.append(point)
                 self.update_overlay()
