@@ -692,8 +692,9 @@ class MainWindow(QMainWindow):
     #     unreal.log("UPDATED")
 
     def add_layer(self):
-        #new_pixmap = QtGui.QPixmap(self.base_image.size())
-        new_pixmap = QtGui.QPixmap()
+        new_pixmap = QtGui.QPixmap(self.base_image.size())
+        new_pixmap.fill(QtCore.Qt.transparent)
+        #new_pixmap = QtGui.QPixmap()
         new_layer = TextureLayer(new_pixmap, QtCore.QPoint(0, 0))
         self.texture_layers.append(new_layer)
 
@@ -2498,7 +2499,7 @@ class MainWindow(QMainWindow):
             return
 
         print(f"Loaded new texture: {texture_path}")
-        new_layer = TextureLayer(self.pixmap, QtCore.QPoint(100, 100))
+        new_layer = TextureLayer(self.pixmap, QtCore.QPoint(0, 0))
         self.texture_layers.append(new_layer)
 
         if self.active_tool_widget:
@@ -3089,7 +3090,7 @@ class PenTool(QtWidgets.QWidget):
 
         self.texture_layers = parent_window.texture_layers
 
-        self.image = self.parent_window.texture_layers[0].pixmap
+        self.image = self.parent_window.selected_layer.pixmap
         if self.image.isNull():
             raise ValueError("Failed to load image")
 
@@ -3261,7 +3262,9 @@ class PenTool(QtWidgets.QWidget):
 
     def update_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
-        painter = QtGui.QPainter(self.overlay)
+        #painter = QtGui.QPainter(self.overlay)
+        painter = QtGui.QPainter(self.parent_window.selected_layer.pixmap)
+
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         outline_pen = QtGui.QPen(QtCore.Qt.red, 2)
         fill_brush = QtGui.QBrush(QtGui.QColor(255, 0, 0, 50))
@@ -3298,7 +3301,8 @@ class PenTool(QtWidgets.QWidget):
         self.update()
 
     def commit_line_to_image(self, line):
-        painter = QtGui.QPainter(self.pen_overlay)
+        #painter = QtGui.QPainter(self.pen_overlay)
+        painter = QtGui.QPainter(self.parent_window.selected_layer.pixmap)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         drawing_pen = QtGui.QPen(self.pen_color, self.parent_window.pen_size)
         drawing_pen.setCapStyle(Qt.RoundCap)
