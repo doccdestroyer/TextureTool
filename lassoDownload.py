@@ -172,7 +172,7 @@ class MainWindow(QMainWindow):
         self.received_value = 100
         self.pen_size = 2
         self.color = PySide6.QtGui.QColor.fromRgbF(0.000000, 0.000000, 0.000000, 1.000000)
-        self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
+        #self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
 
         self.setWindowTitle("Selection Tools")
         self.image_path = image_path
@@ -268,10 +268,10 @@ class MainWindow(QMainWindow):
         # self.export_addtions_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
         # self.layout.addWidget(self.export_addtions_button)
 
-        self.create_decal_button = QPushButton("Create Decal")
-        #self.create_decal_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
-        self.create_decal_button.clicked.connect(lambda: self.create_decal(self.prompt_add_folder_path(), "M_DecalTest69"))
-        self.layout.addWidget(self.create_decal_button)
+        # self.create_decal_button = QPushButton("Create Decal")
+        # #self.create_decal_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
+        # self.create_decal_button.clicked.connect(lambda: self.create_decal(self.prompt_add_folder_path(), "M_DecalTest69"))
+        # self.layout.addWidget(self.create_decal_button)
 
 
         self.tool_description = None
@@ -282,7 +282,7 @@ class MainWindow(QMainWindow):
         self.altered_image = self.base_image
 
         self.use_low_res = True
-        self.resolution = 400
+        self.resolution = 16
 
         self.saturation_value = 100
         self.brightness_value = 100
@@ -503,7 +503,7 @@ class MainWindow(QMainWindow):
         descript_dock = QDockWidget("Tool User Guide", self)
         self.tool_description_label = QLabel(self.tool_description)
         descript_dock.setWidget(self.tool_description_label)
-        descript_dock.setFixedSize(225,420)
+        descript_dock.setFixedSize(225,440)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, descript_dock)
 
         descript_zoom_dock = QDockWidget("Zoom/Pan User Guide", self)
@@ -531,7 +531,7 @@ class MainWindow(QMainWindow):
 
 
         dock = QDockWidget("Saturation", self)
-        self.saturation_panel = Slider(parent = self, name = "Saturation Slider", min = 0, max =100, default =100)
+        self.saturation_panel = Slider(parent = self, name = "Saturation Slider", min = 0, max =200, default =100)
         self.saturation_panel.value_changed.connect(self.adjust_saturation)
         self.saturation_panel.has_released_slider.connect(self.apply_1k_resolution_adjustments)
 
@@ -700,21 +700,21 @@ class MainWindow(QMainWindow):
             self.adjust_saturation(self.saturation_value)
             sliders_changed += 1
             self.adjust_resolution(sliders_changed)
-        if current_adjustment != "gaussian" and self.gaussian_value != -1:
+        if current_adjustment != "gaussian" and self.gaussian_value != 0:
             self.adjust_gaussian(self.gaussian_value)
         self.altered_image = self.current_image
 
     def adjust_resolution(self,sliders_changed):
         if sliders_changed > 6:
-            self.resolution = 32
+            self.resolution = 16
         elif sliders_changed > 4:
-            self.resolution = 64
+            self.resolution = 32
         elif sliders_changed > 2:
-            self.resolution = 86
+            self.resolution = 32
         elif sliders_changed > 1:
-            self.resolution = 128
+            self.resolution = 32
         else:
-            self.resolution = 400
+            self.resolution = 64
         self.adjust_apply_button_colour(sliders_changed)
 
     def adjust_apply_button_colour(self, sliders_changed_amount):
@@ -1291,7 +1291,7 @@ class MainWindow(QMainWindow):
                 pillow_image = ImageQt.fromqimage(altered_image)
 
 
-                image_gaussblur = pillow_image.filter(ImageFilter.GaussianBlur(radius = factor-1))
+                image_gaussblur = pillow_image.filter(ImageFilter.GaussianBlur(radius = factor))
                 new_qimage = ImageQt.ImageQt(image_gaussblur).convertToFormat(QImage.Format_ARGB32)
 
                 display_size = self.current_image.size()  # QImage.size() gives QSize
@@ -1330,7 +1330,7 @@ class MainWindow(QMainWindow):
                 altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
                 pillow_image = ImageQt.fromqimage(altered_image)
 
-                image_gaussblur = pillow_image.filter(ImageFilter.GaussianBlur(radius = (value/10)))
+                image_gaussblur = pillow_image.filter(ImageFilter.GaussianBlur(radius = factor))
                 new_qimage = ImageQt.ImageQt(image_gaussblur).convertToFormat(QImage.Format_ARGB32)
 
 
@@ -2012,14 +2012,22 @@ class MainWindow(QMainWindow):
 
     def force_resolution_to_medium(self, bool):
         unreal.log(print("fumction run"))
-        self.resolution = 1024
-        self.adjust_redness(self.redness_value)
-        self.adjust_greenness(self.greenness_value)
-        self.adjust_blueness(self.blueness_value)
-        self.adjust_saturation(self.saturation_value)
-        self.adjust_contrast(self.contrast_value)
-        self.adjust_brightness(self.brightness_value)
-        self.adjust_gaussian(self.gaussian_value)
+        self.resolution = 256
+
+        if self.redness_value != 0:
+            self.adjust_redness(self.redness_value)
+        if self.greenness_value != 0:
+            self.adjust_greenness(self.greenness_value)
+        if self.blueness_value != 0:
+            self.adjust_blueness(self.blueness_value)
+        if self.saturation_value != 100:
+            self.adjust_saturation(self.saturation_value)
+        if self.contrast_value != 100:
+            self.adjust_contrast(self.contrast_value)
+        if self.brightness_value != 100:
+            self.adjust_brightness(self.brightness_value)
+        if self.gaussian_value != 0:
+            self.adjust_gaussian(self.gaussian_value)
         self.tool_panel.radioButtonGroupChanged()
 
 
@@ -2034,13 +2042,20 @@ class MainWindow(QMainWindow):
         # if self.contrast_value != 100:
         #     self.adjust_contrast(self.contrast_value)
 
-        self.adjust_redness(self.redness_value)
-        self.adjust_greenness(self.greenness_value)
-        self.adjust_blueness(self.blueness_value)
-        self.adjust_saturation(self.saturation_value)
-        self.adjust_contrast(self.contrast_value)
-        self.adjust_brightness(self.brightness_value)
-        self.adjust_gaussian(self.gaussian_value)
+        if self.redness_value != 0:
+            self.adjust_redness(self.redness_value)
+        if self.greenness_value != 0:
+            self.adjust_greenness(self.greenness_value)
+        if self.blueness_value != 0:
+            self.adjust_blueness(self.blueness_value)
+        if self.saturation_value != 100:
+            self.adjust_saturation(self.saturation_value)
+        if self.contrast_value != 100:
+            self.adjust_contrast(self.contrast_value)
+        if self.brightness_value != 100:
+            self.adjust_brightness(self.brightness_value)
+        if self.gaussian_value != 0:
+            self.adjust_gaussian(self.gaussian_value)
 
         self.current_image = self.altered_image
         self.setCursor(QtCore.Qt.ArrowCursor)
@@ -2051,7 +2066,7 @@ class MainWindow(QMainWindow):
     def apply_1k_resolution_adjustments(self, bool):
         self.use_low_res = bool
         self.setCursor(QtCore.Qt.ForbiddenCursor)
-        self.resolution = 1000
+        self.resolution = 256
         # if self.brightness_value != 100:
         #     self.adjust_brightness(self.brightness_value)
         # if self.saturation_value != 100:
@@ -2488,7 +2503,7 @@ class MainWindow(QMainWindow):
         final_image = QtGui.QImage(base_size, QtGui.QImage.Format_ARGB32)
         final_image.fill(QtCore.Qt.transparent)
 
-        pen_layer = TextureLayer(self.pen_overlay, QtCore.QPoint(100, 100))
+        pen_layer = TextureLayer(self.pen_overlay, QtCore.QPoint(0, 0))
         self.texture_layers.append(pen_layer)
 
         painter = QtGui.QPainter(final_image)
@@ -2528,7 +2543,7 @@ class MainWindow(QMainWindow):
         final_image.fill(QtCore.Qt.transparent)
 
 
-        pen_layer = TextureLayer(self.pen_overlay, QtCore.QPoint(100, 100))
+        pen_layer = TextureLayer(self.pen_overlay, QtCore.QPoint(0, 0))
         self.texture_layers.append(pen_layer)
 
         painter = QtGui.QPainter(final_image)
@@ -2751,7 +2766,7 @@ class ToolSectionMenu(QWidget):
         layout.addWidget(self.polygonal_tool)
         layout.addWidget(self.move_tool)
         layout.addWidget(self.transform_tool)
-        layout.addWidget(self.fill_tool)
+        # layout.addWidget(self.fill_tool)
 
 
         for button in [self.pen_tool, self.rectangle_tool, self.ellipse_tool, self.lasso_tool, self.polygonal_tool, self.move_tool, self.transform_tool, self.fill_tool]:
@@ -2842,7 +2857,7 @@ class ToolSectionMenu(QWidget):
             self.parent_window.tool_description = "\n Lasso Tool\n\n\n"\
                 "  This tool allows you to make \n"\
                 "  freehand selections.\n\n"\
-                "  Press shift on the initial click \n"\
+                "  Press shift on initial click \n"\
                 "  to do an additional selection.\n\n"\
                 "  Press alt on initial click to do \n"\
                 "  a removal of your previous \n"\
@@ -2862,7 +2877,7 @@ class ToolSectionMenu(QWidget):
                 "  ending the selection when \n"\
                 "  you make contact with the \n"\
                 "  original position.\n\n"\
-                "  Press shift on the initial click \n"\
+                "  Press shift on initial click \n"\
                 "  to do an additional selection. \n\n"\
                 "  Press alt on initial click to do \n"\
                 "  a removal of your previous \n"\
@@ -3138,7 +3153,10 @@ class PenTool(QtWidgets.QWidget):
                     if path.contains(point):
                         self.in_selection = True
                     else:
-                        self.in_selection = False
+                        if self.in_selection == True:
+                            pass
+                        else:
+                            self.in_selection = False
 
             if (len(self.selections_paths) > 0 and self.in_selection) or len(self.selections_paths)==0:
                 if self.panning:
@@ -3191,7 +3209,7 @@ class PenTool(QtWidgets.QWidget):
             if self.panning:
                 self.panning = False
                 self.setCursor(QtCore.Qt.CrossCursor)
-        
+        self.in_selection = False
 
     def update_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
