@@ -3190,7 +3190,7 @@ class PenTool(QtWidgets.QWidget):
             painter.drawPixmap(layer.position, layer.pixmap)
 
         painter.drawPixmap(0,0, self.overlay)
-        painter.drawPixmap(0,0, self.pen_overlay)
+        #painter.drawPixmap(0,0, self.pen_overlay)
 
         #self.update_overlay()
 
@@ -3235,6 +3235,8 @@ class PenTool(QtWidgets.QWidget):
 
                     else:
                         self.in_selection = False
+                        # self.commit_line_to_image()
+                        # self.points.clear()
                         self.update_overlay()
             else:
                 self.points.append(point)
@@ -3262,8 +3264,9 @@ class PenTool(QtWidgets.QWidget):
 
     def update_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
-        #painter = QtGui.QPainter(self.overlay)
         painter = QtGui.QPainter(self.parent_window.selected_layer.pixmap)
+        drawing_pen = QtGui.QPen(self.pen_color, self.parent_window.pen_size)
+        drawing_pen.setCapStyle(Qt.RoundCap)
 
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         outline_pen = QtGui.QPen(QtCore.Qt.red, 2)
@@ -3271,14 +3274,14 @@ class PenTool(QtWidgets.QWidget):
 
         if self.in_selection or len(self.selections_paths)<1:
             if len(self.points) > 1:
-                pen = QtGui.QPen(QtCore.Qt.black, 3)
-                painter.setPen(pen)
+                #pen = QtGui.QPen(QtCore.Qt.black, 3)
+                painter.setPen(drawing_pen)
                 painter.drawPolyline(QtGui.QPolygon(self.points))
                 self.commit_line_to_image(QtGui.QPolygon(self.points))
 
         #elif not self.in_selection and len(self.selections_paths)>0:
             #self.drawing = False
-
+        painter = QtGui.QPainter(self.overlay)
         for path in self.selections_paths:
             all_polys = path.toFillPolygons()
             for poly_f in all_polys:
