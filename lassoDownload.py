@@ -297,6 +297,9 @@ class MainWindow(QMainWindow):
 
         self.item = None
 
+    # def keyPressEvent(self, event):
+    #     if event.key() == 16777216:
+    #         self.clear_selections()
 
     def change_layer(self, item):
         self.apply_full_resolution_adjustments()
@@ -554,6 +557,8 @@ class MainWindow(QMainWindow):
         self.saturation_panel.value_changed.connect(self.adjust_saturation)
         self.saturation_panel.has_released_slider.connect(self.apply_1k_resolution_adjustments)
 
+
+
         dock.setWidget(self.saturation_panel)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
@@ -580,7 +585,6 @@ class MainWindow(QMainWindow):
         self.brightness_panel = Slider(self, "Brightness Slider" , 0, 199, 100)
         self.brightness_panel.value_changed.connect(self.adjust_brightness)
         self.brightness_panel.has_released_slider.connect(self.apply_1k_resolution_adjustments)
-
         dock.setWidget(self.brightness_panel)
         self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
@@ -1935,7 +1939,8 @@ class MainWindow(QMainWindow):
     #     self.update()
 
     def adjust_brightness(self,value):
-            factor = value/100
+            #factor = 2**(value/100)
+            factor = (value/100)
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
                 self.original_image_location = self.selected_layer.position
@@ -2676,6 +2681,7 @@ class Slider(QWidget):
     def __init__(self, parent, name, min, max, default):
         super().__init__(parent)
         self.parent_window = parent
+ 
 
         self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
         self.setFixedSize(320, 25)
@@ -3394,6 +3400,9 @@ class LassoTool(QtWidgets.QWidget):
             self.drawing = False
             self.selections_paths.clear()
             self.points = []
+        if event.key() == 16777216:
+            self.parent_window.clear_selections()
+            self.drawing = False
 
     def keyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
@@ -3648,7 +3657,9 @@ class PolygonalTool(QtWidgets.QLabel):
                 self.selections_paths.clear()
                 self.points = []
                 self.is_first_click = True
-
+        if event.key() == 16777216:
+            self.parent_window.clear_selections()
+            self.drawing = False
     def keyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
             self.panning = False
@@ -4011,6 +4022,10 @@ class RectangularTool(QtWidgets.QLabel):
             self.drawing = False
             self.selections_paths.clear()
             self.points = []
+        if event.key() == 16777216:
+            self.parent_window.clear_selections()
+            self.drawing = False
+            self.isDrawn = False
 
     def keyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
@@ -4404,6 +4419,10 @@ class EllipticalTool(QtWidgets.QLabel):
             self.drawing = False
             self.selections_paths.clear()
             self.points = []
+        if event.key() == 16777216:
+            self.parent_window.clear_selections()
+            self.drawing = False
+            self.isDrawn = False
 
     def keyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
