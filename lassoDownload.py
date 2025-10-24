@@ -2231,6 +2231,10 @@ class MainWindow(QMainWindow):
 
     def expand_selections(self):
         self.alter_selections_scale(10/9)
+        # self.merged_selection_path = parent_window.merged_selection_path
+        # self.selections_paths = parent_window.selections_paths
+
+
 
     def alter_selections_scale(self,scale_factor):
         new_selections_paths = []
@@ -2251,6 +2255,7 @@ class MainWindow(QMainWindow):
                 new_selections_paths.append(new_path)
 
         self.selections_paths = new_selections_paths
+        
         self.update()
         self.active_tool_widget.update_overlay()
         self.tool_panel.radioButtonGroupChanged()
@@ -4989,6 +4994,8 @@ class TransformTool(QWidget):
                         unreal.log ("ROTATION")
                         self.scaling = False
                         self.rotating = True
+                        self.center_point_of_rotating = QtCore.QPoint(self.dragging_layer.position.x(),self.dragging_layer.position.y())
+
                     #self.overlay = QtGui.QPixmap(self.dragging_pixmap.size())
 
                             
@@ -5049,7 +5056,6 @@ class TransformTool(QWidget):
 
             self.parent_window.texture_layers[(self.parent_window.texture_layers.index(self.dragging_layer))] = new_layer
             self.dragging_layer = self.parent_window.texture_layers[(self.parent_window.texture_layers.index(new_layer))]
-
             self.update_overlay()
             # for layer in self.parent_window.texture_layers:
             #     if self.dragging_layer == layer:
@@ -5096,6 +5102,9 @@ class TransformTool(QWidget):
                 self.panning = False
                 self.setCursor(QtCore.Qt.ArrowCursor)
             if self.scaling:
+                self.update_overlay()
+                self.dragging_pixmap = self.dragging_layer.pixmap
+
                 # print (self.dragging_pixmap.height())
                 # height_difference = self.dragging_pixmap.height()*self.image_scale_factor - self.dragging_pixmap.height()
                 # width_difference =  self.dragging_pixmap.width()*self.image_scale_factor -  self.dragging_pixmap.width()
@@ -5125,7 +5134,9 @@ class TransformTool(QWidget):
                 self.point = None
                 self.center_point = None
                 self.update_overlay()
-            # elif self.rotating:
+            elif self.rotating:
+                self.dragging_pixmap = self.dragging_layer.pixmap
+                self.update_overlay()   
 
 
  
