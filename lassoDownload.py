@@ -238,10 +238,6 @@ class MainWindow(QMainWindow):
         # self.tool_panel = ToolSectionMenu(parent=self)
         # self.tool_panel.show()
 
-        QtGui.QShortcut(QtGui.QKeySequence("Ctrl++"), self, activated=self.zoom_in)
-        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+="), self, activated=self.zoom_in)
-        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+-"), self, activated=self.zoom_out)
-        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+0"), self, activated=self.reset_zoom)
 
 
         # self.cyan_red_panel = Slider(self, "Colour Balance - Red " , 1, 100, 50)
@@ -311,10 +307,21 @@ class MainWindow(QMainWindow):
             font-size: 12px;
             border: 1px solid #434343;
         """) 
+
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl++"), self, activated=self.zoom_in)
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+="), self, activated=self.zoom_in)
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+-"), self, activated=self.zoom_out)
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+0"), self, activated=self.reset_zoom)
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+Shift+i"), self, activated=self.invert_selections)
     # def keyPressEvent(self, event):
     #     if event.key() == 16777216:
     #         self.clear_selections()
 
+
+
+
+
+                            
     def change_layer(self, item):
         self.layer_opacities[self.selected_layer_index] = self.opacity_value
         self.apply_full_resolution_adjustments()
@@ -370,7 +377,6 @@ class MainWindow(QMainWindow):
             font-size: 12px;
             selection-background-color: #424242;                  
         """)  
- 
 
         self.color_button.setStyleSheet(f"""
             background-color: #000000;
@@ -399,6 +405,7 @@ class MainWindow(QMainWindow):
         self.cyan_red_panel = Slider(self, "Colour Balance - Red " , -80, 80, 0)
         self.cyan_red_panel.value_changed.connect(self.adjust_redness)
         self.cyan_red_panel.has_released_slider.connect(self.apply_1k_resolution_adjustments)
+
         dock.setLayout(layout)
 
 
@@ -2394,7 +2401,32 @@ class MainWindow(QMainWindow):
         path.addPolygon(polygon)
         self.selections_paths.append(path)
         self.active_tool_widget.update_overlay()
-    
+
+    def invert_selections(self):
+        entire_image_rectangle = QtCore.QRect(self.base_layer.position, self.base_layer.pixmap.size())
+        entire_image_polygon = QPolygonF(QPolygon(entire_image_rectangle))
+        entire_image_path = QPainterPath()
+        entire_image_path.addPolygon(entire_image_polygon)
+        entire_image_selection = entire_image_path
+
+        for i, path in enumerate(list(self.selections_paths)):
+                subtraction_path = entire_image_path.subtracted(path)
+                self.selections_paths[i] = subtraction_path
+
+                changed = True
+                while changed:
+                    changed = False
+                    for k, other_path in enumerate(list(self.selections_paths)):
+                        if k == i:
+                            continue
+                        if self.selections_paths[i].intersects(other_path):
+                            self.selections_paths[i] = self.selections_paths[i].subtracted(other_path)
+                            changed = True
+                            break
+
+        self.active_tool_widget.update_overlay()
+        self.update()
+        
     def contract_selections(self):
         self.alter_selections_scale(9/10)
 
@@ -2430,6 +2462,7 @@ class MainWindow(QMainWindow):
         self.tool_panel.refresh_tool()
 
     def CreateToolBar(self):
+        print("CreateToolBar is running inside:", type(self))
         menu_bar = self.menuBar()
 
         file_menu = menu_bar.addMenu("File")
@@ -2467,7 +2500,7 @@ class MainWindow(QMainWindow):
         edit_menu = menu_bar.addMenu("Edit")
 
         flip_horizontal = QAction("Flip Current Layer Horizontal", self)
-        flip_vertical = QAction("Flip Current Layer Vertcial", self)
+        flip_vertical = QAction("Flip Current Layer Vertical", self)
 
         edit_menu.addAction(flip_horizontal)
         edit_menu.addAction(flip_vertical)
@@ -2478,7 +2511,7 @@ class MainWindow(QMainWindow):
 
 
         flip_all_horizontal = QAction("Flip All Layers Horizontal", self)
-        flip_all_vertical = QAction("Flip All Layers Vertcial", self)
+        flip_all_vertical = QAction("Flip All Layers Vertical", self)
 
         edit_menu.addAction(flip_all_horizontal)
         edit_menu.addAction(flip_all_vertical)
@@ -2493,13 +2526,15 @@ class MainWindow(QMainWindow):
 
         select_all_action = QAction("Select All", self)
         clear_selections_action = QAction("Clear Selections", self)
+        invert_selections_action = QAction("Invert Selections", self)
 
         select_menu.addAction(select_all_action)
         select_menu.addAction(clear_selections_action)
+        select_menu.addAction(invert_selections_action)
 
         clear_selections_action.triggered.connect(lambda: self.clear_selections())
         select_all_action.triggered.connect(lambda: self.select_all())
-
+        invert_selections_action.triggered.connect(lambda: self.invert_selections())
 
         modify_menu = QMenu("Modify", self)
 
