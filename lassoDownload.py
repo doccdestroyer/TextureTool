@@ -3165,7 +3165,7 @@ class MoveTool(QtWidgets.QWidget):
         self.panning = False
         self.last_pan_point = None
 
-        self.dragging_layer = None
+        self.dragging_layer = self.parent_window.selected_layer
         self.drag_start_offset = QtCore.QPoint()
 
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
@@ -3198,6 +3198,16 @@ class MoveTool(QtWidgets.QWidget):
                         else:
                             layer.selected = True
                             self.dragging_layer = layer
+                            index = self.parent_window.texture_layers.index(self.dragging_layer)
+
+
+                            self.parent_window.selected_layer = self.texture_layers[index]
+                            self.parent_window.selected_layer_index = index
+
+
+                            item = self.parent_window.layers.item(self.parent_window.selected_layer_index)
+                            self.parent_window.layers.setCurrentItem(item)
+
                             self.drag_start_offset = point - layer.position
                             break
     
@@ -3354,9 +3364,13 @@ class PenTool(QtWidgets.QWidget):
         if event.key() == 91:
             unreal.log(print("HELLO"))
             self.parent_window.pen_size -= 5
+            if self.parent_window.pen_size < 2:
+                self.parent_window.pen_size = 2
         if event.key() == 93:
             unreal.log(print("goodbye"))
             self.parent_window.pen_size += 5
+            if self.parent_window.pen_size > 750:
+                self.parent_window.pen_size = 750
 
     def keyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
@@ -5164,11 +5178,7 @@ class TransformTool(QWidget):
                             #     self.clear_dragging_layer()
                             self.dragging_layer = layer
                             index = self.parent_window.texture_layers.index(self.dragging_layer)
-                            print ("dragging layer index: ", index)
-                            print ("dragging layer index: ", index)
-                            print ("dragging layer index: ", index)
-                            print ("dragging layer index: ", index)
-                            print ("dragging layer index: ", index)
+
 
                             self.parent_window.selected_layer = self.texture_layers[index]
                             self.parent_window.selected_layer_index = index
