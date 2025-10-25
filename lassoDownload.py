@@ -202,6 +202,7 @@ class MainWindow(QMainWindow):
         self.selected_layer = base_layer
         self.current_image = self.selected_layer.pixmap.toImage()
         self.selected_layer_index = 0
+
         self.original_image_location = self.selected_layer.position
         self.texture_layers.append(base_layer)
 
@@ -297,6 +298,9 @@ class MainWindow(QMainWindow):
         self.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
 
         self.item = None
+
+        item = self.layers.item(self.selected_layer_index)
+        self.layers.setCurrentItem(item)
 
         self.layer_opacities = [255]
     # def keyPressEvent(self, event):
@@ -516,7 +520,7 @@ class MainWindow(QMainWindow):
 
 
         self.layers = QListWidget(dock)
-
+        self.layers.setFocus()
         i = 0
         for layer in self.texture_layers:
             if i == 0:
@@ -5168,6 +5172,10 @@ class TransformTool(QWidget):
 
                             self.parent_window.selected_layer = self.texture_layers[index]
                             self.parent_window.selected_layer_index = index
+
+
+                            item = self.parent_window.layers.item(self.parent_window.selected_layer_index)
+                            self.parent_window.layers.setCurrentItem(item)
                             self.drag_start_offset = self.point - layer.position
 
                             #############
