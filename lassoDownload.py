@@ -711,7 +711,7 @@ class MainWindow(QMainWindow):
     def delete_current_layer(self):
         if self.selected_layer_index != 0:
             self.texture_layers.remove(self.texture_layers[self.selected_layer_index])
-            self.change_layer(self.item)
+            #self.change_layer(self.item)
             self.rewrite_layers()
             self.update()
 
@@ -3157,17 +3157,34 @@ class PenTool(QtWidgets.QWidget):
     #     parent_window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
 
 
-    def get_scaled_point(self, pos):         
+    # def get_scaled_point(self, pos):         
+    #     scale = self.parent_window.scale_factor
+    #     pan = self.parent_window.pan_offset
+    #     return QtCore.QPoint(int((pos.x() - pan.x()) / scale), int((pos.y() - pan.y()) / scale))
+    
+    def get_scaled_moved_point(self,pos):  
+
         scale = self.parent_window.scale_factor
         pan = self.parent_window.pan_offset
-        return QtCore.QPoint(int((pos.x() - pan.x()) / scale), int((pos.y() - pan.y()) / scale))
 
+        intial_point = QtCore.QPoint(int((pos.x() - pan.x()) / scale), int((pos.y() - pan.y()) / scale))
+        print("INITAL POINT: ", intial_point)
+        base_position = self.parent_window.base_layer.position
+        layer_position = self.parent_window.selected_layer.position
+
+        layer_offset = base_position - layer_position
+        new_point = intial_point + layer_offset
+        print("NEW POINT: ", new_point)
+
+        return QtCore.QPoint(int((pos.x() - pan.x()) / scale) + layer_offset.x(), int((pos.y() - pan.y()) / scale) + layer_offset.y())
+    
     def set_scale_factor(self, scale):
         self.parent_window.scale_factor = scale
-        new_size = self.original_image.size() * scale
+        base_size = self.parent_window.texture_layers[0].pixmap.size()
+        new_size = base_size * scale
         self.resize(new_size)
         self.update()
-
+    
     def keyPressEvent(self, event):
         unreal.log(event.key())
 
@@ -3207,8 +3224,8 @@ class PenTool(QtWidgets.QWidget):
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
-                        
-            point = self.get_scaled_point(event.position())
+            point = self.get_scaled_moved_point(event.position())
+            # point = self.get_scaled_point(event.position())
             for i, path in enumerate(list(self.selections_paths)):
                     if path.contains(point):
                         self.in_selection = True
@@ -3223,7 +3240,7 @@ class PenTool(QtWidgets.QWidget):
                     self.last_pan_point = event.position().toPoint()
                     self.setCursor(QtCore.Qt.ClosedHandCursor)
                 else:
-                    point = self.get_scaled_point(event.position())
+                    point = self.get_scaled_moved_point(event.position())
                     self.drawing = True
                     self.points = [point]
                     self.update_overlay()
@@ -3232,7 +3249,7 @@ class PenTool(QtWidgets.QWidget):
 
     def mouseMoveEvent(self, event):
         if self.drawing and not self.panning:
-            point = self.get_scaled_point(event.position())
+            point = self.get_scaled_moved_point(event.position())
             # self.points.append(point)
             # self.update_overlay()
 
@@ -3278,6 +3295,7 @@ class PenTool(QtWidgets.QWidget):
                 self.panning = False
                 self.setCursor(QtCore.Qt.CrossCursor)
         self.in_selection = False
+        self.update_overlay()
 
     def update_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
@@ -3295,7 +3313,8 @@ class PenTool(QtWidgets.QWidget):
                 painter.setPen(drawing_pen)
                 painter.drawPolyline(QtGui.QPolygon(self.points))
                 self.commit_line_to_image(QtGui.QPolygon(self.points))
-
+                if not self.drawing:
+                    self.points.clear()
         #elif not self.in_selection and len(self.selections_paths)>0:
             #self.drawing = False
         painter = QtGui.QPainter(self.overlay)
@@ -3311,6 +3330,7 @@ class PenTool(QtWidgets.QWidget):
                 painter.drawPolygon(poly_q)
 
         self.pen_color = self.parent_window.color
+
         painter.end()
         self.update()
 
@@ -5153,9 +5173,16 @@ class TransformTool(QWidget):
                 self.point = None
                 self.center_point = None
                 self.update_overlay()
+                self.parent_window.tool_panel.radioButtonGroupChanged()
+
             elif self.rotating:
-                self.dragging_pixmap = self.dragging_layer.pixmap
                 self.update_overlay()   
+
+                self.dragging_pixmap = self.dragging_layer.pixmap
+                self.rotating = False
+
+                self.update_overlay()   
+                self.parent_window.tool_panel.radioButtonGroupChanged()
 
 
  
