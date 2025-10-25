@@ -23,7 +23,7 @@ import unreal
 import math
 ###TODO ADJUST IMPORTS TO INCLUDE WHATS ONLY NECESARY
 #from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar, QColorDialog
-from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF, QAction, QImage, QColor, QPixmap, QAction, QTransform
+from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF, QAction, QImage, QColor, QPixmap, QAction, QTransform, QIcon
 
 
 # from PySide6.QtGui import (QAction, QFont, QIcon, QKeySequence,
@@ -1155,7 +1155,7 @@ class MainWindow(QMainWindow):
                 #self.adjust_saturation(self.saturation_value)
                 self.magenta_green_panel.reset(0)
                 self.greenness_value = 0
-                self.tool_panel.radioButtonGroupChanged()
+                self.tool_panel.refresh_tool()
                 self.update()
     # def adjust_greenness(self,value):
     #     self.green_value = value
@@ -1339,7 +1339,7 @@ class MainWindow(QMainWindow):
                 #self.adjust_saturation(self.saturation_value)
                 self.yellow_blue_panel.reset(0)
                 self.blueness_value = 0
-                self.tool_panel.radioButtonGroupChanged()
+                self.tool_panel.refresh_tool()
                 self.update()
 
     def adjust_gaussian(self,value):
@@ -1419,7 +1419,7 @@ class MainWindow(QMainWindow):
                 #self.adjust_saturation(self.saturation_value)
                 self.gaussian_panel.reset(0)
                 self.gaussian_value = 0
-                self.tool_panel.radioButtonGroupChanged()
+                self.tool_panel.refresh_tool()
 
                 self.update()
     # def adjust_blueness(self,value):
@@ -1610,7 +1610,7 @@ class MainWindow(QMainWindow):
                 #self.adjust_saturation(self.saturation_value)
                 self.cyan_red_panel.reset(0)
                 self.redness_value = 0
-                self.tool_panel.radioButtonGroupChanged()
+                self.tool_panel.refresh_tool()
                 self.update()
 
     def print_value(self,value):
@@ -1707,7 +1707,7 @@ class MainWindow(QMainWindow):
                 #self.adjust_saturation(self.saturation_value)
                 self.contrast_panel.reset(100)
                 self.contrast_value = 100
-                self.tool_panel.radioButtonGroupChanged()
+                self.tool_panel.refresh_tool()
                 self.update()
 
     def adjust_saturation(self,value):
@@ -1801,7 +1801,7 @@ class MainWindow(QMainWindow):
                 #self.adjust_saturation(self.saturation_value)
                 self.saturation_panel.reset(100)
                 self.saturation_value = 100
-                self.tool_panel.radioButtonGroupChanged()
+                self.tool_panel.refresh_tool()
 
                 self.update()
 
@@ -1912,7 +1912,7 @@ class MainWindow(QMainWindow):
                 #self.adjust_saturation(self.saturation_value)
                 # self.opacity_slider.reset(255)
                 # self.opacity_value = 255
-                self.tool_panel.radioButtonGroupChanged()
+                self.tool_panel.refresh_tool()
                 self.layer_opacities[self.selected_layer_index] = factor
 
                 self.current_image = self.selected_layer.pixmap.toImage()
@@ -2039,7 +2039,7 @@ class MainWindow(QMainWindow):
                 #self.adjust_saturation(self.saturation_value)
                 self.saturation_panel.reset(100)
                 self.saturation_value = 100
-                self.tool_panel.radioButtonGroupChanged()
+                self.tool_panel.refresh_tool()
 
                 self.update()
 
@@ -2180,7 +2180,7 @@ class MainWindow(QMainWindow):
                 #self.adjust_saturation(self.saturation_value)
                 self.brightness_panel.reset(100)
                 self.brightness_value = 100
-                self.tool_panel.radioButtonGroupChanged()
+                self.tool_panel.refresh_tool()
 
                 self.update()
 
@@ -2218,7 +2218,7 @@ class MainWindow(QMainWindow):
         if self.gaussian_value != 0:
             self.adjust_gaussian(self.gaussian_value)
 
-        self.tool_panel.radioButtonGroupChanged()
+        self.tool_panel.refresh_tool()
 
     def apply_full_resolution_adjustments(self):
         previous_res = self.resolution
@@ -2256,7 +2256,7 @@ class MainWindow(QMainWindow):
 
         self.current_image = self.altered_image
         self.setCursor(QtCore.Qt.ArrowCursor)
-        self.tool_panel.radioButtonGroupChanged()
+        self.tool_panel.refresh_tool()
         self.use_low_res = True
         self.adjust_apply_button_colour(0)
 
@@ -2282,7 +2282,7 @@ class MainWindow(QMainWindow):
         self.altered_image = self.current_image
 
         self.setCursor(QtCore.Qt.ArrowCursor)
-        self.tool_panel.radioButtonGroupChanged()
+        self.tool_panel.refresh_tool()
 
         # Optionally update the full-res altered_image
         #self.altered_image = self.altered_pixmap.toImage()
@@ -2417,7 +2417,7 @@ class MainWindow(QMainWindow):
         
         self.update()
         self.active_tool_widget.update_overlay()
-        self.tool_panel.radioButtonGroupChanged()
+        self.tool_panel.refresh_tool()
 
     def CreateToolBar(self):
         menu_bar = self.menuBar()
@@ -2570,7 +2570,7 @@ class MainWindow(QMainWindow):
         flipped_pixmap = layer_pixmap.transformed(QTransform().scale(x, y))
         new_layer = flipped_pixmap
         self.pen_overlay = new_layer
-        self.tool_panel.radioButtonGroupChanged()
+        self.tool_panel.refresh_tool()
         self.active_tool_widget.update_overlay()
 
 
@@ -2688,7 +2688,7 @@ class MainWindow(QMainWindow):
     def zoom_changed(self, value):
         if self.active_tool_widget:
             self.active_tool_widget.set_scale_factor(value / 100.0)
-            self.tool_panel.radioButtonGroupChanged()
+            self.tool_panel.refresh_tool()
 
     def zoom_in(self):
         self._apply_zoom(10/9)
@@ -2936,13 +2936,14 @@ class Slider(QWidget):
 ###############################################################
 #                    TOOL SELECTION MENU                      #
 ###############################################################
-class ToolSectionMenu(QWidget):
+class ToolSectionMenu(QMainWindow):
     def __init__(self, parent = None):
         super().__init__(parent)
         self.parent_window = parent
+        self.parent_layout = self.parent_window.layout
 
         self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
-        self.setFixedSize(150, 200)
+        self.setFixedSize(32, 800)
         self.setWindowTitle("Tool Menu")
 
         layout = QVBoxLayout(self)
@@ -2985,9 +2986,9 @@ class ToolSectionMenu(QWidget):
         # layout.addWidget(self.fill_tool)
 
 
-        for button in [self.pen_tool, self.rectangle_tool, self.ellipse_tool, self.lasso_tool, self.polygonal_tool, self.move_tool, self.transform_tool, self.fill_tool]:
-            self.radioButtonGroup.addButton(button)
-            button.clicked.connect(self.radioButtonGroupChanged)
+        # for button in [self.pen_tool, self.rectangle_tool, self.ellipse_tool, self.lasso_tool, self.polygonal_tool, self.move_tool, self.transform_tool, self.fill_tool]:
+        #     self.radioButtonGroup.addButton(button)
+        #     button.clicked.connect(self.radioButtonGroupChanged)
 
         self.setStyleSheet("""
             background-color: #262626;
@@ -2997,158 +2998,431 @@ class ToolSectionMenu(QWidget):
             selection-background-color: #424242;                  
         """)  
  
-        self.pen_tool.setChecked(True)
-        self.radioButtonGroupChanged()
+        #self.pen_tool.setChecked(True)
+        #self.radioButtonGroupChanged()
+        # self.parent_window.active_tool_widget =  PenTool(self.image_path, self)
+        self.selected_tool = "Pen"
+        self.previous_selected_tool = None
+        self.refresh_tool()
 
+        # self._text_edit = QTextEdit()
+        # self.setCentralWidget(self._text_edit)
 
-    def radioButtonGroupChanged(self):
-        button = self.radioButtonGroup.checkedButton()
-        parent_layout = self.parent_window.layout
+        self.create_actions()
+        self.create_tool_bars()
 
-        if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
-            parent_layout.removeWidget(self.parent_window.active_tool_widget)
-            self.parent_window.active_tool_widget.deleteLater()
-        #else:
-            #parent_layout.removeWidget(self.parent_window.image_label)
-            #self.parent_window.image_label.deleteLater()
-
-        # self.parent_window.active_tool_widget = None
-
-        if button == self.pen_tool:
-            self.parent_window.active_tool_widget = PenTool(self.parent_window.image_path, parent_window=self.parent_window, color = self.parent_window.color)
-            self.parent_window.tool_description =  "\n Pen Tool\n\n\n"\
-                "  This Tool allows you to draw \n"\
-                "  on the image. \n\n"\
-                "  If you have had a prior \n"\
-                "  selection, you will only be \n"\
-                "  able to draw within that \n"\
-                "  selection.\n\n"\
-                "  Press [ or ] to scale the pen."\
-                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-
-        elif button == self.rectangle_tool:
-            self.parent_window.active_tool_widget = RectangularTool(self.parent_window.image_path, parent_window=self.parent_window)
-            self.parent_window.tool_description = "\n Rectangular Tool\n\n\n"\
-                "  This tool allows you to draw \n"\
-                "  rectangular selections by \n"\
-                "  clicking and dragging. \n\n"\
-                "  Press shift on initial click \n"\
-                "  to do an additional selection. \n\n"\
-                "  Press alt on initial click for \n"\
-                "  a removal of your previous \n"\
-                "  selection. \n\n"\
-                "  Hold shift whilst drawing to \n"\
-                "  lock the selection into a \n"\
-                "  square. \n\n"\
-                "  Hold alt whilst drawing to \n"\
-                "  lock the selection around the \n"\
-                "  starting point. \n\n"\
-                "  Press delete to remove the \n"\
-                "  entire selection.\n"\
-                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-
-        elif button == self.ellipse_tool:
-            self.parent_window.active_tool_widget = EllipticalTool(self.parent_window.image_path, parent_window=self.parent_window)
-            self.parent_window.tool_description = "\n Ellipse Tool\n\n\n"\
-                "  This tool allows you to draw \n"\
-                "  elliptical selections by \n"\
-                "  clicking and dragging. \n\n"\
-                "  Press shift on initial click \n"\
-                "  to do an additional selection. \n\n"\
-                "  Press alt on initial click for \n"\
-                "  a removal of your previous \n"\
-                "  selection. \n\n"\
-                "  Hold shift whilst drawing to \n"\
-                "  lock the selection into a \n"\
-                "  circle. \n\n"\
-                "  Hold alt whilst drawing to \n"\
-                "  lock the selection around the \n"\
-                "  starting point. \n\n"\
-                "  Press delete to remove the \n"\
-                "  entire selection.\n"\
-                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-
-        elif button == self.lasso_tool:
-            self.parent_window.active_tool_widget = LassoTool(self.parent_window.image_path, parent_window=self.parent_window)
-            self.parent_window.tool_description = "\n Lasso Tool\n\n\n"\
-                "  This tool allows you to make \n"\
-                "  freehand selections.\n\n"\
-                "  Press shift on initial click \n"\
-                "  to do an additional selection.\n\n"\
-                "  Press alt on initial click to do \n"\
-                "  a removal of your previous \n"\
-                "  selection. \n\n"\
-                "  Press delete to remove the \n"\
-                "  entire selection.\n"\
-                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        self.setStyleSheet("""
+            background-color: #2c2c2c;
+            color: #ffffff;
+            font-family: Consolas;
+            font-size: 12px;
+            selection-background-color: #424242;                  
+        """)  
+ 
+    def create_tool_bars(self):
+        self.tool_bar = self.addToolBar("File")
+        self.tool_bar.setOrientation(Qt.Vertical)
+        self.tool_bar.addAction(self.move_action)
+        self.tool_bar.addAction(self.pen_action)
+        self.tool_bar.addAction(self.lasso_action)
+        self.tool_bar.addAction(self.polygonal_action)
+        self.tool_bar.addAction(self.rectangle_action)
+        self.tool_bar.addAction(self.ellipse_action)
+        self.tool_bar.addAction(self.transform_action)
 
 
 
-        elif button == self.polygonal_tool:
-            self.parent_window.active_tool_widget = PolygonalTool(self.parent_window.image_path, parent_window=self.parent_window)
-            self.parent_window.tool_description = "\n Polygonal Lasso Tool \n\n\n"\
-                "  This tool allows you to make \n"\
-                "  polygonal selections by \n"\
-                "  drawing point by point,\n"\
-                "  ending the selection when \n"\
-                "  you make contact with the \n"\
-                "  original position.\n\n"\
-                "  Press shift on initial click \n"\
-                "  to do an additional selection. \n\n"\
-                "  Press alt on initial click to do \n"\
-                "  a removal of your previous \n"\
-                "  selection.\n\n"\
-                "  Press delete to delete the \n"\
-                "  previous point if applicable \n"\
-                "  or to remove the entire \n"\
-                "  selection\n"\
-                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 
 
-        elif button == self.move_tool:
-            self.parent_window.active_tool_widget = MoveTool(parent_window=self.parent_window)
-            self.parent_window.tool_description = "\n Move Tool \n\n\n" \
-                "  This tool allows you to \n"\
-                "  select and move any layer.\n\n"\
-                "  Left click and drag in\n"\
-                "  the bounds of any image\n\n"\
-                "  Left click and drag on the \n"\
-                "  to move it \n"\
-                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-        elif button == self.transform_tool:
-            self.parent_window.active_tool_widget = TransformTool(parent_window=self.parent_window)
-            self.parent_window.tool_description =  "\n Transform Tool\n\n\n"\
-                "  This Tool allows you to  \n"\
-                "  manipulate the selected  \n"\
-                "  layer. \n\n"\
-                "  Left click and drag in the  \n"\
-                "  image to move it.\n\n"\
-                "  Left click and drag on the  \n"\
-                "  border of the image to scale  \n"\
-                "  it. Go along the central point  \n"\
-                "  of the image in order to flip  \n"\
-                "  the image. \n\n"\
-                "  eft click and drag on the  \n"\
-                "  outside of the image to  \n"\
-                "  rotate\n\n"\
-                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-        # elif button == self.fill_tool:
-        #     self.parent_window.active_tool_widget = BucketTool(self.parent_window.image_path, parent_window=self.parent_window)
-        #     self.parent_window.tool_description = "\n Bucket Tool\n\n\n"\
+    def create_actions(self):
+        icon = QIcon(os.path.join(os.path.dirname(__file__), "icon_images", "move.png"))
+        self.move_action = QAction(icon, "Move Tool",
+                                       self,
+                                       statusTip="Move Tool",
+                                       triggered=self.enable_move_tool)
 
+        icon = QIcon(os.path.join(os.path.dirname(__file__), "icon_images", "pen.png"))
+        self.pen_action = QAction(icon, "Pen Tool", self,
+                                  statusTip="Print the current form letter",
+                                  triggered=self.enable_pen_tool)
+
+        icon = QIcon(os.path.join(os.path.dirname(__file__), "icon_images", "lasso.png"))
+        self.lasso_action = QAction(icon, "Lasso Tool", self,
+                                  statusTip="Print the current form letter",
+                                  triggered=self.enable_lasso_tool)
+
+        icon = QIcon(os.path.join(os.path.dirname(__file__), "icon_images", "polylasso.png"))
+        self.polygonal_action = QAction(icon, "Polygonal Lasso", self,
+                                 statusTip="Save the current form letter",
+                                 triggered=self.enable_polygonal_tool)
+
+        icon = QIcon(os.path.join(os.path.dirname(__file__), "icon_images", "rectangle.png"))
+        self.rectangle_action = QAction(icon, "Rectanlge Tool", self,
+                                  statusTip="Print the current form letter",
+                                  triggered=self.enable_rectanlge_tool)
+        
+        icon = QIcon(os.path.join(os.path.dirname(__file__), "icon_images", "ellipse.png"))
+        self.ellipse_action = QAction(icon, "Ellipse Tool", self,
+                                  statusTip="Print the current form letter",
+                                  triggered=self.enable_ellipse_tool)
+        
+        icon = QIcon(os.path.join(os.path.dirname(__file__), "icon_images", "transform.png"))
+        self.transform_action = QAction(icon, "Transform Tool", self,
+                                  statusTip="Print the current form letter",
+                                  triggered=self.enable_transform_tool)
+
+
+
+    def update_tool(self):
         if self.parent_window.active_tool_widget:
-            parent_layout.insertWidget(0,self.parent_window.active_tool_widget)
+            self.parent_layout.insertWidget(0,self.parent_window.active_tool_widget)
             #parent_layout.insertWidget(1,self.parent_window.add_texture_button)
             self.parent_window.active_tool_widget.show()
-            if self.parent_window.active_tool_widget == self.move_tool or  self.parent_window.active_tool_widget == self.transform_tool:
-                self.parent_window.setCursor(QtCore.Qt.ArrowCursor)
-            else: 
-                self.parent_window.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
+            # if self.parent_window.active_tool_widget == self.move_tool or  self.parent_window.active_tool_widget == self.transform_tool:
+            #     self.parent_window.setCursor(QtCore.Qt.ArrowCursor)
+            # else: 
+            #     self.parent_window.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
 
         self.parent_window.tool_description_label.setText(self.parent_window.tool_description)
-
         #self.parent_window.get_tool_description()
         self.parent_window.update()
+
+    def refresh_tool(self):
+
+
+
+        if self.selected_tool == "Move":
+            self.enable_move_tool()
+        elif self.selected_tool == "Pen":
+            self.enable_pen_tool()
+        elif self.selected_tool == "Lasso":
+            self.enable_lasso_tool()
+        elif self.selected_tool == "Polygon":
+            self.enable_polygonal_tool()
+        elif self.selected_tool == "Rectangle":
+            self.enable_rectanlge_tool()
+        elif self.selected_tool == "Ellipse":
+            self.enable_ellipse_tool()
+        elif self.selected_tool == "Transform":
+            self.enable_transform_tool()
+
+
+        self.parent_window.tool_description_label.setText(self.parent_window.tool_description)
+        #self.parent_window.get_tool_description()
+        # self.parent_window.update()
+
+
+    def enable_move_tool(self):
+        if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
+            self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
+            self.parent_window.active_tool_widget.deleteLater()
+        self.parent_window.active_tool_widget = MoveTool(parent_window=self.parent_window)
+        self.parent_window.tool_description = "\n Move Tool \n\n\n" \
+            "  This tool allows you to \n"\
+            "  select and move any layer.\n\n"\
+            "  Left click and drag in\n"\
+            "  the bounds of any image\n\n"\
+            "  Left click and drag on the \n"\
+            "  to move it \n"\
+            "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+
+        self.update_tool()
+
+
+    def enable_pen_tool(self):
+        if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
+            self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
+            self.parent_window.active_tool_widget.deleteLater()
+
+        self.parent_window.active_tool_widget = PenTool(self.parent_window.image_path, parent_window=self.parent_window, color = self.parent_window.color)
+        self.parent_window.tool_description =  "\n Pen Tool\n\n\n"\
+            "  This Tool allows you to draw \n"\
+            "  on the image. \n\n"\
+            "  If you have had a prior \n"\
+            "  selection, you will only be \n"\
+            "  able to draw within that \n"\
+            "  selection.\n\n"\
+            "  Press [ or ] to scale the pen."\
+            "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        self.selected_tool = "Pen"
+        self.update_tool()
+        if self.previous_selected_tool == self.selected_tool:
+            self.previous_selected_tool = "Pen"
+
+
+        
+    def enable_lasso_tool(self):
+        if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
+            self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
+            self.parent_window.active_tool_widget.deleteLater()
+        self.parent_window.active_tool_widget = LassoTool(self.parent_window.image_path, parent_window=self.parent_window)
+        self.parent_window.tool_description = "\n Lasso Tool\n\n\n"\
+            "  This tool allows you to make \n"\
+            "  freehand selections.\n\n"\
+            "  Press shift on initial click \n"\
+            "  to do an additional selection.\n\n"\
+            "  Press alt on initial click to do \n"\
+            "  a removal of your previous \n"\
+            "  selection. \n\n"\
+            "  Press delete to remove the \n"\
+            "  entire selection.\n"\
+            "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        self.selected_tool = "Lasso"
+        self.update_tool()
+        
+    def enable_rectanlge_tool(self):
+        if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
+            self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
+            self.parent_window.active_tool_widget.deleteLater()
+        self.parent_window.active_tool_widget = RectangularTool(self.parent_window.image_path, parent_window=self.parent_window)
+        self.parent_window.tool_description = "\n Rectangular Tool\n\n\n"\
+            "  This tool allows you to draw \n"\
+            "  rectangular selections by \n"\
+            "  clicking and dragging. \n\n"\
+            "  Press shift on initial click \n"\
+            "  to do an additional selection. \n\n"\
+            "  Press alt on initial click for \n"\
+            "  a removal of your previous \n"\
+            "  selection. \n\n"\
+            "  Hold shift whilst drawing to \n"\
+            "  lock the selection into a \n"\
+            "  square. \n\n"\
+            "  Hold alt whilst drawing to \n"\
+            "  lock the selection around the \n"\
+            "  starting point. \n\n"\
+            "  Press delete to remove the \n"\
+            "  entire selection.\n"\
+            "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        self.selected_tool = "Rectanlge"
+        self.update_tool()
+        
+
+    def enable_ellipse_tool(self):
+        if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
+            self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
+            self.parent_window.active_tool_widget.deleteLater()
+        self.parent_window.active_tool_widget = EllipticalTool(self.parent_window.image_path, parent_window=self.parent_window)
+        self.parent_window.tool_description = "\n Ellipse Tool\n\n\n"\
+            "  This tool allows you to draw \n"\
+            "  elliptical selections by \n"\
+            "  clicking and dragging. \n\n"\
+            "  Press shift on initial click \n"\
+            "  to do an additional selection. \n\n"\
+            "  Press alt on initial click for \n"\
+            "  a removal of your previous \n"\
+            "  selection. \n\n"\
+            "  Hold shift whilst drawing to \n"\
+            "  lock the selection into a \n"\
+            "  circle. \n\n"\
+            "  Hold alt whilst drawing to \n"\
+            "  lock the selection around the \n"\
+            "  starting point. \n\n"\
+            "  Press delete to remove the \n"\
+            "  entire selection.\n"\
+            "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        self.selected_tool = "Ellipse"
+        self.update_tool()
+        
+
+    def enable_polygonal_tool(self):
+        if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
+            self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
+            self.parent_window.active_tool_widget.deleteLater()
+        self.parent_window.active_tool_widget = PolygonalTool(self.parent_window.image_path, parent_window=self.parent_window)
+        self.parent_window.tool_description = "\n Polygonal Lasso Tool \n\n\n"\
+            "  This tool allows you to make \n"\
+            "  polygonal selections by \n"\
+            "  drawing point by point,\n"\
+            "  ending the selection when \n"\
+            "  you make contact with the \n"\
+            "  original position.\n\n"\
+            "  Press shift on initial click \n"\
+            "  to do an additional selection. \n\n"\
+            "  Press alt on initial click to do \n"\
+            "  a removal of your previous \n"\
+            "  selection.\n\n"\
+            "  Press delete to delete the \n"\
+            "  previous point if applicable \n"\
+            "  or to remove the entire \n"\
+            "  selection\n"\
+            "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        self.selected_tool = "Polygon"
+        self.update_tool()
+        
+
+    def enable_transform_tool(self):
+        if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
+            self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
+            self.parent_window.active_tool_widget.deleteLater()
+        self.parent_window.active_tool_widget = TransformTool(parent_window=self.parent_window)
+        self.parent_window.tool_description =  "\n Transform Tool\n\n\n"\
+            "  This Tool allows you to  \n"\
+            "  manipulate the selected  \n"\
+            "  layer. \n\n"\
+            "  Left click and drag in the  \n"\
+            "  image to move it.\n\n"\
+            "  Left click and drag on the  \n"\
+            "  border of the image to scale  \n"\
+            "  it. Go along the central point  \n"\
+            "  of the image in order to flip  \n"\
+            "  the image. \n\n"\
+            "  eft click and drag on the  \n"\
+            "  outside of the image to  \n"\
+            "  rotate\n\n"\
+            "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        self.selected_tool = "Transform"
+        self.update_tool()
+        
+
+    # def radioButtonGroupChanged(self):
+    #     button = self.radioButtonGroup.checkedButton()
+    #     parent_layout = self.parent_window.layout
+
+    #     if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
+    #         parent_layout.removeWidget(self.parent_window.active_tool_widget)
+    #         self.parent_window.active_tool_widget.deleteLater()
+    #     #else:
+    #         #parent_layout.removeWidget(self.parent_window.image_label)
+    #         #self.parent_window.image_label.deleteLater()
+
+    #     # self.parent_window.active_tool_widget = None
+
+    #     if button == self.pen_tool:
+    #         self.parent_window.active_tool_widget = PenTool(self.parent_window.image_path, parent_window=self.parent_window, color = self.parent_window.color)
+    #         self.parent_window.tool_description =  "\n Pen Tool\n\n\n"\
+    #             "  This Tool allows you to draw \n"\
+    #             "  on the image. \n\n"\
+    #             "  If you have had a prior \n"\
+    #             "  selection, you will only be \n"\
+    #             "  able to draw within that \n"\
+    #             "  selection.\n\n"\
+    #             "  Press [ or ] to scale the pen."\
+    #             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+
+    #     elif button == self.rectangle_tool:
+    #         self.parent_window.active_tool_widget = RectangularTool(self.parent_window.image_path, parent_window=self.parent_window)
+    #         self.parent_window.tool_description = "\n Rectangular Tool\n\n\n"\
+    #             "  This tool allows you to draw \n"\
+    #             "  rectangular selections by \n"\
+    #             "  clicking and dragging. \n\n"\
+    #             "  Press shift on initial click \n"\
+    #             "  to do an additional selection. \n\n"\
+    #             "  Press alt on initial click for \n"\
+    #             "  a removal of your previous \n"\
+    #             "  selection. \n\n"\
+    #             "  Hold shift whilst drawing to \n"\
+    #             "  lock the selection into a \n"\
+    #             "  square. \n\n"\
+    #             "  Hold alt whilst drawing to \n"\
+    #             "  lock the selection around the \n"\
+    #             "  starting point. \n\n"\
+    #             "  Press delete to remove the \n"\
+    #             "  entire selection.\n"\
+    #             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+
+    #     elif button == self.ellipse_tool:
+    #         self.parent_window.active_tool_widget = EllipticalTool(self.parent_window.image_path, parent_window=self.parent_window)
+    #         self.parent_window.tool_description = "\n Ellipse Tool\n\n\n"\
+    #             "  This tool allows you to draw \n"\
+    #             "  elliptical selections by \n"\
+    #             "  clicking and dragging. \n\n"\
+    #             "  Press shift on initial click \n"\
+    #             "  to do an additional selection. \n\n"\
+    #             "  Press alt on initial click for \n"\
+    #             "  a removal of your previous \n"\
+    #             "  selection. \n\n"\
+    #             "  Hold shift whilst drawing to \n"\
+    #             "  lock the selection into a \n"\
+    #             "  circle. \n\n"\
+    #             "  Hold alt whilst drawing to \n"\
+    #             "  lock the selection around the \n"\
+    #             "  starting point. \n\n"\
+    #             "  Press delete to remove the \n"\
+    #             "  entire selection.\n"\
+    #             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+
+    #     elif button == self.lasso_tool:
+    #         self.parent_window.active_tool_widget = LassoTool(self.parent_window.image_path, parent_window=self.parent_window)
+    #         self.parent_window.tool_description = "\n Lasso Tool\n\n\n"\
+    #             "  This tool allows you to make \n"\
+    #             "  freehand selections.\n\n"\
+    #             "  Press shift on initial click \n"\
+    #             "  to do an additional selection.\n\n"\
+    #             "  Press alt on initial click to do \n"\
+    #             "  a removal of your previous \n"\
+    #             "  selection. \n\n"\
+    #             "  Press delete to remove the \n"\
+    #             "  entire selection.\n"\
+    #             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+
+
+
+    #     elif button == self.polygonal_tool:
+    #         self.parent_window.active_tool_widget = PolygonalTool(self.parent_window.image_path, parent_window=self.parent_window)
+    #         self.parent_window.tool_description = "\n Polygonal Lasso Tool \n\n\n"\
+    #             "  This tool allows you to make \n"\
+    #             "  polygonal selections by \n"\
+    #             "  drawing point by point,\n"\
+    #             "  ending the selection when \n"\
+    #             "  you make contact with the \n"\
+    #             "  original position.\n\n"\
+    #             "  Press shift on initial click \n"\
+    #             "  to do an additional selection. \n\n"\
+    #             "  Press alt on initial click to do \n"\
+    #             "  a removal of your previous \n"\
+    #             "  selection.\n\n"\
+    #             "  Press delete to delete the \n"\
+    #             "  previous point if applicable \n"\
+    #             "  or to remove the entire \n"\
+    #             "  selection\n"\
+    #             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+
+
+    #     elif button == self.move_tool:
+    #         self.parent_window.active_tool_widget = MoveTool(parent_window=self.parent_window)
+    #         self.parent_window.tool_description = "\n Move Tool \n\n\n" \
+    #             "  This tool allows you to \n"\
+    #             "  select and move any layer.\n\n"\
+    #             "  Left click and drag in\n"\
+    #             "  the bounds of any image\n\n"\
+    #             "  Left click and drag on the \n"\
+    #             "  to move it \n"\
+    #             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        
+    #     elif button == self.transform_tool:
+    #         self.parent_window.active_tool_widget = TransformTool(parent_window=self.parent_window)
+    #         self.parent_window.tool_description =  "\n Transform Tool\n\n\n"\
+    #             "  This Tool allows you to  \n"\
+    #             "  manipulate the selected  \n"\
+    #             "  layer. \n\n"\
+    #             "  Left click and drag in the  \n"\
+    #             "  image to move it.\n\n"\
+    #             "  Left click and drag on the  \n"\
+    #             "  border of the image to scale  \n"\
+    #             "  it. Go along the central point  \n"\
+    #             "  of the image in order to flip  \n"\
+    #             "  the image. \n\n"\
+    #             "  eft click and drag on the  \n"\
+    #             "  outside of the image to  \n"\
+    #             "  rotate\n\n"\
+    #             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    #     # elif button == self.fill_tool:
+    #     #     self.parent_window.active_tool_widget = BucketTool(self.parent_window.image_path, parent_window=self.parent_window)
+    #     #     self.parent_window.tool_description = "\n Bucket Tool\n\n\n"\
+
+    #     if self.parent_window.active_tool_widget:
+    #         parent_layout.insertWidget(0,self.parent_window.active_tool_widget)
+    #         #parent_layout.insertWidget(1,self.parent_window.add_texture_button)
+    #         self.parent_window.active_tool_widget.show()
+    #         if self.parent_window.active_tool_widget == self.move_tool or  self.parent_window.active_tool_widget == self.transform_tool:
+    #             self.parent_window.setCursor(QtCore.Qt.ArrowCursor)
+    #         else: 
+    #             self.parent_window.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
+
+    #     self.parent_window.tool_description_label.setText(self.parent_window.tool_description)
+
+    #     #self.parent_window.get_tool_description()
+    #     self.parent_window.update()
 
 ###############################################################
 #                     PEN DEBUG TOOL                          #
@@ -3888,7 +4162,7 @@ class PolygonalTool(QtWidgets.QLabel):
                         self.update()
 
                 else: #Check if polygon has completed
-                    if (point - self.points[0]).manhattanLength() < 20:
+                    if (point - self.points[0]).manhattanLength() < (20):
                         isComplete = True
                         self.points.append(self.points[0])
                         self.drawing = False 
@@ -5360,7 +5634,7 @@ class TransformTool(QWidget):
                 self.point = None
                 self.center_point = None
                 self.update_overlay()
-                self.parent_window.tool_panel.radioButtonGroupChanged()
+                self.parent_window.tool_panel.refresh_tool()
 
             elif self.rotating:
                 self.update_overlay()   
@@ -5369,7 +5643,7 @@ class TransformTool(QWidget):
                 self.rotating = False
 
                 self.update_overlay()   
-                self.parent_window.tool_panel.radioButtonGroupChanged()
+                self.parent_window.tool_panel.refresh_tool()
             if self.panning != True:
                 new_layer = TextureLayer(self.dragging_pixmap, self.dragging_layer.position)
                 self.parent_window.selected_layer = self.parent_window.texture_layers[(self.parent_window.texture_layers.index(new_layer))]
@@ -5424,6 +5698,7 @@ class TransformTool(QWidget):
 
         # self.active_tool_widget.update_overlay()
         # self.tool_panel.radioButtonGroupChanged()
+
 
     def update_overlay(self):
         
