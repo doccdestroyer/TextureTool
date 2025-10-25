@@ -303,6 +303,14 @@ class MainWindow(QMainWindow):
         self.layers.setCurrentItem(item)
 
         self.layer_opacities = [255]
+
+        self.setStyleSheet(f"""
+            background-color: #2c2c2c;
+            color: #ffffff;
+            font-family: Consolas;
+            font-size: 12px;
+            border: 1px solid #434343;
+        """) 
     # def keyPressEvent(self, event):
     #     if event.key() == 16777216:
     #         self.clear_selections()
@@ -328,6 +336,7 @@ class MainWindow(QMainWindow):
 
         self.opacity_slider.reset(self.layer_opacities[self.selected_layer_index])
         self.apply_full_resolution_adjustments()
+
     def color_dialog(self):
         self.color = QColorDialog.getColor()
 
@@ -556,11 +565,12 @@ class MainWindow(QMainWindow):
         "  Ctrl 0   -  Reset Zoom"\
         "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nn\n\n\n")
         descript_zoom_dock.setWidget(self.tool_zoom_label)
-        descript_zoom_dock.setFixedSize(225,500)
+        descript_zoom_dock.setFixedSize(225,440)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, descript_zoom_dock)
 
         tool_dock = QDockWidget("Tools", self)
         self.tool_panel = ToolSectionMenu(parent=self)
+        tool_dock.setFixedSize(32,500)
         #dock.setWidget(self.tool_panel)
         #self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock)
 
@@ -2943,7 +2953,7 @@ class ToolSectionMenu(QMainWindow):
         self.parent_layout = self.parent_window.layout
 
         self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
-        self.setFixedSize(32, 800)
+        self.setFixedSize(32, 1000)
         self.setWindowTitle("Tool Menu")
 
         layout = QVBoxLayout(self)
