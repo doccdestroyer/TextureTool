@@ -148,43 +148,17 @@ class TestWidget(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent_window = parent
-        self.setFixedSize(500,500)
+
+        lbl = QLabel()
+
+        layout = QVBoxLayout()
+        layout.addWidget(lbl) 
+        self.setLayout(layout)
 
 
-        self.setWindowTitle("Selection Tools")
-        self.active_tool_widget = None 
-
-        layout = QVBoxLayout(self)
-
-        self.image_label = QLabel()
-        layout.addWidget(self.image_label)
-
-        self.setFixedSize(self.image_label.pixmap().size())
-
-        self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
-        
-        # self.gaussian_panel = Slider(self, "Gaussian Slider" , 0, 100, 0)
-        # self.gaussian_panel.show()
-        # lbl = QLabel()
-
-        # layout = QVBoxLayout()
-        # layout.addWidget(lbl) 
-        # self.setLayout(layout)
-
-        # self.label = QLabel()
-
-        # self.guassian_slider = QSlider(Qt.Horizontal)
-        # self.guassian_slider.setMinimum(0)
-        # self.guassian_slider.setMaximum(100)
-        # self.guassian_slider.setSliderPosition(default)
-        # self.guassian_slider.valueChanged.connect(self.parent_window.adjust_gaussian)
-        # # self.guassian_slider.sliderReleased.connect(self.slider_been_released)
-        # layout.addWidget(self.guassian_slider)
-
-        # self.guassian_slider.show()
-
-        # self.setWidget
-        # self.gaussian_panel.show()
+        self.gaussian_panel = Slider(self, "Gaussian Slider" , 0, 100, 0)
+        self.gaussian_panel.value_changed.connect(self.adjust_gaussian)
+        layout.addWidget(self.parent_window.gaussian_panel)
 ###############################################################
 #                        MAIN WINDOW                          #
 ###############################################################
@@ -310,7 +284,8 @@ class MainWindow(QMainWindow):
         self.redness_value = 0
         self.greenness_value = 0
         self.blueness_value = 0
-        self.blur_value = 0
+        self.gaussian_value = 0
+        self.exposure_value = 0
         self.opacity_value = 255
         self.create_dock_windows()
         self.use_low_res = True
@@ -585,7 +560,7 @@ class MainWindow(QMainWindow):
         descript_dock = QDockWidget("Tool User Guide", self)
         self.tool_description_label = QLabel(self.tool_description)
         descript_dock.setWidget(self.tool_description_label)
-        descript_dock.setFixedSize(250,440)
+        descript_dock.setFixedSize(225,440)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, descript_dock)
 
         descript_zoom_dock = QDockWidget("Zoom/Pan User Guide", self)
@@ -595,7 +570,7 @@ class MainWindow(QMainWindow):
         "  Ctrl 0   -  Reset Zoom"\
         "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nn\n\n\n")
         descript_zoom_dock.setWidget(self.tool_zoom_label)
-        descript_zoom_dock.setFixedSize(250,440)
+        descript_zoom_dock.setFixedSize(225,440)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, descript_zoom_dock)
 
         tool_dock = QDockWidget("Tools", self)
@@ -640,6 +615,30 @@ class MainWindow(QMainWindow):
                 }
             """)
 
+        dock = QDockWidget("Exposure", self)
+        self.exposure_panel = Slider(self, "Expsure Slider" , -100, 100, 0)
+        self.exposure_panel.value_changed.connect(self.adjust_exposure)
+        self.exposure_panel.has_released_slider.connect(self.apply_1k_resolution_adjustments)
+        dock.setWidget(self.exposure_panel)
+        self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
+
+
+        self.exposure_panel.setStyleSheet("""
+                QSlider::groove:horizontal {
+                    border: 1px solid #999999;
+                    height: 5px;
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #000000, stop:1 #FFFFFF);
+
+                }
+
+                QSlider::handle:horizontal {
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
+                    border: 1px solid #5c5c5c;
+                    width: 10px;
+                    margin: -2px 0;
+                    border-radius: 3px;
+                }
+            """)
 
 
         dock = QDockWidget("Brightness", self)
@@ -695,29 +694,28 @@ class MainWindow(QMainWindow):
             """)
 
 
-        dock = QDockWidget("Sharpness - Blur", self)
-        self.blur_panel = Slider(self, "Blur Slider" , -100, 100, 0)
-        self.blur_panel.value_changed.connect(self.adjust_blur)
-        self.blur_panel.has_released_slider.connect(self.apply_1k_resolution_adjustments)
-        dock.setWidget(self.blur_panel)
-        self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
+        # dock = QDockWidget("Gaussian Blur", self)
+        # self.gaussian_panel = Slider(self, "Gaussian Slider" , 0, 100, 0)
+        # self.gaussian_panel.value_changed.connect(self.adjust_gaussian)
+        # dock.setWidget(self.gaussian_panel)
+        # self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
-        self.blur_panel.setStyleSheet("""
-                QSlider::groove:horizontal {
-                    border: 1px solid #999999;
-                    height: 5px;
-                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #000000, stop:1 #FFFFFF);
+        # self.gaussian_panel.setStyleSheet("""
+        #         QSlider::groove:horizontal {
+        #             border: 1px solid #999999;
+        #             height: 5px;
+        #             background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #000000, stop:1 #FFFFFF);
 
-                }
+        #         }
 
-                QSlider::handle:horizontal {
-                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
-                    border: 1px solid #5c5c5c;
-                    width: 10px;
-                    margin: -2px 0;
-                    border-radius: 3px;
-                }
-            """)
+        #         QSlider::handle:horizontal {
+        #             background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
+        #             border: 1px solid #5c5c5c;
+        #             width: 10px;
+        #             margin: -2px 0;
+        #             border-radius: 3px;
+        #         }
+        #     """)
 
 
 
@@ -780,8 +778,7 @@ class MainWindow(QMainWindow):
     def adjust_all_but_self(self, current_adjustment):
         sliders_changed = 1
         self.adjust_resolution(sliders_changed)
-        if current_adjustment != "opacity" and self.blur_value != 255:
-            self.adjust_opacity(self.opacity_value)
+
         if current_adjustment != "redness" and self.redness_value != 0:
             self.adjust_redness(self.redness_value)
             sliders_changed += 1
@@ -790,12 +787,18 @@ class MainWindow(QMainWindow):
             self.adjust_blueness(self.blueness_value)
             sliders_changed += 1
             self.adjust_resolution(sliders_changed)
+            print("changed bleuness")
         if current_adjustment != "greenness" and self.greenness_value != 0:
             self.adjust_greenness(self.greenness_value)
+            print("changed greeness")
             sliders_changed += 1
             self.adjust_resolution(sliders_changed)
         if current_adjustment != "brightness" and self.brightness_value != 100:
             self.adjust_brightness(self.brightness_value)
+            sliders_changed += 1
+            self.adjust_resolution(sliders_changed)
+        if current_adjustment != "exposure":
+            self.adjust_exposure(self.exposure_value)
             sliders_changed += 1
             self.adjust_resolution(sliders_changed)
         if current_adjustment != "contrast" and self.contrast_value != 100:
@@ -806,10 +809,12 @@ class MainWindow(QMainWindow):
             self.adjust_saturation(self.saturation_value)
             sliders_changed += 1
             self.adjust_resolution(sliders_changed)
-        if current_adjustment != "blur" and self.blur_value != 0:
-            self.adjust_blur(self.blur_value)
-
-        self.altered_image = self.current_image
+        if current_adjustment != "gaussian" and self.gaussian_value != 0:
+            self.adjust_gaussian(self.gaussian_value)
+        if current_adjustment != "opacity":
+            self.adjust_opacity(self.opacity_value)
+            
+        # self.altered_image = self.current_image
 
     def adjust_resolution(self,sliders_changed):
 
@@ -1383,8 +1388,8 @@ class MainWindow(QMainWindow):
                 self.tool_panel.refresh_tool()
                 self.update()
 
-    def adjust_blur(self,value):
-            print(value)
+    def adjust_gaussian(self,value):
+            factor = value/10
             if self.use_low_res:
                 #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
                 self.original_image_location = self.selected_layer.position
@@ -1400,16 +1405,9 @@ class MainWindow(QMainWindow):
 
                 pillow_image = ImageQt.fromqimage(altered_image)
 
-                if value > 0:
-                    image_blur = pillow_image.filter(ImageFilter.BLUR)
-                    pillow_image = Image.blend(pillow_image,image_blur,(value/100)) 
-                    new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
-                elif value < 0:
-                    image_sharp = pillow_image.filter(ImageFilter.SHARPEN)
-                    pillow_image = Image.blend(pillow_image,image_sharp,(abs(value)/100)) 
-                    new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
-                else:
-                    new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
+
+                image_gaussblur = pillow_image.filter(ImageFilter.GaussianBlur(radius = factor))
+                new_qimage = ImageQt.ImageQt(image_gaussblur).convertToFormat(QImage.Format_ARGB32)
 
                 display_size = self.current_image.size()  # QImage.size() gives QSize
                 new_qimage = new_qimage.scaled(display_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -1429,12 +1427,12 @@ class MainWindow(QMainWindow):
 
                 self.altered_image = new_qimage
 
-                if value != self.blur_value:
-                    self.adjust_all_but_self("blur")
+                if value != self.gaussian_value:
+                    self.adjust_all_but_self("gaussian")
                     self.altered_image = self.base_image
 
 
-                self.blur_value = value
+                self.gaussian_value = value
                 #self.base_image = self.base_pixmap.toImage()
                 ########################
                 ####self.altered_image = self.altered_pixmap.toImage()
@@ -1447,17 +1445,9 @@ class MainWindow(QMainWindow):
                 altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
                 pillow_image = ImageQt.fromqimage(altered_image)
 
-                if value > 0:
-                    image_blur = pillow_image.filter(ImageFilter.BLUR)
-                    pillow_image = Image.blend(pillow_image,image_blur,(value/100)) 
-                    new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
-                elif value < 0:
-                    print("is sharpeneing")
-                    image_sharp = pillow_image.filter(ImageFilter.SHARPEN)
-                    pillow_image = Image.blend(pillow_image,image_sharp,(abs(value)/100)) 
-                    new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
-                else:
-                    new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
+                image_gaussblur = pillow_image.filter(ImageFilter.GaussianBlur(radius = factor))
+                new_qimage = ImageQt.ImageQt(image_gaussblur).convertToFormat(QImage.Format_ARGB32)
+
 
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
@@ -1473,8 +1463,8 @@ class MainWindow(QMainWindow):
                 ########################
                 self.altered_image = self.altered_pixmap.toImage()
                 #self.adjust_saturation(self.saturation_value)
-                self.blur_panel.reset(0)
-                self.blur_value = 0
+                self.gaussian_panel.reset(0)
+                self.gaussian_value = 0
                 self.tool_panel.refresh_tool()
 
                 self.update()
@@ -2240,6 +2230,107 @@ class MainWindow(QMainWindow):
 
                 self.update()
 
+    def adjust_exposure(self,value):
+            factor = 2**(value/100)
+            if self.use_low_res:
+                #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+                self.original_image_location = self.selected_layer.position
+                #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+
+                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
+
+                #image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
+
+
+                altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
+
+                pillow_image = ImageQt.fromqimage(altered_image)
+
+                # for pixelY in range(altered_image.height()):
+                #     for pixelX in range (altered_image.width()):
+                #         pixel_color = QColor(altered_image.pixel(pixelX,pixelY))
+                #         H,S,L,A = pixel_color.getHsl()
+                exposure_enhancer = ImageEnhance.Brightness(pillow_image)
+                pillow_image = exposure_enhancer.enhance(factor)
+
+                new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
+
+                display_size = self.current_image.size() 
+                new_qimage = new_qimage.scaled(display_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
+
+
+
+
+
+                #self.base_pixmap = QPixmap.fromImage(image)
+                self.altered_pixmap = QPixmap.fromImage(new_qimage)
+
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
+                #update textures
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
+                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.active_tool_widget.update_overlay()
+
+
+
+                self.altered_image = new_qimage
+
+                if value != self.exposure_value:
+                    self.adjust_all_but_self("exposure")
+                    print("adjusting  all but exposure")
+                    self.altered_image = self.current_image
+
+
+                self.exposure_value = value
+
+                #self.base_image = self.base_pixmap.toImage()
+                ########################
+                ####self.altered_image = self.altered_pixmap.toImage()
+                #####self.adjust_saturation(self.saturation_value)
+                self.update()
+            else:          
+                self.setCursor(QtCore.Qt.ForbiddenCursor)
+                self.original_image_location = self.selected_layer.position
+
+                #image = self.base_image.convertToFormat(QImage.Format_ARGB32)
+                altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
+                pillow_image = ImageQt.fromqimage(altered_image)
+
+                # for pixelY in range(altered_image.height()):
+                #     for pixelX in range (altered_image.width()):
+                #         pixel_color = QColor(altered_image.pixel(pixelX,pixelY))
+                #         H,S,L,A = pixel_color.getHsl()
+
+                if value != 0:
+                    exposure_enhancer = ImageEnhance.Brightness(pillow_image)
+                    pillow_image = exposure_enhancer.enhance(factor)
+
+
+                new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
+
+
+                #self.base_pixmap = QPixmap.fromImage(image)
+                self.altered_pixmap = QPixmap.fromImage(new_qimage)
+
+                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
+                #update textures
+                #index = self.texture_layers.index(self.selected_layer)
+                self.texture_layers[self.selected_layer_index] = updated_texture
+                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.active_tool_widget.update_overlay()
+
+                #self.base_image = self.base_pixmap.toImage()
+                ########################
+                self.altered_image = self.altered_pixmap.toImage()
+                #self.adjust_saturation(self.saturation_value)
+                self.exposure_panel.reset(0)
+                self.exposure_value = 0
+                self.tool_panel.refresh_tool()
+
+                self.update()
 
     def reset_sliders(self):
         self.magenta_green_panel.reset(0)
@@ -2248,7 +2339,8 @@ class MainWindow(QMainWindow):
         self.saturation_panel.reset(100)
         self.contrast_panel.reset(100)
         self.brightness_panel.reset(100)
-        self.blur_panel.reset(0)
+        self.gaussian_panel.reset(0)
+        self.exposure_value(0)
         self.opacity_slider.reset(255)
         self.adjust_apply_button_colour(0)
         self.apply_full_resolution_adjustments()
@@ -2271,8 +2363,10 @@ class MainWindow(QMainWindow):
             self.adjust_contrast(self.contrast_value)
         if self.brightness_value != 100:
             self.adjust_brightness(self.brightness_value)
-        if self.blur_value != 0:
-            self.adjust_blur(self.blur_value)
+        if self.exposure_value != 0:
+            self.adjust_exposure(self.exposure_value)
+        if self.gaussian_value != 0:
+            self.adjust_gaussian(self.gaussian_value)
 
         self.tool_panel.refresh_tool()
 
@@ -2302,8 +2396,10 @@ class MainWindow(QMainWindow):
             self.adjust_contrast(self.contrast_value)
         if self.brightness_value != 100:
             self.adjust_brightness(self.brightness_value)
-        if self.blur_value != 0:
-            self.adjust_blur(self.blur_value)
+        if self.exposure_value != 0:
+            self.adjust_exposure(self.exposure_value)
+        if self.gaussian_value != 0:
+            self.adjust_gaussian(self.gaussian_value)
         #self.adjust_opacity(self.opacity_value)
         if self.opacity_value != self.layer_opacities[self.selected_layer_index]:
             self.adjust_opacity(self.opacity_value)
@@ -2333,7 +2429,8 @@ class MainWindow(QMainWindow):
         self.adjust_saturation(self.saturation_value)
         self.adjust_contrast(self.contrast_value)
         self.adjust_brightness(self.brightness_value)
-        self.adjust_blur(self.blur_value)
+        self.adjust_exposure(self.exposure_value)
+        self.adjust_gaussian(self.gaussian_value)
         self.adjust_opacity(self.opacity_value)
         self.altered_image = self.current_image
 
@@ -2589,21 +2686,6 @@ class MainWindow(QMainWindow):
         contract_action.triggered.connect(lambda: self.contract_selections())
 
 
-        filter_menu = menu_bar.addMenu("Filters")
-
-
-        gaussian_action = QAction("Gaussian Blur", self)
-        invert_action = QAction("Invert Layer", self)
- 
-
-        filter_menu.addAction(gaussian_action)
-        filter_menu.addAction(invert_action)
-
-        gaussian_action.triggered.connect(lambda: self.create_gaussian_menu())
-        ###invert_action.triggered.connect(lambda: self.contract_selections())
-
-
-
         help_menu = menu_bar.addMenu("Help")
         help_action = QAction("Show Help", self)
         help_action.triggered.connect(self.show_help)
@@ -2633,10 +2715,6 @@ class MainWindow(QMainWindow):
             selection-background-color: #424242;                  
         """)  
  
-    def create_gaussian_menu(self):
-        print("gaussian menu created")
-        thing = TestWidget(self)
-        thing.show()
 
     def flip_horizontal(self):
         self.flip_selected_layer(-1,1)
