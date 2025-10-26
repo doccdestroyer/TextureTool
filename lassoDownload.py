@@ -116,7 +116,7 @@ class ChooseNameWindow(QMainWindow):
         self.setStyleSheet("""
             background-color: #262626;
             color: #ffffff;
-            font-family: Consolas;
+            font-family: Segoe UI;
             font-size: 12px;
             selection-background-color: #424242;                  
         """)  
@@ -125,8 +125,6 @@ class ChooseNameWindow(QMainWindow):
 
         self.name = None
         self.button_clicked = False
-
-
 
     def buttonClicked(self, checked):
         self.button_clicked = True
@@ -159,6 +157,74 @@ class TestWidget(QWidget):
         self.gaussian_panel = Slider(self, "Gaussian Slider" , 0, 100, 0)
         self.gaussian_panel.value_changed.connect(self.adjust_gaussian)
         layout.addWidget(self.parent_window.gaussian_panel)
+
+class DeleteConfirmationWindow(QWidget):
+    def __init__(self, parent = None):
+        super(DeleteConfirmationWindow, self).__init__(parent)
+
+        self.mainWindow= QMainWindow()
+        #self.mainWindow.setParent(parent)
+        self.parent_window = parent
+
+        # button
+        self.accept_button = QPushButton("Yes")
+        self.accept_button.clicked.connect(self.aceept_button_clicked)
+
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.clicked.connect(self.cancel_button_clicked)
+
+        # label
+        self.label = QLabel()
+        self.label.setText("Are you sure you want to delete this layer?")
+
+        # radio button
+        self.dont_show_again_radio_button = QRadioButton()
+        self.dont_show_again_radio_button.setText("Don't show this again")
+        self.dont_show_again_radio_button.clicked.connect(self.dont_show_again_enabled)
+
+        # combine all in a layout
+        layout = QVBoxLayout()
+
+        button_layouts= QHBoxLayout()
+        button_layouts.addWidget(self.accept_button)
+        button_layouts.addWidget(self.cancel_button)
+        layout.addWidget(self.label)
+        layout.addWidget(self.dont_show_again_radio_button)
+        layout.addLayout(button_layouts)
+
+        container = QWidget()
+        container.setLayout(layout)
+
+        self.setStyleSheet("""
+            background-color: #252525;
+            color: #ffffff;
+            font-family: Segoe UI;
+            font-size: 12px;                 
+        """)  
+
+        self.mainWindow.setCentralWidget(container)
+
+
+    def aceept_button_clicked(self, checked):
+        self.parent_window.will_delete = True
+        self.parent_window.delete_current_layer()
+        self.parent_window.update()
+        self.mainWindow.close()
+        self.mainWindow.deleteLater()
+
+    def cancel_button_clicked(self, checked):
+        self.parent_window.will_delete = False
+        self.parent_window.update()
+        self.parent_window.delete_current_layer()
+        self.mainWindow.close()
+        self.mainWindow.deleteLater()
+
+    def dont_show_again_enabled(self, checked):
+        self.parent_window.show_delete_message = False
+        self.parent_window.update()
+
+
+        
 ###############################################################
 #                        MAIN WINDOW                          #
 ###############################################################
@@ -301,7 +367,7 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(f"""
             background-color: #2c2c2c;
             color: #ffffff;
-            font-family: Consolas;
+            font-family: Segoe UI;
             font-size: 12px;
             border: 1px solid #434343;
         """) 
@@ -316,7 +382,8 @@ class MainWindow(QMainWindow):
     #         self.clear_selections()
 
 
-
+        self.will_delete = False
+        self.show_delete_message = True
 
 
                             
@@ -350,7 +417,7 @@ class MainWindow(QMainWindow):
         self.color_button.setStyleSheet(f"""
             background-color: {self.color_name};
             color: #ffffff;
-            font-family: Consolas;
+            font-family: Segoe UI;
             font-size: 12px;
         """) 
         self.active_tool_widget.update_overlay()
@@ -371,7 +438,7 @@ class MainWindow(QMainWindow):
         self.setStyleSheet("""
             background-color: #2c2c2c;
             color: #ffffff;
-            font-family: Consolas;
+            font-family: Segoe UI;
             font-size: 12px;
             selection-background-color: #424242;                  
         """)  
@@ -379,7 +446,7 @@ class MainWindow(QMainWindow):
         self.color_button.setStyleSheet(f"""
             background-color: #000000;
             color: #ffffff;
-            font-family: Consolas;
+            font-family: Segoe UI;
             font-size: 12px;
         """) 
 
@@ -428,7 +495,7 @@ class MainWindow(QMainWindow):
         # self.cyan_red_panel.setStyleSheet("""
         #     background-color: #252525;
         #     color: #ffffff;
-        #     font-family: Consolas;
+        #     font-family: Segoe UI;
         #     background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00FFFF, stop:1 #FF0000);
         #     font-size: 12px;
                                           
@@ -529,7 +596,7 @@ class MainWindow(QMainWindow):
 
         self.delete_layer_button = QPushButton("Delete Current Layer")
         self.delete_layer_button.setCheckable(True)
-        self.delete_layer_button.clicked.connect(self.delete_current_layer)
+        self.delete_layer_button.clicked.connect(self.show_delete_box)
         internal_layout.addWidget(self.delete_layer_button)
 
 
@@ -769,12 +836,72 @@ class MainWindow(QMainWindow):
         self.update()
 
     def delete_current_layer(self):
-        if self.selected_layer_index != 0:
+        if self.will_delete == True:
             self.texture_layers.remove(self.texture_layers[self.selected_layer_index])
-            #self.change_layer(self.item)
+            self.layer_opacities.remove(self.layer_opacities[self.selected_layer_index])
+
             self.rewrite_layers()
+
+            self.selected_layer = self.texture_layers[self.selected_layer_index-1]
+            self.selected_layer_index = self.selected_layer_index-1
+            item = self.layers.item(self.selected_layer_index)
+            self.layers.setCurrentItem(item)
+            self.will_delete = False
             self.update()
 
+            
+    def show_delete_box(self):
+        if self.selected_layer_index != 0:
+            if self.show_delete_message == True:
+                self.show_delete_confirmation()
+            else:
+                self.will_delete = True
+                self.delete_current_layer()
+
+
+        else:
+            self.show_cannot_delete_message()
+
+    def show_delete_confirmation(self):
+        self.window = DeleteConfirmationWindow(self)
+        self.window.mainWindow.show()
+        self.window.setWindowTitle("Delete Confirmation")
+        self.window.setObjectName("deleteConfirmationWindow")
+        #unreal.parent_external_window_to_slate(DeleteConfirmationWindow.window.winId())
+
+    def radioButtonGroupChanged(self, checked):
+        button = self.radioButtonGroup.checkedButton()
+        unreal.log('Radio Button Group Changed: '+ button.text())
+
+    def comboBoxIndexChanged(self, index):
+        unreal.log('Combo Box Index: ' + str(index))
+
+    def comboBoxTextChanged(self, text):
+        unreal.log('Combo Box Text: ' + str(text))
+    
+    def dialChanged(self, value):
+        unreal.log('Dial changed: ' + str(value))
+
+    def sliderChanged(self, value):
+        unreal.log('Slider changed: ' + str(value))
+
+    def buttonClicked(self, checked):
+        unreal.log('BUTTON CLICKED')
+        unreal.log('Checked: '+ str(checked))
+
+        if checked:
+            self.button.setText('You already pressed me!')
+        else:
+            self.button.setText('Press Me! (again)')
+
+
+
+    def show_cannot_delete_message(self):
+        QMessageBox.about(self, "Error",
+                          "You canno delete the base layer!\n\n"
+                          "If you wish to export without the base layer,"
+                          "select File > Export > Export Flattened Additons.")
+        
     def adjust_all_but_self(self, current_adjustment):
         sliders_changed = 1
         self.adjust_resolution(sliders_changed)
@@ -835,7 +962,7 @@ class MainWindow(QMainWindow):
             self.apply_button.setStyleSheet("""
                 background-color: #7A7A7A;
                 color: #ffffff;
-                font-family: Consolas;
+                font-family: Segoe UI;
                 font-size: 12px;
                 selection-background-color: #424242;                  
             """)    
@@ -844,7 +971,7 @@ class MainWindow(QMainWindow):
             self.apply_button.setStyleSheet("""
                 background-color: #2c2c2c;
                 color: #ffffff;
-                font-family: Consolas;
+                font-family: Segoe UI;
                 font-size: 12px;
                 selection-background-color: #424242;                  
             """)   
@@ -2694,7 +2821,7 @@ class MainWindow(QMainWindow):
         menu_bar.setStyleSheet("""
             background-color: #252525;
             color: #ffffff;
-            font-family: Consolas;
+            font-family: Segoe UI;
             font-size: 12px;
             selection-background-color: #424242;                  
         """)  
@@ -2702,7 +2829,7 @@ class MainWindow(QMainWindow):
         modify_menu.setStyleSheet("""
             background-color: #252525;
             color: #ffffff;
-            font-family: Consolas;
+            font-family: Segoe UI;
             font-size: 12px;
             selection-background-color: #424242;                  
         """)  
@@ -2710,7 +2837,7 @@ class MainWindow(QMainWindow):
         export_menu.setStyleSheet("""
             background-color: #252525;
             color: #ffffff;
-            font-family: Consolas;
+            font-family: Segoe UI;
             font-size: 12px;
             selection-background-color: #424242;                  
         """)  
@@ -3037,7 +3164,7 @@ class Slider(QWidget):
         self.setStyleSheet("""
             background-color: #252525;
             color: #ffffff;
-            font-family: Consolas;
+            font-family: Segoe UI;
             font-size: 12px;
         """)  
  
@@ -3174,7 +3301,7 @@ class ToolSectionMenu(QMainWindow):
         self.setStyleSheet("""
             background-color: #262626;
             color: #ffffff;
-            font-family: Consolas;
+            font-family: Segoe UI;
             font-size: 12px;
             selection-background-color: #424242;                  
         """)  
@@ -3195,7 +3322,7 @@ class ToolSectionMenu(QMainWindow):
         self.setStyleSheet("""
             background-color: #2c2c2c;
             color: #ffffff;
-            font-family: Consolas;
+            font-family: Segoe UI;
             font-size: 12px;
             selection-background-color: #424242;                  
         """)  
