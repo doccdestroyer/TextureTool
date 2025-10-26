@@ -833,6 +833,7 @@ class MainWindow(QMainWindow):
             self.active_tool_widget.update()
 
         self.layers.addItem("Layer "+ str(len(self.texture_layers)-1))
+        self.layer_opacities.append(255)
         self.update()
 
     def delete_current_layer(self):
@@ -1979,7 +1980,9 @@ class MainWindow(QMainWindow):
                 self.update()
 
     def adjust_opacity(self,value):
-            factor = value
+            factor = value/255
+            if factor <0.001:
+                factor = 0.001
             if self.use_low_res:
                 #previous_res = self.resolution
 
@@ -1998,7 +2001,7 @@ class MainWindow(QMainWindow):
 
                 altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
 
-                pillow_image = ImageQt.fromqimage(altered_image)
+                pillow_image = ImageQt.fromqimage(altered_image).convert("RGBA")
 
                 # for pixelY in range(altered_image.height()):
                 #     for pixelX in range (altered_image.width()):
@@ -2007,8 +2010,14 @@ class MainWindow(QMainWindow):
 
 
 
-                alpha_mask = Image.new("L", pillow_image.size, int(factor)) 
-                pillow_image.putalpha(alpha_mask)
+                # alpha_mask = Image.new("L", pillow_image.size, int(factor)) 
+                # pillow_image.putalpha(alpha_mask)
+
+                r, g, b, a = pillow_image.split()
+                new_alpha = a.point(lambda point: point*factor)
+                pillow_image.putalpha(new_alpha)
+
+
 
 
                 new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
@@ -2063,8 +2072,14 @@ class MainWindow(QMainWindow):
                 #         H,S,L,A = pixel_color.getHsl()
 
 
-                alpha_mask = Image.new("L", pillow_image.size, factor) 
-                pillow_image.putalpha(alpha_mask)
+                # alpha_mask = Image.new("L", pillow_image.size, factor) 
+                # pillow_image.putalpha(alpha_mask)
+
+
+                r, g, b, a = pillow_image.split()
+                new_alpha = a.point(lambda point: point*factor)
+                pillow_image.putalpha(new_alpha)
+
 
                 new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
 
