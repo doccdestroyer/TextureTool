@@ -350,7 +350,7 @@ class MainWindow(QMainWindow):
         self.redness_value = 0
         self.greenness_value = 0
         self.blueness_value = 0
-        self.gaussian_value = 0
+        #self.gaussian_value = 0
         self.exposure_value = 0
         self.opacity_value = 255
         self.create_dock_windows()
@@ -937,8 +937,8 @@ class MainWindow(QMainWindow):
             self.adjust_saturation(self.saturation_value)
             sliders_changed += 1
             self.adjust_resolution(sliders_changed)
-        if current_adjustment != "gaussian" and self.gaussian_value != 0:
-            self.adjust_gaussian(self.gaussian_value)
+        # if current_adjustment != "gaussian" and self.gaussian_value != 0:
+        #     self.adjust_gaussian(self.gaussian_value)
         if current_adjustment != "opacity":
             self.adjust_opacity(self.opacity_value)
             
@@ -2475,14 +2475,15 @@ class MainWindow(QMainWindow):
                 self.update()
 
     def reset_sliders(self):
+        # self.resolution = 1024
         self.magenta_green_panel.reset(0)
         self.cyan_red_panel.reset(0)
         self.yellow_blue_panel.reset(0)
         self.saturation_panel.reset(100)
         self.contrast_panel.reset(100)
         self.brightness_panel.reset(100)
-        self.gaussian_panel.reset(0)
-        self.exposure_value(0)
+        # self.gaussian_panel.reset(0)
+        self.exposure_panel.reset(0)
         self.opacity_slider.reset(255)
         self.adjust_apply_button_colour(0)
         self.apply_full_resolution_adjustments()
@@ -2507,13 +2508,12 @@ class MainWindow(QMainWindow):
             self.adjust_brightness(self.brightness_value)
         if self.exposure_value != 0:
             self.adjust_exposure(self.exposure_value)
-        if self.gaussian_value != 0:
-            self.adjust_gaussian(self.gaussian_value)
+        # if self.gaussian_value != 0:
+        #     self.adjust_gaussian(self.gaussian_value)
 
         self.tool_panel.refresh_tool()
 
     def apply_full_resolution_adjustments(self):
-        previous_res = self.resolution
         #self.resolution = self.base_image.height()
         self.use_low_res = False
         self.setCursor(QtCore.Qt.ForbiddenCursor)
@@ -2526,27 +2526,36 @@ class MainWindow(QMainWindow):
         #     self.adjust_contrast(self.contrast_value)
   
 
-        if self.redness_value != 0:
-            self.adjust_redness(self.redness_value)
-        if self.greenness_value != 0:
-            self.adjust_greenness(self.greenness_value)
-        if self.blueness_value != 0:
-            self.adjust_blueness(self.blueness_value)
-        if self.saturation_value != 100:
-            self.adjust_saturation(self.saturation_value)
-        if self.contrast_value != 100:
-            self.adjust_contrast(self.contrast_value)
-        if self.brightness_value != 100:
-            self.adjust_brightness(self.brightness_value)
-        if self.exposure_value != 0:
-            self.adjust_exposure(self.exposure_value)
-        if self.gaussian_value != 0:
-            self.adjust_gaussian(self.gaussian_value)
-        #self.adjust_opacity(self.opacity_value)
-        if self.opacity_value != self.layer_opacities[self.selected_layer_index]:
-            self.adjust_opacity(self.opacity_value)
+        # if self.redness_value != 0:
+        #     self.adjust_redness(self.redness_value)
+        # if self.greenness_value != 0:
+        #     self.adjust_greenness(self.greenness_value)
+        # if self.blueness_value != 0:
+        #     self.adjust_blueness(self.blueness_value)
+        # if self.saturation_value != 100:
+        #     self.adjust_saturation(self.saturation_value)
+        # if self.contrast_value != 100:
+        #     self.adjust_contrast(self.contrast_value)
+        # if self.brightness_value != 100:
+        #     self.adjust_brightness(self.brightness_value)
+        # if self.exposure_value != 0:
+        #     self.adjust_exposure(self.exposure_value)
+        # if self.gaussian_value != 0:
+        #     self.adjust_gaussian(self.gaussian_value)
+        # #self.adjust_opacity(self.opacity_value)
+        # if self.opacity_value != self.layer_opacities[self.selected_layer_index]:
+        #     self.adjust_opacity(self.opacity_value)
 
 
+        self.adjust_redness(self.redness_value)
+        self.adjust_greenness(self.greenness_value)
+        self.adjust_blueness(self.blueness_value)
+        self.adjust_saturation(self.saturation_value)
+        self.adjust_contrast(self.contrast_value)
+        self.adjust_brightness(self.brightness_value)
+        self.adjust_exposure(self.exposure_value)
+        #self.adjust_gaussian(self.gaussian_value)
+        self.adjust_opacity(self.opacity_value)
 
         self.current_image = self.altered_image
         self.setCursor(QtCore.Qt.ArrowCursor)
@@ -2572,7 +2581,7 @@ class MainWindow(QMainWindow):
         self.adjust_contrast(self.contrast_value)
         self.adjust_brightness(self.brightness_value)
         self.adjust_exposure(self.exposure_value)
-        self.adjust_gaussian(self.gaussian_value)
+        #self.adjust_gaussian(self.gaussian_value)
         self.adjust_opacity(self.opacity_value)
         self.altered_image = self.current_image
 
@@ -6000,6 +6009,9 @@ class TransformTool(QWidget):
         for layer in self.parent_window.texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
         painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
+
+        painter = QtGui.QPainter(self.overlay)
+
         painter.drawPixmap(0, 0, self.overlay)
         
     def clear_overlay(self):
