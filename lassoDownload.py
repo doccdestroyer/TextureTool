@@ -3056,6 +3056,7 @@ class MainWindow(QMainWindow):
         import_task = unreal.AssetImportTask()
         import_task.filename = temp_path
         import_task.destination_path = unreal_folder
+        import_task.destination_name = name          
         import_task.automated = True
         import_task.save = True
         import_task.replace_existing = True
@@ -3063,13 +3064,15 @@ class MainWindow(QMainWindow):
         asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
         asset_tools.import_asset_tasks([import_task])
 
-        imported_asset_path = f"{unreal_folder}" + "/" + name + ".png"
+        imported_asset_path = f"{unreal_folder}/{name}.{name}"
+
         if unreal.EditorAssetLibrary.does_asset_exist(imported_asset_path):
-            unreal.log("Succesfully imported into Unreal")
+            unreal.log("Successfully imported into Unreal")
+            texture_generated = unreal.EditorAssetLibrary.load_asset(imported_asset_path)
+            texture_generated.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_DEFAULT)
+            unreal.EditorAssetLibrary.save_asset(imported_asset_path)
         else:
             unreal.log_error("Failed to import into Unreal")
-        time.sleep(1)
-        self.close()
 
     def export_flattened_additions(self, unreal_folder, name):
         temp_dir = os.path.join(unreal.Paths.project_intermediate_dir(), "TempExports")
@@ -3095,6 +3098,7 @@ class MainWindow(QMainWindow):
         import_task = unreal.AssetImportTask()
         import_task.filename = temp_path
         import_task.destination_path = unreal_folder
+        import_task.destination_name = name          
         import_task.automated = True
         import_task.save = True
         import_task.replace_existing = True
@@ -3102,19 +3106,16 @@ class MainWindow(QMainWindow):
         asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
         asset_tools.import_asset_tasks([import_task])
 
-        imported_asset_path = f"{unreal_folder}" + "/" + name + ".png"
-        print("IMPORTED ASSET 1: ", imported_asset_path)
-
-        time.sleep(1)
-        unreal.AssetRegistryHelpers.get_asset_registry().scan_paths_synchronous([unreal_folder])
+        imported_asset_path = f"{unreal_folder}/{name}.{name}"
 
         if unreal.EditorAssetLibrary.does_asset_exist(imported_asset_path):
-            unreal.log("Succesfully imported into Unreal")
-            unreal.log(f"FIRST FUNCTION FILE PATH: ", imported_asset_path)
-            return imported_asset_path
+            unreal.log("Successfully imported into Unreal")
+            texture_generated = unreal.EditorAssetLibrary.load_asset(imported_asset_path)
+            texture_generated.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_DEFAULT)
+            unreal.EditorAssetLibrary.save_asset(imported_asset_path)
         else:
             unreal.log_error("Failed to import into Unreal")
-            #return imported_asset_path]
+
         time.sleep(1)
         self.close()
 
