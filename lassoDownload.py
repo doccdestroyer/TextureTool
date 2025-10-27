@@ -328,10 +328,10 @@ class MainWindow(QMainWindow):
         # self.export_addtions_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
         # self.layout.addWidget(self.export_addtions_button)
 
-        # self.create_decal_button = QPushButton("Create Decal")
-        # #self.create_decal_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
-        # self.create_decal_button.clicked.connect(lambda: self.create_decal(self.prompt_add_folder_path(), "M_DecalTest69"))
-        # self.layout.addWidget(self.create_decal_button)
+        self.create_decal_button = QPushButton("Create Decal")
+        #self.create_decal_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
+        self.create_decal_button.clicked.connect(lambda: self.create_decal(self.prompt_add_folder_path(), "M_DecalTest69"))
+        self.layout.addWidget(self.create_decal_button)
 
 
         self.tool_description = None
@@ -941,7 +941,7 @@ class MainWindow(QMainWindow):
         #     self.adjust_gaussian(self.gaussian_value)
         if current_adjustment != "opacity":
             self.adjust_opacity(self.opacity_value)
-            
+        self.tool_panel.refresh_tool()
         # self.altered_image = self.current_image
 
     def adjust_resolution(self,sliders_changed):
@@ -2037,7 +2037,6 @@ class MainWindow(QMainWindow):
                 self.active_tool_widget.update_overlay()
 
 
-
                 self.altered_image = new_qimage
 
                 if value != self.opacity_value:
@@ -2053,8 +2052,10 @@ class MainWindow(QMainWindow):
 
 
 
-                self.current_image = self.selected_layer.pixmap.toImage()
-                self.altered_image = self.current_image
+                # self.current_image = self.selected_layer.pixmap.toImage()
+                # self.altered_image = self.current_image
+
+                
                 #self.resolution = previous_res
 
                 self.update()
@@ -2103,8 +2104,8 @@ class MainWindow(QMainWindow):
                 self.tool_panel.refresh_tool()
                 self.layer_opacities[self.selected_layer_index] = factor
 
-                self.current_image = self.selected_layer.pixmap.toImage()
-                self.altered_image = self.current_image
+                # self.current_image = self.selected_layer.pixmap.toImage()
+                # self.altered_image = self.current_image
                 self.update()
 
     def adjust_gamma(self,value):
@@ -2476,6 +2477,7 @@ class MainWindow(QMainWindow):
 
     def reset_sliders(self):
         # self.resolution = 1024
+        self.apply_full_resolution_adjustments()
         self.magenta_green_panel.reset(0)
         self.cyan_red_panel.reset(0)
         self.yellow_blue_panel.reset(0)
@@ -2486,7 +2488,7 @@ class MainWindow(QMainWindow):
         self.exposure_panel.reset(0)
         self.opacity_slider.reset(255)
         self.adjust_apply_button_colour(0)
-        self.apply_full_resolution_adjustments()
+
         self.update()
 
     def force_resolution_to_medium(self, bool):
@@ -2526,42 +2528,43 @@ class MainWindow(QMainWindow):
         #     self.adjust_contrast(self.contrast_value)
   
 
-        # if self.redness_value != 0:
-        #     self.adjust_redness(self.redness_value)
-        # if self.greenness_value != 0:
-        #     self.adjust_greenness(self.greenness_value)
-        # if self.blueness_value != 0:
-        #     self.adjust_blueness(self.blueness_value)
-        # if self.saturation_value != 100:
-        #     self.adjust_saturation(self.saturation_value)
-        # if self.contrast_value != 100:
-        #     self.adjust_contrast(self.contrast_value)
-        # if self.brightness_value != 100:
-        #     self.adjust_brightness(self.brightness_value)
-        # if self.exposure_value != 0:
-        #     self.adjust_exposure(self.exposure_value)
+        if self.redness_value != 0:
+            self.adjust_redness(self.redness_value)
+        if self.greenness_value != 0:
+            self.adjust_greenness(self.greenness_value)
+        if self.blueness_value != 0:
+            self.adjust_blueness(self.blueness_value)
+        if self.saturation_value != 100:
+            self.adjust_saturation(self.saturation_value)
+        if self.contrast_value != 100:
+            self.adjust_contrast(self.contrast_value)
+        if self.brightness_value != 100:
+            self.adjust_brightness(self.brightness_value)
+        if self.exposure_value != 0:
+            self.adjust_exposure(self.exposure_value)
         # if self.gaussian_value != 0:
         #     self.adjust_gaussian(self.gaussian_value)
-        # #self.adjust_opacity(self.opacity_value)
-        # if self.opacity_value != self.layer_opacities[self.selected_layer_index]:
-        #     self.adjust_opacity(self.opacity_value)
+        #self.adjust_opacity(self.opacity_value)
+        if self.opacity_value != self.layer_opacities[self.selected_layer_index]:
+            self.adjust_opacity(self.opacity_value)
 
 
-        self.adjust_redness(self.redness_value)
-        self.adjust_greenness(self.greenness_value)
-        self.adjust_blueness(self.blueness_value)
-        self.adjust_saturation(self.saturation_value)
-        self.adjust_contrast(self.contrast_value)
-        self.adjust_brightness(self.brightness_value)
-        self.adjust_exposure(self.exposure_value)
-        #self.adjust_gaussian(self.gaussian_value)
-        self.adjust_opacity(self.opacity_value)
+        # self.adjust_redness(self.redness_value)
+        # self.adjust_greenness(self.greenness_value)
+        # self.adjust_blueness(self.blueness_value)
+        # self.adjust_saturation(self.saturation_value)
+        # self.adjust_contrast(self.contrast_value)
+        # self.adjust_brightness(self.brightness_value)
+        # self.adjust_exposure(self.exposure_value)
+        # #self.adjust_gaussian(self.gaussian_value)
+        # self.adjust_opacity(self.opacity_value)
 
         self.current_image = self.altered_image
         self.setCursor(QtCore.Qt.ArrowCursor)
         self.tool_panel.refresh_tool()
         self.use_low_res = True
         self.adjust_apply_button_colour(0)
+
 
     def apply_1k_resolution_adjustments(self, bool):
         self.use_low_res = bool
@@ -3122,15 +3125,56 @@ class MainWindow(QMainWindow):
             texture_generated = unreal.EditorAssetLibrary.load_asset(imported_asset_path)
             texture_generated.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_DEFAULT)
             unreal.EditorAssetLibrary.save_asset(imported_asset_path)
+            return imported_asset_path
         else:
             unreal.log_error("Failed to import into Unreal")
 
         time.sleep(1)
         self.close()
 
-    def create_decal(self, unreal_folder, material_name):
-        merged_texture_path = self.export_flattened_additions(str(self.prompt_add_folder_path()),"TESTTEST")
-        print("MERGED TEXTURE PATH: ", merged_texture_path)
+    def create_decal(self, unreal_folder, material_name, name = "DECAL"):
+
+
+        temp_dir = os.path.join(unreal.Paths.project_intermediate_dir(), "TempExports")
+        os.makedirs(temp_dir, exist_ok=True)
+        temp_path = os.path.join(temp_dir, (name + ".png"))
+
+        base_size = self.texture_layers[0].pixmap.size()
+        final_image = QtGui.QImage(base_size, QtGui.QImage.Format_ARGB32)
+        final_image.fill(QtCore.Qt.transparent)
+
+
+        pen_layer = TextureLayer(self.pen_overlay, QtCore.QPoint(0, 0))
+        self.texture_layers.append(pen_layer)
+
+        painter = QtGui.QPainter(final_image)
+        for layer in self.texture_layers[1:]:
+            painter.drawPixmap(layer.position, layer.pixmap)
+
+        painter.end()
+
+        QtGui.QPixmap.fromImage(final_image).save(temp_path, "PNG")
+
+        import_task = unreal.AssetImportTask()
+        import_task.filename = temp_path
+        import_task.destination_path = unreal_folder
+        import_task.destination_name = name          
+        import_task.automated = True
+        import_task.save = True
+        import_task.replace_existing = True
+
+        asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
+        asset_tools.import_asset_tasks([import_task])
+
+        imported_asset_path = f"{unreal_folder}{name}.{name}"
+
+        if unreal.EditorAssetLibrary.does_asset_exist(imported_asset_path):
+            unreal.log("Successfully imported into Unreal")
+            texture_generated = unreal.EditorAssetLibrary.load_asset(imported_asset_path)
+            texture_generated.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_DEFAULT)
+            unreal.EditorAssetLibrary.save_asset(imported_asset_path)
+        else:
+            unreal.log_error("Failed to import into Unreal")
 
         asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
         material_factory = unreal.MaterialFactoryNew()
@@ -3138,15 +3182,18 @@ class MainWindow(QMainWindow):
         decal_name = material_name
 
         #texture_path = merged_texture_path
-        unreal.log(merged_texture_path)
-        unreal.log(merged_texture_path)
-        unreal.log(merged_texture_path)
-        unreal.log(merged_texture_path)
+        unreal.log(imported_asset_path)
+        unreal.log(imported_asset_path)
+        unreal.log(imported_asset_path)
+        unreal.log(imported_asset_path)
 
-        texture = unreal.load_asset(str(merged_texture_path))
+        texture = unreal.load_asset(str(imported_asset_path))
+        if texture:
+            print ("TEXTURE LOADED")
 
         material = asset_tools.create_asset(decal_name, package_path, unreal.Material, material_factory)
-
+        if material:
+            print ("MATERIAL LOADED")
         mat_editor = unreal.MaterialEditingLibrary
 
         material.set_editor_property("material_domain", unreal.MaterialDomain.MD_DEFERRED_DECAL)
@@ -3794,7 +3841,7 @@ class MoveTool(QtWidgets.QWidget):
         if event.button() == QtCore.Qt.LeftButton:
             if self.panning:
                 self.last_pan_point = event.position().toPoint()
-                self.setCursoe(QtCore.Qt.ClosedHandCursor)
+                self.setCursor(QtCore.Qt.ClosedHandCursor)
             else:
                 point = self.get_scaled_point(event.position())
                 for layer in reversed(self.parent_window.texture_layers):
@@ -5717,7 +5764,7 @@ class TransformTool(QWidget):
         self.panning = False
         self.last_pan_point = None
 
-        self.dragging_layer = None
+
         self.drag_start_offset = QtCore.QPoint()
 
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
@@ -5729,12 +5776,12 @@ class TransformTool(QWidget):
 
         #self.merged_selection_path = parent_window.merged_selection_path
 
-        self.image = self.parent_window.texture_layers[0].pixmap
+        self.image = self.parent_window.selected_layer.pixmap
 
         self.overlay = QtGui.QPixmap(self.image.size())
         self.overlay.fill(QtCore.Qt.transparent)
 
-        self.dragging_pixmap = QtGui.QPixmap(self.image.size())
+        self.selected_pixmap = QtGui.QPixmap(self.image.size())
         #self.overlay = QtGui.QPixmap()
         #self.overlay.fill(QtCore.Qt.transparent)
         self.scaling = False
@@ -5745,6 +5792,17 @@ class TransformTool(QWidget):
         self.rectangle = None
 
         self.point = None
+        self.rotation_angle = 0
+
+        self.OGHEIGHT = None
+        self.OGWIDTH = None
+
+        self.topLeft = None
+
+
+        self.rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size())
+        self.center_point = self.rectangle.center()
+        self.paint_center_point = self.center_point
 
     def get_scaled_point(self, pos):
         scale = self.parent_window.scale_factor
@@ -5759,235 +5817,283 @@ class TransformTool(QWidget):
         self.update()
     
     def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton and self.inSelection:
-            if self.panning:
-                self.last_pan_point = event.position().toPoint()
-                self.setCursoe(QtCore.Qt.ClosedHandCursor)
-            else:
-                self.point = self.get_scaled_point(event.position())
-                for layer in reversed(self.parent_window.texture_layers):
-                    self.rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
-                    unreal.log(print(self.rectangle))
+        if self.parent_window.selected_layer == self.parent_window.texture_layers[0]:
+            pass
+        else:
+            if event.button() == QtCore.Qt.LeftButton and self.inSelection:
+                if self.panning:
+                    self.last_pan_point = event.position().toPoint()
+                    self.setCursor(QtCore.Qt.ClosedHandCursor)
+                else:
+                    self.point = self.get_scaled_point(event.position())
+                    self.rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size())
+                    
+                    self.topLeft = self.rectangle.topLeft()
+
                     expanded_rectangle = self.expand_rectangle(self.rectangle, 1.2)
-                    # expanded_rectangle = QtCore.QRect(layer.position, layer.pixmap.size())
-                    # expanded_rectangle.setWidth(expanded_rectangle.width()*2)
-                    # expanded_rectangle.setHeight(expanded_rectangle.height()*2)
+
                     self.center_point = self.rectangle.center()
+
+
+                    half_pix_height = self.parent_window.selected_layer.pixmap.height() * 0.5
+                    half_pix_width = self.parent_window.selected_layer.pixmap.width() * 0.5
+                    
+                    #self.center_point = QtCore.QPoint(self.topLeft.x() + half_pix_width, self.topLeft.y() + half_pix_height)
+
+                    #self.center_point = (self.rectangle.height()/2 , self.rectangle.width()/2)
                     unreal.log(print(self.center_point))
+                    print(self.center_point)
+
+                    self.selected_pixmap = self.parent_window.selected_layer.pixmap
 
                     if self.rectangle.contains(self.point):
 
-                        if layer == self.parent_window.texture_layers[0]:
-                            break #NEW NEW NEW  
-                        else:
-                            layer.selected = True
-                            # if self.dragging_layer != layer:
-                            #     self.clear_dragging_layer()
-                            self.dragging_layer = layer
-                            index = self.parent_window.texture_layers.index(self.dragging_layer)
+                            # index = self.parent_window.texture_layers.index(self.parent_window.selected_layer)
+
+        
+                            # self.parent_window.selected_layer = self.texture_layers[index]
+                            # self.parent_window.selected_layer_index = index
 
 
-                            self.parent_window.selected_layer = self.texture_layers[index]
-                            self.parent_window.selected_layer_index = index
-
-
-                            item = self.parent_window.layers.item(self.parent_window.selected_layer_index)
-                            self.parent_window.layers.setCurrentItem(item)
-                            self.drag_start_offset = self.point - layer.position
+                            # item = self.parent_window.layers.item(self.parent_window.selected_layer_index)
+                            # self.parent_window.layers.setCurrentItem(item)
+                            self.drag_start_offset = self.point - self.parent_window.selected_layer.position
 
                             #############
 
-                            #self.overlay = QtGui.QPixmap(self.dragging_layer.pixmap.size())
-                            self.dragging_pixmap = self.dragging_layer.pixmap
+                            #self.overlay = QtGui.QPixmap(self.parent_window.selected_layer.pixmap.size())
                             self.scaling = False
                             self.rotating = False
 
 
 
                             self.update_overlay()
-                            break
                     elif expanded_rectangle.contains(self.point):
                         unreal.log ("YOU DID IT YOU DID IT")
                         self.scaling = True
                         self.rotating = False
-                        base_image = self.dragging_pixmap.toImage()
+                        base_image = self.selected_pixmap.toImage()
                         convert = base_image.convertToFormat(QImage.Format_ARGB32)
                         self.pillow_image = ImageQt.fromqimage(convert)            
-                        self.rectangle = QtCore.QRect(self.dragging_layer.position, self.dragging_layer.pixmap.size())
-                        self.center_point_of_scaling = QtCore.QPoint(self.dragging_layer.position.x(),self.dragging_layer.position.y())
-                        self.original_dragging_layer_data = self.dragging_layer
-                        break
+                        self.rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size())
+                        self.center_point_of_scaling = QtCore.QPoint(self.parent_window.selected_layer.position.x(),self.parent_window.selected_layer.position.y())
+                        self.original_dragging_layer_data = self.parent_window.selected_layer
 
                     else: #currently set to scaling settings which will need ot be changed once ui and indication is clearer
                         unreal.log ("ROTATION")
                         self.scaling = False
                         self.rotating = True
-                        self.center_point_of_rotating = QtCore.QPoint(self.dragging_layer.position.x(),self.dragging_layer.position.y())
+                        #self.center_point_of_rotating = QtCore.QPoint(self.dragging_layer.position.x(),self.dragging_layer.position.y())
 
+
+
+
+                        rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size())
+                        self.topLeft = rectangle.topLeft()
+                        self.center_point = QtCore.QPoint(self.topLeft.x() + half_pix_width, self.topLeft.y() + half_pix_height)
+                        #self.paint_center_point = self.center_point
+
+                        base_image = self.parent_window.selected_layer.pixmap.toImage()
+                        convert = base_image.convertToFormat(QImage.Format_ARGB32)
+                        self.pillow_image = ImageQt.fromqimage(convert) 
+
+
+                        self.OGHEIGHT = self.parent_window.selected_layer.pixmap.height()
+                        self.OGWIDTH = self.parent_window.selected_layer.pixmap.width()
+
+                        # base_image = self.dragging_pixmap.toImage()
+                        # convert = base_image.convertToFormat(QImage.Format_ARGB32)
+                        # self.pillow_image = ImageQt.fromqimage(convert) 
                     #self.overlay = QtGui.QPixmap(self.dragging_pixmap.size())
-
+                    self.update()
                             
     def mouseMoveEvent(self,event):
-        if self.panning and self.last_pan_point:
-            change = event.position().toPoint() - self.last_pan_point
-            self.parent_window.pan_offset += change
-            self.last_pan_point = event.position().toPoint()
-            self.update()
-        if self.scaling:
-            hover_point = self.get_scaled_point(event.position())
+        if self.parent_window.selected_layer == self.parent_window.texture_layers[0]:
+            pass
+        else:
+            if self.panning and self.last_pan_point:
+                change = event.position().toPoint() - self.last_pan_point
+                self.parent_window.pan_offset += change
+                self.last_pan_point = event.position().toPoint()
+                self.update()
+            if self.scaling:
+                hover_point = self.get_scaled_point(event.position())
 
-            self.x_hover_difference = (self.center_point_of_scaling.x()-hover_point.x())
-            self.y_hover_difference = (self.center_point_of_scaling.y()-hover_point.y())
-            hover_variance = max(abs(self.x_hover_difference), abs(self.y_hover_difference))
+                self.x_hover_difference = (self.center_point_of_scaling.x()-hover_point.x())
+                self.y_hover_difference = (self.center_point_of_scaling.y()-hover_point.y())
+                hover_variance = max(abs(self.x_hover_difference), abs(self.y_hover_difference))
 
-            self.x_main_difference = (self.center_point_of_scaling.x()-self.point.x())
-            self.y_main_difference = (self.center_point_of_scaling.y()-self.point.y())
-            main_variance = max(abs(self.x_main_difference), abs(self.y_main_difference))
+                self.x_main_difference = (self.center_point_of_scaling.x()-self.point.x())
+                self.y_main_difference = (self.center_point_of_scaling.y()-self.point.y())
+                main_variance = max(abs(self.x_main_difference), abs(self.y_main_difference))
 
-            self.image_scale_factor = hover_variance/main_variance
+                self.image_scale_factor = hover_variance/main_variance
+                
+                if self.image_scale_factor < 0.1:
+                    self.image_scale_factor = 0.1
+
+                if self.image_scale_factor > 20:
+                    self.image_scale_factor = 20
+
+                height_difference = self.original_dragging_layer_data.pixmap.height()*self.image_scale_factor - self.original_dragging_layer_data.pixmap.height()
+                width_difference =  self.original_dragging_layer_data.pixmap.width()*self.image_scale_factor -  self.original_dragging_layer_data.pixmap.width()
+                
+                unreal.log(print("self image scale factor:", self.image_scale_factor))
+                
+
+
+
+                resized_image = self.pillow_image.resize((int(self.pillow_image.size[0]*self.image_scale_factor), int(self.pillow_image.size[1]*self.image_scale_factor)))
+                unreal.log(print("image scaled"))
+
+
+                new_qimage = ImageQt.ImageQt(resized_image).convertToFormat(QImage.Format_ARGB32)
+                new_image = QPixmap.fromImage(new_qimage)
+
+
+                #self.dragging_pixmap = self.dragging_pixmap.scaled(self.dragging_pixmap.width()*self.image_scale_factor,self.dragging_pixmap.height()*self.image_scale_factor)
+                self.selected_pixmap = new_image
+
+
+
+
+                bounds_rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.selected_pixmap.size())
+
+                new_position = QtCore.QPoint(self.original_dragging_layer_data.position.x() - width_difference/2, self.original_dragging_layer_data.position.y() - height_difference/2)
+                #new_position = QtCore.QPoint(self.center_point_of_scaling.x() - width_difference/2, self.center_point_of_scaling.y() - height_difference/2)
+                #new_position =  QtCore.QPoint(self.center_point_of_scaling.x(), self.center_point_of_scaling.y())
+
+                new_layer = TextureLayer(self.selected_pixmap, new_position)
+
+                self.parent_window.texture_layers[self.parent_window.selected_layer_index] = new_layer
+                self.parent_window.selected_layer = self.parent_window.texture_layers[self.parent_window.selected_layer_index]
+
+                self.update_overlay()
+                
+                # for layer in self.parent_window.texture_layers:
+                #     if self.dragging_layer == layer:
+
+            elif self.rotating:
+                hover_point = self.get_scaled_point(event.position())
+
+                rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size())
+                topLeft = rectangle.topLeft()
+                
+                print("TOP LEFT BASE: ", self.topLeft)
+
+    
+
+
+                # half_pix_height_difference = self.OGHEIGHT -(self.dragging_layer.pixmap.height() * 0.5)
+                # half_pix_width_difference = self.OGWIDTH - self.dragging_layer.pixmap.width() * 0.5
+                
+
+                print("DRAGGING LAYER POSITION", self.parent_window.selected_layer.position)
+                dragging_position_x = self.parent_window.selected_layer.position.x()
+                dragging_position_y = self.parent_window.selected_layer.position.y()
+
+                # half_pix_height_difference = self.OGHEIGHT - (self.dragging_layer.pixmap.height() * 0.5)
+                # half_pix_width_differenece = self.OGWIDTH - (self.dragging_layer.pixmap.width() * 0.5)
+
+                half_pix_height_difference = (self.OGHEIGHT - self.parent_window.selected_layer.pixmap.height())/2
+                half_pix_width_differenece = (self.OGWIDTH - self.parent_window.selected_layer.pixmap.width())/2
+
+
+                # self.center_point = QtCore.QPoint(topLeft.x() - half_pix_width, topLeft.y() - half_pix_height)
+
+                newTopLeft = QtCore.QPoint(self.topLeft.x() + half_pix_width_differenece, self.topLeft.y() + half_pix_height_difference)
+
+                a = self.point.x(), self.point.y()
+                b = self.center_point.x(), self.center_point.y()
+                c = hover_point.x(), hover_point.y()
+                rotation_angle = math.degrees(math.atan2(c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0]))
+                if rotation_angle <0:
+                    rotation_angle += 360
+                self.rotation_angle = rotation_angle
+                
             
-            if self.image_scale_factor < 0.1:
-                self.image_scale_factor = 0.1
-
-            if self.image_scale_factor > 20:
-                self.image_scale_factor = 20
-
-            height_difference = self.original_dragging_layer_data.pixmap.height()*self.image_scale_factor - self.original_dragging_layer_data.pixmap.height()
-            width_difference =  self.original_dragging_layer_data.pixmap.width()*self.image_scale_factor -  self.original_dragging_layer_data.pixmap.width()
             
-            unreal.log(print("self image scale factor:", self.image_scale_factor))
-            
+                rotated_image = self.pillow_image.rotate(360 - rotation_angle, expand = True)
+                unreal.log(print("image rotated"))
+                unreal.log(print(rotation_angle))
+
+                new_qimage = ImageQt.ImageQt(rotated_image).convertToFormat(QImage.Format_ARGB32)
+                new_image = QPixmap.fromImage(new_qimage)
+
+                
+                new_layer = TextureLayer(new_image, newTopLeft)
+
+                self.parent_window.texture_layers[self.parent_window.selected_layer_index] = new_layer
+                self.parent_window.selected_layer = self.parent_window.texture_layers[self.parent_window.selected_layer_index]
+                self.update_overlay()
+
+                        
+            else:
+                new_position = self.get_scaled_point(event.position()) - self.drag_start_offset
+                self.parent_window.selected_layer.position = new_position
+                
+                half_pix_height = self.parent_window.selected_layer.pixmap.height() * 0.5
+                half_pix_width = self.parent_window.selected_layer.pixmap.width() * 0.5
+                rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size())
+                topLeft = rectangle.topLeft()
+                self.paint_center_point = QtCore.QPoint(topLeft.x() + half_pix_width, topLeft.y() + half_pix_height)
+                #half_pix_height = self.parent_window.selected_layer.pixmap.height() * 0.5
+                #half_pix_width = self.parent_window.selected_layer.pixmap.width() * 0.5
+                #self.paint_center_point = QtCore.QPoint(self.topLeft.x() + half_pix_width, self.topLeft.y() + half_pix_height)
 
 
 
-            resized_image = self.pillow_image.resize((int(self.pillow_image.size[0]*self.image_scale_factor), int(self.pillow_image.size[1]*self.image_scale_factor)))
-            unreal.log(print("image scaled"))
-
-
-            new_qimage = ImageQt.ImageQt(resized_image).convertToFormat(QImage.Format_ARGB32)
-            new_image = QPixmap.fromImage(new_qimage)
-
-
-            #self.dragging_pixmap = self.dragging_pixmap.scaled(self.dragging_pixmap.width()*self.image_scale_factor,self.dragging_pixmap.height()*self.image_scale_factor)
-            self.dragging_pixmap = new_image
-
-
-
-
-            bounds_rectangle = QtCore.QRect(self.dragging_layer.position, self.dragging_pixmap.size())
-
-            new_position = QtCore.QPoint(self.original_dragging_layer_data.position.x() - width_difference/2, self.original_dragging_layer_data.position.y() - height_difference/2)
-            #new_position = QtCore.QPoint(self.center_point_of_scaling.x() - width_difference/2, self.center_point_of_scaling.y() - height_difference/2)
-            #new_position =  QtCore.QPoint(self.center_point_of_scaling.x(), self.center_point_of_scaling.y())
-
-            new_layer = TextureLayer(self.dragging_pixmap, new_position)
-
-            self.parent_window.texture_layers[(self.parent_window.texture_layers.index(self.dragging_layer))] = new_layer
-            self.dragging_layer = self.parent_window.texture_layers[(self.parent_window.texture_layers.index(new_layer))]
-            self.parent_window.selected_layer = self.parent_window.texture_layers[(self.parent_window.texture_layers.index(new_layer))]
-
-            self.update_overlay()
-            
-            # for layer in self.parent_window.texture_layers:
-            #     if self.dragging_layer == layer:
-
-        elif self.rotating:
-            hover_point = self.get_scaled_point(event.position())
-            a = self.point.x(), self.point.y()
-            b = self.center_point.x(), self.center_point.y()
-            c = hover_point.x(), hover_point.y()
-            rotation_angle = math.degrees(math.atan2(c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0]))
-            if rotation_angle <0:
-                rotation_angle += 360
-            
-            base_image = self.dragging_pixmap.toImage()
-            convert = base_image.convertToFormat(QImage.Format_ARGB32)
-            pillow_image = ImageQt.fromqimage(convert)            
-        
-            rotated_image = pillow_image.rotate(360 - rotation_angle, expand = True)
-            unreal.log(print("image rotated"))
-            unreal.log(print(rotation_angle))
-
-            new_qimage = ImageQt.ImageQt(rotated_image).convertToFormat(QImage.Format_ARGB32)
-            new_image = QPixmap.fromImage(new_qimage)
-
-            
-            new_layer = TextureLayer(new_image, self.dragging_layer.position)
-
-            self.parent_window.texture_layers[(self.parent_window.texture_layers.index(self.dragging_layer))] = new_layer
-            self.dragging_layer = self.parent_window.texture_layers[(self.parent_window.texture_layers.index(new_layer))]
-            self.update_overlay()
-
-                    
-        elif self.dragging_layer:
-            new_position = self.get_scaled_point(event.position()) - self.drag_start_offset
-            self.dragging_layer.position = new_position
             self.update()
 
     def mouseReleaseEvent(self, event):
-        # if self.selections_paths == 0:
-        #     pass
-        # else:
-        if event.button() == QtCore.Qt.LeftButton:
-            if self.panning:
-                self.panning = False
-                self.setCursor(QtCore.Qt.ArrowCursor)
+        if self.parent_window.selected_layer == self.parent_window.texture_layers[0]:
+            pass
+        else:
+            if event.button() == QtCore.Qt.LeftButton:
+                if self.panning:
+                    self.panning = False
+                    self.setCursor(QtCore.Qt.ArrowCursor)
+                # else:
+                #     base_image = self.parent_window.selected_layer.pixmap.toImage()
+                #     convert = base_image.convertToFormat(QImage.Format_ARGB32)
+                #     self.pillow_image = ImageQt.fromqimage(convert) 
+                    
+                if self.scaling:
+                    self.update_overlay()
+                    # self.selected_pixmap = self.parent_window.selected_layer.pixmap
+                    self.scaling = False
+                    # self.rectangle = None
+                    self.point = None
+                    # self.center_point = None
+                    self.update_overlay()
+                    self.parent_window.tool_panel.refresh_tool()
 
-                
-            if self.scaling:
-                self.update_overlay()
-                self.dragging_pixmap = self.dragging_layer.pixmap
+                elif self.rotating:
+                    self.update_overlay()   
 
-                # print (self.dragging_pixmap.height())
-                # height_difference = self.dragging_pixmap.height()*self.image_scale_factor - self.dragging_pixmap.height()
-                # width_difference =  self.dragging_pixmap.width()*self.image_scale_factor -  self.dragging_pixmap.width()
-                # self.dragging_pixmap = self.dragging_pixmap.scaled(self.dragging_pixmap.width()*self.image_scale_factor,self.dragging_pixmap.height()*self.image_scale_factor)
-                # # print (self.dragging_pixmap.height())
-                # # transform = QTransform()
-                # bounds_rectangle = QtCore.QRect(self.dragging_layer.position, self.dragging_pixmap.size())
-
-                # center = bounds_rectangle.center()
-                # #new_position = QtCore.QPoint(self.dragging_layer.position.x() + (width_difference/2), self.dragging_layer.position.y() +(height_difference/2))
-                # new_position = QtCore.QPoint(center.x() + width_difference/2, center.y() + height_difference/2)
-                # # transform.translate(center.x(), center.y())
-                # # transform.scale(self.scale_factor, self.scale_factor)
-                # # transform.translate(-center.x(), -center.y())
-
-                # # self.dragging_pixmap = transform.map(self.dragging_pixmap)
-                # #print("INDEX: ", (self.parent_window.texture_layers.index(self.dragging_layer)))
-                # unreal.log(print("NEW POSITION: ", new_position))
-
-                # new_layer = TextureLayer(self.dragging_pixmap, new_position)
-
-                # self.parent_window.texture_layers[(self.parent_window.texture_layers.index(self.dragging_layer))] = new_layer
-                # self.dragging_layer = self.parent_window.texture_layers[(self.parent_window.texture_layers.index(new_layer))]
-                print("NEW LAYER DELT WITH")
-                self.scaling = False
-                self.rectangle = None
-                self.point = None
-                self.center_point = None
-                self.update_overlay()
-                self.parent_window.tool_panel.refresh_tool()
-
-            elif self.rotating:
-                self.update_overlay()   
-
-                self.dragging_pixmap = self.dragging_layer.pixmap
-                self.rotating = False
-
-                self.update_overlay()   
-                self.parent_window.tool_panel.refresh_tool()
-            if self.panning != True:
-                new_layer = TextureLayer(self.dragging_pixmap, self.dragging_layer.position)
-                self.parent_window.selected_layer = self.parent_window.texture_layers[(self.parent_window.texture_layers.index(new_layer))]
+                    self.selected_pixmap = self.parent_window.selected_layer.pixmap
+                    self.rotating = False
 
 
- 
 
-            # elif self.dragging_layer:
-            #     self.dragging_layer.selected = False
-            #     self.dragging_layer = None
-            #     self.clear_overlay()
+
+
+
+                    self.update_overlay()   
+                    self.parent_window.tool_panel.refresh_tool()
+                # if self.panning != True:
+                #     new_layer = TextureLayer(self.dragging_pixmap, self.dragging_layer.position)
+                #     self.parent_window.selected_layer = self.parent_window.texture_layers[(self.parent_window.texture_layers.index(new_layer))]
+
+                    self.rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size())
+                    self.topLeft = self.rectangle.topLeft()
+
+
+
+                # elif self.dragging_layer:
+                #     self.dragging_layer.selected = False
+                #     self.dragging_layer = None
+                #     self.clear_overlay()
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
             self.panning = True
@@ -6010,9 +6116,44 @@ class TransformTool(QWidget):
             painter.drawPixmap(layer.position, layer.pixmap)
         painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
 
-        painter = QtGui.QPainter(self.overlay)
+        # painter = QtGui.QPainter(self.overlay)
+        painter.drawRect(QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size()))
+        #painter.drawPixmap((self.center_point.x(),self.center_point.y()), self.overlay)
+        
 
-        painter.drawPixmap(0, 0, self.overlay)
+
+
+        # rect = self.rect()
+        # xc = self.parent_window.selected_layer.pixmap.width() * 0.5
+        # yc = self.parent_window.selected_layer.pixmap.height() * 0.5
+
+        # painter.setPen(QtGui.QPen(QtCore.Qt.black, 1))
+
+
+        # painter.drawLine(xc, rect.top(), xc, rect.bottom())
+        # painter.drawLine(rect.left(), yc, rect.right(), yc)
+                         
+        # painter.setBrush(QtGui.QBrush(QtCore.Qt.white))
+        # painter.setPen(QtGui.QPen(QtCore.Qt.blue, 1))
+
+        # painter.translate(xc, yc)
+
+        # painter.rotate(self.rotation_angle)
+
+        # rx = -(13 * 0.5)
+        # ry = -(17 * 0.5)
+        # painter.drawRect(QtCore.QRect(rx, ry, 13, 17))
+        # center_of_new_rect = (QtCore.QRect(rx, ry, 13, 17)).center()
+        pen = QtGui.QPen(QtCore.Qt.white, 10)
+        pen.setCapStyle(Qt.RoundCap)
+        painter.setPen(pen)
+        painter.drawPoint(self.paint_center_point)
+
+        # painter.setPen(QtGui.QPen(QtCore.Qt.green, 80))
+        # painter.drawPoint(center_of_new_rect)
+
+
+
         
     def clear_overlay(self):
         # self.overlay.fill(QtCore.Qt.transparent)
@@ -6045,17 +6186,14 @@ class TransformTool(QWidget):
 
         outline_pen =QtGui.QPen(QtGui.QColor(0, 0, 255, 255), 5)
 
-        if self.dragging_layer:
+        if self.parent_window.selected_layer:
             
             painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
             painter = QtGui.QPainter(self.overlay)
             painter.setPen(QtGui.QPen(outline_pen))
-            rect = QtCore.QRect(self.dragging_pixmap.rect())
+            rect = QtCore.QRect(self.selected_pixmap.rect())
             unreal.log(rect)
-            painter.drawRect(rect)
-            painter.drawRect(10, 10, 100, 100)
-
 
         painter.end()
         self.update()
