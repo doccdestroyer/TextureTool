@@ -4090,6 +4090,7 @@ class PenTool(QtWidgets.QWidget):
         painter.drawEllipse(self.painter_point, (-self.parent_window.pen_size/2),(self.parent_window.pen_size/2))
 
 
+
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             point = self.get_scaled_moved_point(event.position())
@@ -6192,10 +6193,15 @@ class TransformTool(QWidget):
         painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
 
         # painter = QtGui.QPainter(self.overlay)
-        painter.drawRect(QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size()))
-        #painter.drawPixmap((self.center_point.x(),self.center_point.y()), self.overlay)
-        
+        if self.parent_window.selected_layer != self.texture_layers[0]:
+            painter.drawRect(QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size()))
+            pen = QtGui.QPen(QtCore.Qt.white, 10)
+            pen.setCapStyle(Qt.RoundCap)
+            painter.setPen(pen)
+            painter.drawPoint(self.paint_center_point)
 
+
+        #painter.drawPixmap((self.center_point.x(),self.center_point.y()), self.overlay)
 
 
         # rect = self.rect()
@@ -6219,10 +6225,6 @@ class TransformTool(QWidget):
         # ry = -(17 * 0.5)
         # painter.drawRect(QtCore.QRect(rx, ry, 13, 17))
         # center_of_new_rect = (QtCore.QRect(rx, ry, 13, 17)).center()
-        pen = QtGui.QPen(QtCore.Qt.white, 10)
-        pen.setCapStyle(Qt.RoundCap)
-        painter.setPen(pen)
-        painter.drawPoint(self.paint_center_point)
 
         # painter.setPen(QtGui.QPen(QtCore.Qt.green, 80))
         # painter.drawPoint(center_of_new_rect)
