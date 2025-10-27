@@ -4079,15 +4079,15 @@ class PenTool(QtWidgets.QWidget):
 
         painter.drawPixmap(0,0, self.overlay)
 
-        pen = QtGui.QPen(QtCore.Qt.white, self.parent_window.pen_size)
-        pen.setCapStyle(Qt.RoundCap)
+        white_pen = QtGui.QPen(QtCore.Qt.white)
+        black_pen = QtGui.QPen(QtCore.Qt.black)
 
+
+        painter.setPen(black_pen)
+        painter.drawEllipse(self.painter_point, (-self.parent_window.pen_size/1.95),(self.parent_window.pen_size/1.95))
+        painter.drawEllipse(self.painter_point, (-self.parent_window.pen_size/2.05),(self.parent_window.pen_size/2.05))
+        painter.setPen(white_pen)
         painter.drawEllipse(self.painter_point, (-self.parent_window.pen_size/2),(self.parent_window.pen_size/2))
-
-
-        #painter.drawPixmap(0,0, self.pen_overlay)
-
-        #self.update_overlay()
 
 
     def mousePressEvent(self, event):
