@@ -4014,6 +4014,11 @@ class PenTool(QtWidgets.QWidget):
     #     scale = self.parent_window.scale_factor
     #     pan = self.parent_window.pan_offset
     #     return QtCore.QPoint(int((pos.x() - pan.x()) / scale), int((pos.y() - pan.y()) / scale))
+
+    def get_scaled_point(self, pos):
+        scale = self.parent_window.scale_factor
+        pan = self.parent_window.pan_offset
+        return QtCore.QPoint(int((pos.x() - pan.x()) / scale), int((pos.y() - pan.y()) / scale))
     
     def get_scaled_moved_point(self,pos):  
 
@@ -4021,13 +4026,11 @@ class PenTool(QtWidgets.QWidget):
         pan = self.parent_window.pan_offset
 
         intial_point = QtCore.QPoint(int((pos.x() - pan.x()) / scale), int((pos.y() - pan.y()) / scale))
-        print("INITAL POINT: ", intial_point)
         base_position = self.parent_window.base_layer.position
         layer_position = self.parent_window.selected_layer.position
 
         layer_offset = base_position - layer_position
         new_point = intial_point + layer_offset
-        print("NEW POINT: ", new_point)
 
         return QtCore.QPoint(int((pos.x() - pan.x()) / scale) + layer_offset.x(), int((pos.y() - pan.y()) / scale) + layer_offset.y())
     
@@ -4148,7 +4151,7 @@ class PenTool(QtWidgets.QWidget):
             self.update()
 
 
-        self.painter_point = self.get_scaled_moved_point(event.position()) 
+        self.painter_point = self.get_scaled_point(event.position())
 
         self.update()
             
