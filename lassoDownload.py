@@ -3976,7 +3976,9 @@ class PenTool(QtWidgets.QWidget):
         self.merged_selection_path = parent_window.merged_selection_path
         self.selections_paths = parent_window.selections_paths
         self.update_overlay()
+        self.setMouseTracking(True)
 
+        self.painter_point = None
 
 #HERE HERE HERE HERE LAYERS
 
@@ -4072,9 +4074,17 @@ class PenTool(QtWidgets.QWidget):
             painter.drawPixmap(layer.position, layer.pixmap)
 
         painter.drawPixmap(0,0, self.overlay)
+
+        pen = QtGui.QPen(QtCore.Qt.white, self.parent_window.pen_size)
+        pen.setCapStyle(Qt.RoundCap)
+
+        painter.drawEllipse(self.painter_point, (-self.parent_window.pen_size/2),(self.parent_window.pen_size/2))
+
+
         #painter.drawPixmap(0,0, self.pen_overlay)
 
         #self.update_overlay()
+
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
@@ -4130,11 +4140,15 @@ class PenTool(QtWidgets.QWidget):
                 self.points.append(point)
                 self.update_overlay()
 
-        if self.panning and self.last_pan_point:
+        elif self.panning and self.last_pan_point:
             change = event.position().toPoint() - self.last_pan_point 
             self.parent_window.pan_offset += change                    
             self.last_pan_point = event.position().toPoint()
             self.update()
+
+
+        self.painter_point = self.get_scaled_moved_point(event.position()) 
+
         self.update()
             
 
@@ -5937,7 +5951,7 @@ class TransformTool(QWidget):
                     #self.overlay = QtGui.QPixmap(self.dragging_pixmap.size())
                     self.update()
                             
-    def mouseMoveEvent(self,event):
+    def mouseMoveEvent(self,event): 
         if self.parent_window.selected_layer == self.parent_window.texture_layers[0]:
             pass
         else:
