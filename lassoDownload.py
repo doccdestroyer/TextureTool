@@ -289,7 +289,7 @@ class MainWindow(QMainWindow):
         self.setFixedSize(1600,850)
 
         self.chosen_name = None
-
+        self.never_rotated = True
         # self.saturation_panel = Slider(parent = self, name = "Saturation Slider", min = 0, max =100, default =100)
         # self.saturation_panel.show()
         # self.saturation_panel.value_changed.connect(self.adjust_saturation)
@@ -407,6 +407,7 @@ class MainWindow(QMainWindow):
         self.altered_image = self.current_image
 
         self.opacity_slider.reset(self.layer_opacities[self.selected_layer_index])
+        self.never_rotated = True
         self.apply_full_resolution_adjustments()
 
     def color_dialog(self):
@@ -5925,6 +5926,8 @@ class TransformTool(QWidget):
 
                     else: #currently set to scaling settings which will need ot be changed once ui and indication is clearer
                         unreal.log ("ROTATION")
+
+
                         self.scaling = False
                         self.rotating = True
                         #self.center_point_of_rotating = QtCore.QPoint(self.dragging_layer.position.x(),self.dragging_layer.position.y())
@@ -5945,6 +5948,12 @@ class TransformTool(QWidget):
                         self.OGHEIGHT = self.parent_window.selected_layer.pixmap.height()
                         self.OGWIDTH = self.parent_window.selected_layer.pixmap.width()
 
+
+                        if self.parent_window.never_rotated == True:
+                            self.pillow_image = self.pillow_image.rotate(45, expand = True)
+                            self.pillow_image = self.pillow_image.rotate(0, expand = True)
+                            self.parent_window.never_rotated = False
+                            print("NEVER ROTATED SET TO FALSE BECAUSE IT WAS TRUE, IMAGE EXPANDED TWICE")
                         # base_image = self.dragging_pixmap.toImage()
                         # convert = base_image.convertToFormat(QImage.Format_ARGB32)
                         # self.pillow_image = ImageQt.fromqimage(convert) 
@@ -6019,7 +6028,7 @@ class TransformTool(QWidget):
 
             elif self.rotating:
                 hover_point = self.get_scaled_point(event.position())
-
+                self.parent_window.never_rotated = False
                 rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size())
                 topLeft = rectangle.topLeft()
                 
@@ -6057,7 +6066,25 @@ class TransformTool(QWidget):
                 
             
             
-                rotated_image = self.pillow_image.rotate(360 - rotation_angle, expand = True)
+                rotated_image = self.pillow_image.rotate(360 - rotation_angle)
+
+                # larger_scalar = max(self.OGHEIGHT, self.OGWIDTH)
+
+                # difference_y = rotated_image.height - larger_scalar*4/3
+                # difference_x = rotated_image.width - larger_scalar*4/3
+
+                # left_x = difference_x/2
+                # top_y = difference_y/2
+                # right_x = rotated_image.width - difference_x/2
+                # bottom_y = rotated_image.height - difference_y/2
+
+                # print("LEFT X, ", left_x)
+                # print("top_y, ", top_y)
+                # print("right_x ", left_x)
+                # print("LEFT X, ", left_x)
+                
+
+                # cropped_image = rotated_image.crop((left_x, top_y, right_x, bottom_y))
                 unreal.log(print("image rotated"))
                 unreal.log(print(rotation_angle))
 
@@ -6111,6 +6138,7 @@ class TransformTool(QWidget):
                     # self.center_point = None
                     self.update_overlay()
                     self.parent_window.tool_panel.refresh_tool()
+                    #self.parent_window.never_rotated = True
 
                 elif self.rotating:
                     self.update_overlay()   
