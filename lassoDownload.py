@@ -328,10 +328,10 @@ class MainWindow(QMainWindow):
         # self.export_addtions_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
         # self.layout.addWidget(self.export_addtions_button)
 
-        self.create_decal_button = QPushButton("Create Decal")
-        #self.create_decal_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
-        self.create_decal_button.clicked.connect(lambda: self.create_decal(self.prompt_add_folder_path(), "M_DecalTest69"))
-        self.layout.addWidget(self.create_decal_button)
+        # self.create_decal_button = QPushButton("Create Decal")
+        # #self.create_decal_button.clicked.connect(lambda: self.export_flattened_additions(str(self.prompt_add_folder_path())))
+        # self.create_decal_button.clicked.connect(lambda: self.create_decal(self.prompt_add_folder_path(), "M_DecalTest69"))
+        # self.layout.addWidget(self.create_decal_button)
 
 
         self.tool_description = None
@@ -2751,6 +2751,32 @@ class MainWindow(QMainWindow):
         self.active_tool_widget.update_overlay()
         self.tool_panel.refresh_tool()
 
+    def queue_flattened_image(self):
+        chosen_name = None
+        folder_path = None
+        chosen_name = self.change_name()
+        while folder_path == None:
+            if chosen_name == None:
+                pass
+            else:
+                break
+        folder_path = self.prompt_add_folder_path()
+        self.export_flattened_image(folder_path, chosen_name)
+
+
+    def queue_flattened_additions(self):
+        chosen_name = None
+        folder_path = None
+        chosen_name = self.change_name()
+        while folder_path == None:
+            if chosen_name == None:
+                pass
+            else:
+                break
+        folder_path = self.prompt_add_folder_path()
+        self.export_flattened_additions(folder_path, chosen_name)
+
+
     def CreateToolBar(self):
         print("CreateToolBar is running inside:", type(self))
         menu_bar = self.menuBar()
@@ -2776,8 +2802,8 @@ class MainWindow(QMainWindow):
         export_menu.addAction(export_flat_additions)
         export_menu.addAction(create_decal)
     
-        export_flat_all.triggered.connect(lambda: self.export_flattened_image((str(self.prompt_add_folder_path())), self.chosen_name))
-        export_flat_additions.triggered.connect(lambda: self.export_flattened_additions((str(self.prompt_add_folder_path())), self.chosen_name))
+        export_flat_all.triggered.connect(lambda:self.queue_flattened_image())
+        export_flat_additions.triggered.connect(lambda: self.queue_flattened_additions())
         create_decal.triggered.connect((lambda: self.create_decal(self.prompt_add_folder_path(), (self.chosen_name + "_Decal"))))
         file_menu.addMenu(export_menu)    
 
@@ -2952,7 +2978,7 @@ class MainWindow(QMainWindow):
             if name_window.button_clicked:
                 self.chosen_name = name_window.getName()
                 looping = False
-
+        return self.chosen_name
             
 
     def prompt_add_texture(self):
@@ -3138,7 +3164,7 @@ class MainWindow(QMainWindow):
     def create_decal(self, unreal_folder, material_name, name = "DECAL"):
 
         name = self.chosen_name
-        
+
         temp_dir = os.path.join(unreal.Paths.project_intermediate_dir(), "TempExports")
         os.makedirs(temp_dir, exist_ok=True)
         temp_path = os.path.join(temp_dir, (name + ".png"))
