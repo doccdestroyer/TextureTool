@@ -2770,12 +2770,15 @@ class MainWindow(QMainWindow):
 
         export_flat_all = QAction("Export Flattened Image", self)
         export_flat_additions = QAction("Export Flattened Additions", self)
+        create_decal = QAction("Create Decal", self)
 
         export_menu.addAction(export_flat_all)
         export_menu.addAction(export_flat_additions)
-
+        export_menu.addAction(create_decal)
+    
         export_flat_all.triggered.connect(lambda: self.export_flattened_image((str(self.prompt_add_folder_path())), self.chosen_name))
         export_flat_additions.triggered.connect(lambda: self.export_flattened_additions((str(self.prompt_add_folder_path())), self.chosen_name))
+        create_decal.triggered.connect((lambda: self.create_decal(self.prompt_add_folder_path(), (self.chosen_name + "_Decal"))))
         file_menu.addMenu(export_menu)    
 
         self.chosen_name = "untitled"
@@ -3134,7 +3137,8 @@ class MainWindow(QMainWindow):
 
     def create_decal(self, unreal_folder, material_name, name = "DECAL"):
 
-
+        name = self.chosen_name
+        
         temp_dir = os.path.join(unreal.Paths.project_intermediate_dir(), "TempExports")
         os.makedirs(temp_dir, exist_ok=True)
         temp_path = os.path.join(temp_dir, (name + ".png"))
