@@ -847,9 +847,10 @@ class MainWindow(QMainWindow):
 
     def delete_current_layer(self):
         if self.will_delete == True:
+            print("IS DELELTING")
             self.texture_layers.remove(self.texture_layers[self.selected_layer_index])
             self.layer_opacities.remove(self.layer_opacities[self.selected_layer_index])
-            self.translucent_texture_layers.remove(self.texture_layers[self.selected_layer_index])
+            self.translucent_texture_layers.remove(self.translucent_texture_layers[self.selected_layer_index])
 
             self.rewrite_layers()
 
