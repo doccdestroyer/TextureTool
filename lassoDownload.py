@@ -1773,7 +1773,7 @@ class MainWindow(QMainWindow):
                 # self.opacity_slider.reset(255)
                 # self.opacity_value = 255
                 self.tool_panel.refresh_tool()
-                self.layer_opacities[self.selected_layer_index] = factor
+                self.layer_opacities[self.selected_layer_index] = value
 
                 # self.current_image = self.selected_layer.pixmap.toImage()
                 # self.altered_image = self.current_image
