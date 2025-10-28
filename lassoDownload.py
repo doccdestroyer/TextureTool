@@ -3841,7 +3841,7 @@ class LassoTool(QtWidgets.QWidget):
         # painter.drawPixmap(0, 0, self.image)
         # painter.drawPixmap(0, 0, self.overlay)
 
-        for layer in self.texture_layers[0:]:
+        for layer in self.parent_window.translucent_texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
 
         painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
@@ -4123,7 +4123,7 @@ class PolygonalTool(QtWidgets.QLabel):
         # painter.drawPixmap(0, 0, self.image)   
         # painter.drawPixmap(0, 0, self.overlay)
 
-        for layer in self.parent_window.texture_layers[0:]:
+        for layer in self.parent_window.translucent_texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
         painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
         painter.drawPixmap(0, 0, self.overlay)
@@ -4551,7 +4551,7 @@ class RectangularTool(QtWidgets.QLabel):
         # painter.drawPixmap(0, 0, self.image)
         # painter.drawPixmap(0, 0, self.overlay)
 
-        for layer in self.parent_window.texture_layers[0:]:
+        for layer in self.parent_window.translucent_texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
         painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
         painter.drawPixmap(0, 0, self.overlay)
@@ -4958,7 +4958,7 @@ class EllipticalTool(QtWidgets.QLabel):
         # painter.drawPixmap(0, 0, self.image)
         # painter.drawPixmap(0, 0, self.overlay)
 
-        for layer in self.parent_window.texture_layers[0:]:
+        for layer in self.parent_window.translucent_texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
         painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
         painter.drawPixmap(0, 0, self.overlay)
@@ -5604,8 +5604,8 @@ class TransformTool(QWidget):
         # painter.drawPixmap(0, 0, self.image)
         # painter.drawPixmap(0, 0, self.overlay)
 
-        for layer in self.parent_window.texture_layers[0:]:
-            painter.drawPixmap(layer.position, layer.pixmap)
+        for layer in self.parent_window.translucent_texture_layers[0:]:
+                        painter.drawPixmap(layer.position, layer.pixmap)
         painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
 
         # painter = QtGui.QPainter(self.overlay)
