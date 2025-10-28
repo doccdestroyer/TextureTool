@@ -858,6 +858,7 @@ class MainWindow(QMainWindow):
             item = self.layers.item(self.selected_layer_index)
             self.layers.setCurrentItem(item)
             self.will_delete = False
+            
             self.update()
 
             
@@ -885,9 +886,10 @@ class MainWindow(QMainWindow):
 
     def show_cannot_delete_message(self):
         QMessageBox.about(self, "Error",
-                          "You canno delete the base layer!\n\n"
+                          "You cannot delete the base layer!\n\n"
                           "If you wish to export without the base layer,"
                           "select File > Export > Export Flattened Additons.")
+        self.will_delete = True
         
     def adjust_all_but_self(self, current_adjustment):
         sliders_changed = 1
@@ -2035,8 +2037,8 @@ class MainWindow(QMainWindow):
 
         self.tool_panel.refresh_tool()
         
-        if self.opacity_value != self.layer_opacities[self.selected_layer_index]:
-            self.adjust_opacity(self.opacity_value)
+
+        self.adjust_opacity(self.opacity_value)
  
         self.adjust_apply_button_colour(0)
 
