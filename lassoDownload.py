@@ -244,6 +244,7 @@ class MainWindow(QMainWindow):
         self.scale_factor = 1.0
         self.pan_offset = QtCore.QPoint(0,0)
         self.texture_layers = []
+        self.translucent_texture_layers = []
 
         self.pixmap = None
 
@@ -268,6 +269,7 @@ class MainWindow(QMainWindow):
 
         self.original_image_location = self.selected_layer.position
         self.texture_layers.append(base_layer)
+        self.translucent_texture_layers.append(base_layer)
 
         self.pen_overlay = QtGui.QPixmap(self.texture_layers[0].pixmap.size())
         self.pen_overlay.fill(QtCore.Qt.transparent)
@@ -388,6 +390,7 @@ class MainWindow(QMainWindow):
 
                             
     def change_layer(self, item):
+
         self.layer_opacities[self.selected_layer_index] = self.opacity_value
         self.apply_full_resolution_adjustments()
         # self.item = item        
@@ -395,21 +398,25 @@ class MainWindow(QMainWindow):
         print("item: ", item)
         for i in range (1, len(self.texture_layers)):
             if item.text() == "Base Layer":
-                self.selected_layer = self.texture_layers[0]
+                self.selected_layer = self.translucent_texture_layers[0]
                 self.selected_layer_index = 0
                 self.item = item
                 print(item)
             else:
                 if item.text() == ("Layer " + str(i)):
-                    self.selected_layer = self.texture_layers[i]
+                    self.selected_layer = self.translucent_texture_layers[i]
                     self.selected_layer_index = i
         self.current_image = self.selected_layer.pixmap.toImage()
         self.altered_image = self.current_image
 
-        self.opacity_slider.reset(self.layer_opacities[self.selected_layer_index])
+        #self.opacity_slider.reset(self.layer_opacities[self.selected_layer_index])
         self.never_rotated = True
-        self.apply_full_resolution_adjustments()
+        self.opacity_value = self.layer_opacities[self.selected_layer_index]
 
+        #self.adjust_opacity(self.opacity_value)
+
+        self.apply_full_resolution_adjustments()
+        #self.use_low_res = True
     def color_dialog(self):
         self.color = QColorDialog.getColor()
 
@@ -581,7 +588,7 @@ class MainWindow(QMainWindow):
         dock = QDockWidget("Layer Opacity", self)
         self.opacity_slider = Slider(self, "Opacity", 0,255,255)
         self.opacity_slider.value_changed.connect(self.adjust_opacity)
-        self.opacity_slider.has_released_slider.connect(self.apply_1k_resolution_adjustments)
+        self.opacity_slider.has_released_slider.connect(self.apply_full_resolution_adjustments)
         self.opacity_slider.setFixedSize(320, 25)
         #layout.addWidget(self.opacity_slider)
         dock.setWidget(self.opacity_slider)
@@ -829,6 +836,7 @@ class MainWindow(QMainWindow):
         #new_pixmap = QtGui.QPixmap()
         new_layer = TextureLayer(new_pixmap, QtCore.QPoint(0, 0))
         self.texture_layers.append(new_layer)
+        self.translucent_texture_layers.append(new_layer)
 
         if self.active_tool_widget:
             self.active_tool_widget.update()
@@ -841,6 +849,7 @@ class MainWindow(QMainWindow):
         if self.will_delete == True:
             self.texture_layers.remove(self.texture_layers[self.selected_layer_index])
             self.layer_opacities.remove(self.layer_opacities[self.selected_layer_index])
+            self.translucent_texture_layers.remove(self.texture_layers[self.selected_layer_index])
 
             self.rewrite_layers()
 
@@ -871,30 +880,6 @@ class MainWindow(QMainWindow):
         self.window.setObjectName("deleteConfirmationWindow")
         #unreal.parent_external_window_to_slate(DeleteConfirmationWindow.window.winId())
 
-    def radioButtonGroupChanged(self, checked):
-        button = self.radioButtonGroup.checkedButton()
-        unreal.log('Radio Button Group Changed: '+ button.text())
-
-    def comboBoxIndexChanged(self, index):
-        unreal.log('Combo Box Index: ' + str(index))
-
-    def comboBoxTextChanged(self, text):
-        unreal.log('Combo Box Text: ' + str(text))
-    
-    def dialChanged(self, value):
-        unreal.log('Dial changed: ' + str(value))
-
-    def sliderChanged(self, value):
-        unreal.log('Slider changed: ' + str(value))
-
-    def buttonClicked(self, checked):
-        unreal.log('BUTTON CLICKED')
-        unreal.log('Checked: '+ str(checked))
-
-        if checked:
-            self.button.setText('You already pressed me!')
-        else:
-            self.button.setText('Press Me! (again)')
 
 
 
@@ -1049,6 +1034,8 @@ class MainWindow(QMainWindow):
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
                 self.texture_layers[self.selected_layer_index] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
+
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
                 
@@ -1107,6 +1094,8 @@ class MainWindow(QMainWindow):
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
                 self.texture_layers[self.selected_layer_index] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
+
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
 
@@ -1179,7 +1168,7 @@ class MainWindow(QMainWindow):
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
                 self.texture_layers[self.selected_layer_index] = updated_texture
-                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
                 self.active_tool_widget.update_overlay()
                 #self.base_image = self.base_pixmap.toImage()
                 ########################
@@ -1238,7 +1227,7 @@ class MainWindow(QMainWindow):
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
                 self.texture_layers[self.selected_layer_index] = updated_texture
-                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
                 self.active_tool_widget.update_overlay()
 
                 #self.base_image = self.base_pixmap.toImage()
@@ -1391,7 +1380,7 @@ class MainWindow(QMainWindow):
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
                 self.texture_layers[self.selected_layer_index] = updated_texture
-                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
                 self.active_tool_widget.update_overlay()
 
 
@@ -1451,7 +1440,7 @@ class MainWindow(QMainWindow):
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
                 self.texture_layers[self.selected_layer_index] = updated_texture
-                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
                 self.active_tool_widget.update_overlay()
 
                 #self.base_image = self.base_pixmap.toImage()
@@ -1500,7 +1489,7 @@ class MainWindow(QMainWindow):
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
                 self.texture_layers[self.selected_layer_index] = updated_texture
-                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
                 self.active_tool_widget.update_overlay()
 
 
@@ -1543,7 +1532,7 @@ class MainWindow(QMainWindow):
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
                 self.texture_layers[self.selected_layer_index] = updated_texture
-                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
                 self.active_tool_widget.update_overlay()
 
                 #self.base_image = self.base_pixmap.toImage()
@@ -1593,7 +1582,7 @@ class MainWindow(QMainWindow):
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
                 self.texture_layers[self.selected_layer_index] = updated_texture
-                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
                 self.active_tool_widget.update_overlay()
 
 
@@ -1637,7 +1626,7 @@ class MainWindow(QMainWindow):
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
                 self.texture_layers[self.selected_layer_index] = updated_texture
-                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
                 self.active_tool_widget.update_overlay()
 
                 #self.base_image = self.base_pixmap.toImage()
@@ -1698,12 +1687,13 @@ class MainWindow(QMainWindow):
 
 
                 #self.base_pixmap = QPixmap.fromImage(image)
+
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
                 updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
-                self.texture_layers[self.selected_layer_index] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
 
@@ -1722,7 +1712,6 @@ class MainWindow(QMainWindow):
                 #####self.adjust_saturation(self.saturation_value)
 
 
-
                 # self.current_image = self.selected_layer.pixmap.toImage()
                 # self.altered_image = self.current_image
 
@@ -1737,6 +1726,7 @@ class MainWindow(QMainWindow):
                 #image = self.base_image.convertToFormat(QImage.Format_ARGB32)
                 altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
                 pillow_image = ImageQt.fromqimage(altered_image)
+
 
                 # for pixelY in range(altered_image.height()):
                 #     for pixelX in range (altered_image.width()):
@@ -1755,14 +1745,13 @@ class MainWindow(QMainWindow):
 
                 new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
 
-
                 #self.base_pixmap = QPixmap.fromImage(image)
                 self.altered_pixmap = QPixmap.fromImage(new_qimage)
 
                 updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
-                self.texture_layers[self.selected_layer_index] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
                 #self.active_tool_widget.texture_layers[0] = updated_texture
                 self.active_tool_widget.update_overlay()
 
@@ -1824,7 +1813,7 @@ class MainWindow(QMainWindow):
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
                 self.texture_layers[self.selected_layer_index] = updated_texture
-                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
                 self.active_tool_widget.update_overlay()
 
 
@@ -1872,7 +1861,7 @@ class MainWindow(QMainWindow):
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
                 self.texture_layers[self.selected_layer_index] = updated_texture
-                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
                 self.active_tool_widget.update_overlay()
 
                 #self.base_image = self.base_pixmap.toImage()
@@ -1926,7 +1915,7 @@ class MainWindow(QMainWindow):
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
                 self.texture_layers[self.selected_layer_index] = updated_texture
-                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
                 self.active_tool_widget.update_overlay()
 
 
@@ -1974,7 +1963,7 @@ class MainWindow(QMainWindow):
                 #update textures
                 #index = self.texture_layers.index(self.selected_layer)
                 self.texture_layers[self.selected_layer_index] = updated_texture
-                #self.active_tool_widget.texture_layers[0] = updated_texture
+                self.translucent_texture_layers[self.selected_layer_index] = updated_texture
                 self.active_tool_widget.update_overlay()
 
                 #self.base_image = self.base_pixmap.toImage()
@@ -1997,7 +1986,7 @@ class MainWindow(QMainWindow):
         self.brightness_panel.reset(100)
         # self.gaussian_panel.reset(0)
         self.exposure_panel.reset(0)
-        self.opacity_slider.reset(255)
+        #self.opacity_slider.reset(255)
         self.adjust_apply_button_colour(0)
         self.resetting = True
         self.apply_full_resolution_adjustments()
@@ -2048,13 +2037,14 @@ class MainWindow(QMainWindow):
         
         if self.opacity_value != self.layer_opacities[self.selected_layer_index]:
             self.adjust_opacity(self.opacity_value)
-        self.use_low_res = True
+ 
         self.adjust_apply_button_colour(0)
 
         self.current_image = self.selected_layer.pixmap.toImage()
         self.altered_image = self.current_image
 
         self.opacity_slider.reset(self.layer_opacities[self.selected_layer_index])
+        self.use_low_res = True
         #self.tool_panel.refresh_tool()
 
     def apply_1k_resolution_adjustments(self, bool):
@@ -2455,6 +2445,7 @@ class MainWindow(QMainWindow):
         print(f"Loaded new texture: {texture_path}")
         new_layer = TextureLayer(self.pixmap, QtCore.QPoint(0, 0))
         self.texture_layers.append(new_layer)
+        self.translucent_texture_layers.append(new_layer)
 
         if self.active_tool_widget:
             self.active_tool_widget.update()
@@ -3070,7 +3061,6 @@ class ToolSectionMenu(QMainWindow):
             "  ending the selection when \n"\
             "  you make contact with the \n"\
             "  original position.\n\n"\
-            "  Press shift on initial click \n"\
             "  to do an additional selection. \n\n"\
             "  Press alt on initial click to do \n"\
             "  a removal of your previous \n"\
@@ -3100,7 +3090,7 @@ class ToolSectionMenu(QMainWindow):
             "  it. Go along the central point  \n"\
             "  of the image in order to flip  \n"\
             "  the image. \n\n"\
-            "  eft click and drag on the  \n"\
+            "  Left click and drag on the  \n"\
             "  outside of the image to  \n"\
             "  rotate\n\n"\
             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
@@ -3497,7 +3487,7 @@ class PenTool(QtWidgets.QWidget):
         #painter.drawPixmap(0, 0, self.image)
         #painter.drawPixmap(0, 0, self.overlay)
 
-        for layer in self.parent_window.texture_layers[0:]:
+        for layer in self.parent_window.translucent_texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
 
         painter.drawPixmap(0,0, self.overlay)
@@ -3599,7 +3589,7 @@ class PenTool(QtWidgets.QWidget):
         
     def update_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
-        painter = QtGui.QPainter(self.parent_window.selected_layer.pixmap)
+        painter = QtGui.QPainter(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap)
         drawing_pen = QtGui.QPen(self.pen_color, self.parent_window.pen_size)
         drawing_pen.setCapStyle(Qt.RoundCap)
 
