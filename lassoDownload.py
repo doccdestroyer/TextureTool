@@ -384,7 +384,7 @@ class MainWindow(QMainWindow):
 
         self.will_delete = False
         self.show_delete_message = True
-
+        self.resetting = False
 
                             
     def change_layer(self, item):
@@ -581,7 +581,7 @@ class MainWindow(QMainWindow):
         dock = QDockWidget("Layer Opacity", self)
         self.opacity_slider = Slider(self, "Opacity", 0,255,255)
         self.opacity_slider.value_changed.connect(self.adjust_opacity)
-        self.opacity_slider.has_released_slider.connect(self.apply_full_resolution_adjustments)
+        self.opacity_slider.has_released_slider.connect(self.apply_1k_resolution_adjustments)
         self.opacity_slider.setFixedSize(320, 25)
         #layout.addWidget(self.opacity_slider)
         dock.setWidget(self.opacity_slider)
@@ -908,38 +908,43 @@ class MainWindow(QMainWindow):
         sliders_changed = 1
         self.adjust_resolution(sliders_changed)
 
-        if current_adjustment != "redness" and self.redness_value != 0:
+
+
+        if current_adjustment != "rednesss" and self.redness_value != 0:
             self.adjust_redness(self.redness_value)
             sliders_changed += 1
             self.adjust_resolution(sliders_changed)
+
+        if current_adjustment != "greenness" and self.greenness_value != 0:
+            self.adjust_greenness(self.greenness_value)
+            sliders_changed += 1
+            self.adjust_resolution(sliders_changed)
+
         if current_adjustment != "blueness" and self.blueness_value != 0:
             self.adjust_blueness(self.blueness_value)
             sliders_changed += 1
             self.adjust_resolution(sliders_changed)
-            print("changed bleuness")
-        if current_adjustment != "greenness" and self.greenness_value != 0:
-            self.adjust_greenness(self.greenness_value)
-            print("changed greeness")
-            sliders_changed += 1
-            self.adjust_resolution(sliders_changed)
+
         if current_adjustment != "brightness" and self.brightness_value != 100:
             self.adjust_brightness(self.brightness_value)
             sliders_changed += 1
             self.adjust_resolution(sliders_changed)
-        if current_adjustment != "exposure":
-            self.adjust_exposure(self.exposure_value)
-            sliders_changed += 1
-            self.adjust_resolution(sliders_changed)
-        if current_adjustment != "contrast" and self.contrast_value != 100:
-            self.adjust_contrast(self.contrast_value)
-            sliders_changed += 1
-            self.adjust_resolution(sliders_changed)
+
         if current_adjustment != "saturation" and self.saturation_value != 100:
             self.adjust_saturation(self.saturation_value)
             sliders_changed += 1
             self.adjust_resolution(sliders_changed)
-        # if current_adjustment != "gaussian" and self.gaussian_value != 0:
-        #     self.adjust_gaussian(self.gaussian_value)
+        
+        if current_adjustment != "exposure" and self.exposure_value != 0:
+            self.adjust_exposure(self.exposure_value)
+            sliders_changed += 1
+            self.adjust_resolution(sliders_changed)
+
+        if current_adjustment != "contrast" and self.contrast_value != 100:
+            self.adjust_contrast(self.contrast_value)
+            sliders_changed += 1
+            self.adjust_resolution(sliders_changed)
+
         if current_adjustment != "opacity":
             self.adjust_opacity(self.opacity_value)
         self.tool_panel.refresh_tool()
@@ -982,226 +987,7 @@ class MainWindow(QMainWindow):
 
 
 
-    def adjust_cyan(self,value):
-        factor = value/10
-        image = self.current_image.convertToFormat(QImage.Format_ARGB32) 
-        altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
 
-        for pixelY in range(image.height()):
-            for pixelX in range(image.width()):
-                pixel_color = QColor(image.pixel(pixelX,pixelY))
-                pixel_color_alt = QColor(altered_image.pixel(pixelX,pixelY))
-                
-                original_hue, original_saturation, original_value, original_alpha = pixel_color.getHsv()
-                # new_hue, new_saturation, new_value, new_alpha = pixel_color_alt.getHsv()
-
-                # # difference_in_hue = new_hue - original_hue
-
-                new_hue = original_hue
-
-                if value<0:  #becoming more cyan
-                    if original_hue == 180:
-                        pass
-                    elif original_hue < 180:
-                        new_hue = original_hue - value
-                        if new_hue > 180:
-                            new_hue = 180
-                    elif original_hue > 180:
-                        new_hue = original_hue + value
-                        if new_hue < 180:
-                            new_hue = 180
-
-                elif value > 0: # becoming more red
-                    if original_value == 0 or original_value == 360: 
-                        pass
-                    elif original_hue > 180:
-                        new_hue = original_hue + value
-                        if new_hue > 360:
-                            new_hue = 360
-                    elif original_hue <= 180:
-                        new_hue = original_hue - value
-                        if new_hue < 0:
-                            new_hue = 0
-                    
-                if new_hue < 0:
-                    if value > 0:
-                        new_hue = 0
-                    elif value <0:
-                        new_hue = 360 - new_hue
-                elif new_hue > 360:
-                    if value > 0:
-                        new_hue = 360
-                    elif value < 0:
-                        new_hue = new_hue - 360
-
-                pixel_color_alt.setHsv(new_hue,original_saturation, original_value, original_alpha)
-
-                altered_image.setPixelColor(pixelX,pixelY,pixel_color_alt)
-
-                previous_cyan_value = value
-
-        self.cyan_red_panel.image_label.setPixmap(QPixmap.fromImage(altered_image))
-
-        #self.base_pixmap = QPixmap.fromImage(altered_image)
-        self.altered_pixmap = QPixmap.fromImage(altered_image)
-
-        updated_texture = TextureLayer(QPixmap.fromImage(altered_image), QtCore.QPoint(0,0))
-        #index = self.texture_layers.index(self.selected_layer)
-        self.texture_layers[self.selected_layer_index] = updated_texture
-        self.active_tool_widget.update_overlay()
-
-        #self.altered_image = self.base_pixmap.toImage()
-        #self.altered_image = self.altered_pixmap.toImage()
-
-
-        self.update()
-
-
-    # def adjust_magneta(self,value):
-    #     factor = value/10
-    #     image = self.base_image.convertToFormat(QImage.Format_ARGB32) 
-    #     altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-
-    #     for pixelY in range(image.height()):
-    #         for pixelX in range(image.width()):
-    #             pixel_color = QColor(image.pixel(pixelX,pixelY))
-    #             pixel_color_alt = QColor(altered_image.pixel(pixelX,pixelY))
-                
-    #             original_hue, original_saturation, original_value, original_alpha = pixel_color.getHsv()
-    #             # new_hue, new_saturation, new_value, new_alpha = pixel_color_alt.getHsv()
-
-    #             # # difference_in_hue = new_hue - original_hue
-
-    #             new_hue = original_hue
-
-    #             if value>0:  #becoming more magenta
-    #                 if original_hue == 300:
-    #                     pass
-    #                 elif original_hue > 300:
-    #                     new_hue = 300
-    #                 elif original_hue > 120:
-    #                     new_hue = original_hue + value
-    #                     if new_hue > 300:
-    #                         new_hue = 300
-    #                 elif original_hue < 120:
-    #                     new_hue = original_hue - value
-    #                     if new_hue <0:
-    #                         new_hue = 360 - new_hue
-    #                         if new_hue < 300:
-    #                             new_hue = 300
-
-    #             elif value > 0: # becoming more green
-    #                 pass
-    #             pixel_color_alt.setHsv(new_hue,original_saturation, original_value, original_alpha)
-
-    #             altered_image.setPixelColor(pixelX,pixelY,pixel_color_alt)
-
-    #             previous_magenta_value = value
-
-    #     self.magenta_green_panel.image_label.setPixmap(QPixmap.fromImage(altered_image))
-
-    #     #self.base_pixmap = QPixmap.fromImage(altered_image)
-    #     self.altered_pixmap = QPixmap.fromImage(altered_image)
-
-    #     updated_texture = TextureLayer(QPixmap.fromImage(altered_image), QtCore.QPoint(0,0))
-    #     self.texture_layers[0] = updated_texture
-    #     self.active_tool_widget.texture_layers[0] = updated_texture
-    #     self.active_tool_widget.update_overlay()
-
-    #     #self.altered_image = self.base_pixmap.toImage()
-    #     #self.altered_image = self.altered_pixmap.toImage()
-
-
-    #     self.update()
-
-    # def adjust_cyan(self,value):
-    #     factor = value/100
-    #     image = self.base_image.convertToFormat(QImage.Format_ARGB32) 
-    #     altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-    #     for pixelY in range(image.height()):
-    #         for pixelX in range(image.width()):
-    #             pixel_color = QColor(image.pixel(pixelX,pixelY))
-    #             pixel_color_alt = QColor(altered_image.pixel(pixelX,pixelY))
-
-
-    #             C_ORIGINAL,M,Y,K,A = pixel_color.getCmyk()
-    #             if value == 0:
-    #                 pass 
-    #             else:
-    #                 C_ORIGINAL = 255- ((C_ORIGINAL + (255-int(C_ORIGINAL))) * factor)
-    #                 # if C_ORIGINAL>255:
-    #                 #     C_ORIGINAL = 255  
-    #             pixel_color.setCmyk(C_ORIGINAL,M,Y,K,A)
-    #             altered_image.setPixelColor(pixelX,pixelY,pixel_color)
-
-    #         self.cyan_red_panel.image_label.setPixmap(QPixmap.fromImage(altered_image))
-
-    #         #self.base_pixmap = QPixmap.fromImage(image)
-    #         self.altered_pixmap = QPixmap.fromImage(altered_image)
-
-    #         updated_texture = TextureLayer(QPixmap.fromImage(altered_image), QtCore.QPoint(0,0))
-    #         #update textures
-    #         self.texture_layers[0] = updated_texture
-    #         #self.active_tool_widget.texture_layers[0] = updated_texture
-    #         self.active_tool_widget.update_overlay()
-
-    #         #self.base_image = self.base_pixmap.toImage()
-    #         ########################
-    #         self.altered_image = self.altered_pixmap.toImage()
-
-    # def adjust_redness(self,value):
-    #     self.red_value = value
-    #     factor = value/100
-    #     image = self.base_image.convertToFormat(QImage.Format_ARGB32) 
-    #     altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-
-
-    #     for pixelY in range(image.height()):
-    #         for pixelX in range(image.width()):
-    #             pixel_color = QColor(image.pixel(pixelX,pixelY))
-    #             pixel_color_alt = QColor(altered_image.pixel(pixelX,pixelY))
-
-    #             #R = pixel_color.red()
-    #             if value == 50:
-    #                 pass
-    #             else:
-
-    #                 B_OG_ORIGINAL = pixel_color.red()
-    #                 if B_OG_ORIGINAL == 0:
-    #                         B_OG_ORIGINAL = 1
-    #                 B_OG_CHANGED = (B_OG_ORIGINAL + (255-int(B_OG_ORIGINAL))) * factor 
-    #                 CHANGE = B_OG_CHANGED / B_OG_ORIGINAL
-
-
-    #                 R = pixel_color_alt.red()
-    #                 R = R * CHANGE
-    #                 if R > 255:
-    #                     R = 255
-
-    #                 # R1,G1,B1,A1 = pixel_color_alt.getRgb()
-
-    #                 # pixel_color_alt.setRgb(R,G1,B1,A1)
-
-    #                 pixel_color_alt.setRed(R)
-
-    #                 #do red logic tint
-    #             altered_image.setPixelColor(pixelX,pixelY,pixel_color_alt)
-
-    #     self.cyan_red_panel.image_label.setPixmap(QPixmap.fromImage(altered_image))
-
-    #     #self.base_pixmap = QPixmap.fromImage(altered_image)
-    #     self.altered_pixmap = QPixmap.fromImage(altered_image)
-
-    #     updated_texture = TextureLayer(QPixmap.fromImage(altered_image), QtCore.QPoint(0,0))
-    #     self.texture_layers[0] = updated_texture
-    #     self.active_tool_widget.texture_layers[0] = updated_texture
-    #     self.active_tool_widget.update_overlay()
-
-    #     #self.altered_image = self.base_pixmap.toImage()
-    #     #self.altered_image = self.altered_pixmap.toImage()
-
-
-    #     self.update()
     def adjust_greenness(self,value):
             factor = abs(value)/100
             if self.use_low_res:
@@ -1282,11 +1068,11 @@ class MainWindow(QMainWindow):
                 self.update()
             else:
                 self.setCursor(QtCore.Qt.ForbiddenCursor)
+                self.original_image_location = self.selected_layer.position
 
                 #image = self.base_image.convertToFormat(QImage.Format_ARGB32)
                 altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
                 pillow_image = ImageQt.fromqimage(altered_image)
-                self.original_image_location = self.selected_layer.position
 
                 # for pixelY in range(altered_image.height()):
                 #     for pixelX in range (altered_image.width()):
@@ -1330,61 +1116,8 @@ class MainWindow(QMainWindow):
                 #self.adjust_saturation(self.saturation_value)
                 self.magenta_green_panel.reset(0)
                 self.greenness_value = 0
-                self.tool_panel.refresh_tool()
                 self.update()
-    # def adjust_greenness(self,value):
-    #     self.green_value = value
-    #     factor = value/100
-    #     image = self.base_image.convertToFormat(QImage.Format_ARGB32) 
-    #     altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
 
-    #     for pixelY in range(image.height()):
-    #         for pixelX in range(image.width()):
-    #             pixel_color = QColor(image.pixel(pixelX,pixelY))
-    #             pixel_color_alt = QColor(altered_image.pixel(pixelX,pixelY))
-
-    #             #R = pixel_color.red()
-    #             if value == 50:
-    #                 pass
-    #             else:
-    #                 #R,B_OG_ORIGINAL,B,A = pixel_color.getRgb()
-    #                 B_OG_ORIGINAL = pixel_color.green()
-    #                 if B_OG_ORIGINAL == 0:
-    #                         B_OG_ORIGINAL = 1
-    #                 B_OG_CHANGED = (B_OG_ORIGINAL + (255-int(B_OG_ORIGINAL))) * factor 
-    #                 CHANGE = B_OG_CHANGED / B_OG_ORIGINAL
-
-
-    #                 G = pixel_color_alt.green()
-    #                 G = G * CHANGE
-    #                 if G > 255:
-    #                     G = 255
-
-    #                 # R1,G1,B1,A1 = pixel_color_alt.getRgb()
-
-    #                 # pixel_color_alt.setRgb(R1, G, B1, A1)
-
-    #                 pixel_color_alt.setGreen(G)
-
-
-    #                 # pixel_color_alt.setRgb(R,G,B,A)
-    #                 #do red logic tint
-    #             altered_image.setPixelColor(pixelX,pixelY,pixel_color_alt)
-
-    #     self.magenta_green_panel.image_label.setPixmap(QPixmap.fromImage(altered_image))
-        
-    #     self.altered_pixmap = QPixmap.fromImage(altered_image)
-
-    #     updated_texture = TextureLayer(QPixmap.fromImage(altered_image), QtCore.QPoint(0,0))
-    #     self.texture_layers[0] = updated_texture
-    #     self.active_tool_widget.texture_layers[0] = updated_texture
-    #     self.active_tool_widget.update_overlay()
-
-    #     #self.altered_image = self.base_pixmap.toImage()
-    #     #self.altered_image = self.altered_pixmap.toImage()
-
-
-    #     self.update()
     def adjust_blueness(self,value):
             factor = abs(value)/100
             if self.use_low_res:
@@ -1514,7 +1247,6 @@ class MainWindow(QMainWindow):
                 #self.adjust_saturation(self.saturation_value)
                 self.yellow_blue_panel.reset(0)
                 self.blueness_value = 0
-                self.tool_panel.refresh_tool()
                 self.update()
 
     def adjust_gaussian(self,value):
@@ -1597,63 +1329,6 @@ class MainWindow(QMainWindow):
                 self.tool_panel.refresh_tool()
 
                 self.update()
-    # def adjust_blueness(self,value):
-    #     self.blue_value = value
-    #     factor = value/100
-    #     image = self.base_image.convertToFormat(QImage.Format_ARGB32) 
-    #     altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-
-    #     for pixelY in range(image.height()):
-    #         for pixelX in range(image.width()):
-    #             pixel_color = QColor(image.pixel(pixelX,pixelY))
-    #             pixel_color_alt = QColor(altered_image.pixel(pixelX,pixelY))
-
-    #             #R = pixel_color.red()
-    #             if value == 50:
-    #                 pass
-    #             else:
-
-    #                 B_OG_ORIGINAL = pixel_color.blue()
-    #                 if B_OG_ORIGINAL == 0:
-    #                         B_OG_ORIGINAL = 1
-    #                 B_OG_CHANGED = (B_OG_ORIGINAL + (255-int(B_OG_ORIGINAL))) * factor 
-    #                 CHANGE = B_OG_CHANGED / B_OG_ORIGINAL
-
-
-    #                 B = pixel_color_alt.blue()
-    #                 B = B * CHANGE
-    #                 if B > 255:
-    #                     B = 255
-
-
-    #                 pixel_color_alt.setBlue(B)
-
-
-                    
-    #                 # R1,G1,B1,A1 = pixel_color_alt.getRgb()
-
-    #                 # pixel_color_alt.setRgb(R1, G1, B, A1)
-
-    #                 #do red logic tint
-    #             altered_image.setPixelColor(pixelX,pixelY,pixel_color_alt)
-
-
-    #     self.yellow_blue_panel.image_label.setPixmap(QPixmap.fromImage(altered_image))
-        
-    #     #self.base_pixmap = QPixmap.fromImage(altered_image)
-    #     self.altered_pixmap = QPixmap.fromImage(altered_image)
-
-    #     updated_texture = TextureLayer(QPixmap.fromImage(altered_image), QtCore.QPoint(0,0))
-    #     self.texture_layers[0] = updated_texture
-    #     self.active_tool_widget.texture_layers[0] = updated_texture
-    #     self.active_tool_widget.update_overlay()
-
-    #     #self.altered_image = self.base_pixmap.toImage()
-    #     #self.altered_image = self.altered_pixmap.toImage()
-
-
-    #     self.update()
-
 
     def adjust_redness(self,value):
             factor = abs(value)/100
@@ -1730,7 +1405,7 @@ class MainWindow(QMainWindow):
 
                 self.redness_value = value
 
-                self.update()                #self.base_image = self.base_pixmap.toImage()
+                #self.base_image = self.base_pixmap.toImage()
                 ########################
                 ####self.altered_image = self.altered_pixmap.toImage()
                 #####self.adjust_saturation(self.saturation_value)
@@ -1785,12 +1460,7 @@ class MainWindow(QMainWindow):
                 #self.adjust_saturation(self.saturation_value)
                 self.cyan_red_panel.reset(0)
                 self.redness_value = 0
-                self.tool_panel.refresh_tool()
                 self.update()
-
-    def print_value(self,value):
-        unreal.log("hello")
-        unreal.log(print("VALUE WHEN RELEASE: ", value))
 
     def adjust_contrast(self,value):
             factor = value/100
@@ -2109,166 +1779,7 @@ class MainWindow(QMainWindow):
                 # self.altered_image = self.current_image
                 self.update()
 
-    def adjust_gamma(self,value):
-            factor = value/100
-            if self.use_low_res:
-                #original_image = self.base_image.convertToFormat(QImage.Format_ARGB32)
-                self.original_image_location = self.selected_layer.position
 
-                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-
-
-
-
-                altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
-
-                pillow_image = ImageQt.fromqimage(altered_image)
-
-                # for pixelY in range(altered_image.height()):
-                #     for pixelX in range (altered_image.width()):
-                #         pixel_color = QColor(altered_image.pixel(pixelX,pixelY))
-                #         H,S,L,A = pixel_color.getHsl()
-
-                # color_enhancer = ImageEnhance.Color(pillow_image)
-                # pillow_image = color_enhancer.enhance(factor)
-
-                mid_color = (value, value, value)
-
-                # colorize_ops = ImageOps.colorize(pillow_image.convert('L'), mid = mid_color, black = 'black', white = 'white')
-                # new_qimage = ImageQt.ImageQt(colorize_ops).convertToFormat(QImage.Format_ARGB32)
-                contrast_enhancer = ImageEnhance.Contrast(pillow_image)
-                contrast_image = contrast_enhancer.enhance(factor)
-                new_qimage = ImageQt.ImageQt(contrast_image).convertToFormat(QImage.Format_ARGB32)
-
-                display_size = self.current_image.size()  
-                # new_qimage = new_qimage.scaled(display_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-
-                for pixelY in range(new_qimage.height()):
-                    for pixelX in range (new_qimage.width()):
-                        pixel_color = QColor(new_qimage.pixel(pixelX,pixelY))
-                        H1,S1,L1,A1 = pixel_color.getHsl()
-
-                        base_pixel_colour = QColor(altered_image.pixel(pixelX,pixelY))
-                        H,S,L,A = base_pixel_colour.getHsl()
-
-                        pixel_color.setHsl(H,S,L1,A1)
-                        new_qimage.setPixelColor(pixelX,pixelY,pixel_color)
-            # for pixelY in range(altered_image.height()):
-            #     for pixelX in range (altered_image.width()):
-            #         pixel_color = QColor(altered_image.pixel(pixelX,pixelY))
-            #         H,S,L,A = pixel_color.getHsl()
-
-
-            # for pixelY in range(new_qimage.height()):
-            #     for pixelX in range (new_qimage.width()):
-
-            #         pixel_color_alter = QColor(altered_image.pixel(pixelX,pixelY))
-            #         H,S,L,A = pixel_color_alter.getHsl()
-
-
-            #         pixel_color = QColor(new_qimage.pixel(pixelX,pixelY))
-            #         H1,S1,L1,A1 = pixel_color.getHsl()
-            #         L1 = int(L1*factor)
-            #         if L1>255:
-            #             L1 = 255
-
-            #         pixel_color_alter.setHsl(H,S,L1,A1)
-            #         new_qimage.setPixelColor(pixelX,pixelY,pixel_color_alter)
-
-
-                new_qimage = new_qimage.scaled(display_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-
-
-                #self.base_pixmap = QPixmap.fromImage(image)
-                self.altered_pixmap = QPixmap.fromImage(new_qimage)
-
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
-                #update textures
-                #index = self.texture_layers.index(self.selected_layer)
-                self.texture_layers[self.selected_layer_index] = updated_texture                #self.active_tool_widget.texture_layers[0] = updated_texture
-                self.active_tool_widget.update_overlay()
-
-                #self.saturation_value = value
-
-                #self.base_image = self.base_pixmap.toImage()
-                ########################
-                ####self.altered_image = self.altered_pixmap.toImage()
-                #####self.adjust_saturation(self.saturation_value)
-                self.update()
-            else:
-                self.setCursor(QtCore.Qt.ForbiddenCursor)
-
-                #image = self.base_image.convertToFormat(QImage.Format_ARGB32)
-                altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
-
-                # for pixelY in range(altered_image.height()):
-                #     for pixelX in range (altered_image.width()):
-                #         pixel_color = QColor(altered_image.pixel(pixelX,pixelY))
-                #         H,S,L,A = pixel_color.getHsl()
-
-                color_enhancer = ImageEnhance.Color(pillow_image)
-                pillow_image = color_enhancer.enhance(factor)
-
-                new_qimage = ImageQt.ImageQt(pillow_image).convertToFormat(QImage.Format_ARGB32)
-
-
-                #self.base_pixmap = QPixmap.fromImage(image)
-                self.altered_pixmap = QPixmap.fromImage(new_qimage)
-
-                updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
-                #update textures
-                #index = self.texture_layers.index(self.selected_layer)
-                self.texture_layers[self.selected_layer_index] = updated_texture
-                #self.active_tool_widget.texture_layers[0] = updated_texture
-                self.active_tool_widget.update_overlay()
-
-                #self.base_image = self.base_pixmap.toImage()
-                ########################
-                self.altered_image = self.altered_pixmap.toImage()
-                #self.adjust_saturation(self.saturation_value)
-                self.saturation_panel.reset(100)
-                self.saturation_value = 100
-                self.tool_panel.refresh_tool()
-
-                self.update()
-
-
-    # def adjust_saturation(self,value):
-    #     factor = value/100
-    #     image = self.base_image.convertToFormat(QImage.Format_ARGB32)
-    #     altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-
-
-    #     for pixelY in range(image.height()):
-    #         for pixelX in range(image.width()):
-    #             pixel_color_alter = QColor(altered_image.pixel(pixelX,pixelY))
-    #             H,S,L,A = pixel_color_alter.getHsl()
-
-    #             pixel_color = QColor(image.pixel(pixelX,pixelY))
-    #             H1,S1,L1,A1 = pixel_color.getHsl()
-    #             S1 = int(S1*factor)
-
-    #             pixel_color_alter.setHsl(H1,S1,L,A)
-    #             altered_image.setPixelColor(pixelX,pixelY,pixel_color_alter)
-        
-    #     self.saturation_panel.image_label.setPixmap(QPixmap.fromImage(altered_image))
-
-    #     #self.base_pixmap = QPixmap.fromImage(image)
-    #     self.altered_pixmap = QPixmap.fromImage(altered_image)
-
-    #     updated_texture = TextureLayer(QPixmap.fromImage(altered_image), QtCore.QPoint(0,0))
-    #     #update textures
-    #     self.texture_layers[0] = updated_texture
-    #     #self.active_tool_widget.texture_layers[0] = updated_texture
-    #     self.active_tool_widget.update_overlay()
-
-    #     #self.base_image = self.base_pixmap.toImage()
-    #     ########################
-    #     self.altered_image = self.altered_pixmap.toImage()
-
-    #     self.saturation_value = value
-    #     self.update()
 
     def adjust_brightness(self,value):
             #factor = 2**(value/100)
@@ -2478,7 +1989,6 @@ class MainWindow(QMainWindow):
 
     def reset_sliders(self):
         # self.resolution = 1024
-        self.apply_full_resolution_adjustments()
         self.magenta_green_panel.reset(0)
         self.cyan_red_panel.reset(0)
         self.yellow_blue_panel.reset(0)
@@ -2489,30 +1999,11 @@ class MainWindow(QMainWindow):
         self.exposure_panel.reset(0)
         self.opacity_slider.reset(255)
         self.adjust_apply_button_colour(0)
-
+        self.resetting = True
+        self.apply_full_resolution_adjustments()
+        self.resetting = False
         self.update()
 
-    def force_resolution_to_medium(self, bool):
-        unreal.log(print("fumction run"))
-        self.resolution = 256
-        if self.opacity_value != 255:
-            self.adjust_opacity(self.opacity_value)
-        if self.redness_value != 0:
-            self.adjust_redness(self.redness_value)
-        if self.greenness_value != 0:
-            self.adjust_greenness(self.greenness_value)
-        if self.blueness_value != 0:
-            self.adjust_blueness(self.blueness_value)
-        if self.saturation_value != 100:
-            self.adjust_saturation(self.saturation_value)
-        if self.contrast_value != 100:
-            self.adjust_contrast(self.contrast_value)
-        if self.brightness_value != 100:
-            self.adjust_brightness(self.brightness_value)
-        if self.exposure_value != 0:
-            self.adjust_exposure(self.exposure_value)
-        # if self.gaussian_value != 0:
-        #     self.adjust_gaussian(self.gaussian_value)
 
         self.tool_panel.refresh_tool()
 
@@ -2521,159 +2012,91 @@ class MainWindow(QMainWindow):
         self.use_low_res = False
         self.setCursor(QtCore.Qt.ForbiddenCursor)
 
-        # if self.brightness_value != 100:
-        #     self.adjust_brightness(self.brightness_value)
-        # if self.saturation_value != 100:
-        #     self.adjust_saturation(self.saturation_value)
-        # if self.contrast_value != 100:
-        #     self.adjust_contrast(self.contrast_value)
-  
 
-        if self.redness_value != 0:
+
+        if self.redness_value != 0 or self.resetting:
             self.adjust_redness(self.redness_value)
-        if self.greenness_value != 0:
+
+        if self.greenness_value != 0 or self.resetting:
             self.adjust_greenness(self.greenness_value)
-        if self.blueness_value != 0:
+
+        if self.blueness_value != 0 or self.resetting:
             self.adjust_blueness(self.blueness_value)
-        if self.saturation_value != 100:
+
+        if self.saturation_value != 100 or self.resetting:
             self.adjust_saturation(self.saturation_value)
-        if self.contrast_value != 100:
-            self.adjust_contrast(self.contrast_value)
-        if self.brightness_value != 100:
+ 
+        if self.brightness_value != 100 or self.resetting:
             self.adjust_brightness(self.brightness_value)
-        if self.exposure_value != 0:
+
+        if self.exposure_value != 0 or self.resetting:
             self.adjust_exposure(self.exposure_value)
-        # if self.gaussian_value != 0:
-        #     self.adjust_gaussian(self.gaussian_value)
-        #self.adjust_opacity(self.opacity_value)
-        if self.opacity_value != self.layer_opacities[self.selected_layer_index]:
-            self.adjust_opacity(self.opacity_value)
+
+        if self.contrast_value != 100 or self.resetting:
+            self.adjust_contrast(self.contrast_value)
 
 
-        # self.adjust_redness(self.redness_value)
-        # self.adjust_greenness(self.greenness_value)
-        # self.adjust_blueness(self.blueness_value)
-        # self.adjust_saturation(self.saturation_value)
-        # self.adjust_contrast(self.contrast_value)
-        # self.adjust_brightness(self.brightness_value)
-        # self.adjust_exposure(self.exposure_value)
-        # #self.adjust_gaussian(self.gaussian_value)
-        # self.adjust_opacity(self.opacity_value)
+
 
         self.current_image = self.altered_image
         self.setCursor(QtCore.Qt.ArrowCursor)
+
+
+        self.selected_layer = self.texture_layers[self.selected_layer_index]
+
         self.tool_panel.refresh_tool()
+        
+        if self.opacity_value != self.layer_opacities[self.selected_layer_index]:
+            self.adjust_opacity(self.opacity_value)
         self.use_low_res = True
         self.adjust_apply_button_colour(0)
 
+        self.current_image = self.selected_layer.pixmap.toImage()
+        self.altered_image = self.current_image
+
+        self.opacity_slider.reset(self.layer_opacities[self.selected_layer_index])
+        #self.tool_panel.refresh_tool()
 
     def apply_1k_resolution_adjustments(self, bool):
         self.use_low_res = bool
         self.setCursor(QtCore.Qt.ForbiddenCursor)
         self.resolution = 256
-        # if self.brightness_value != 100:
-        #     self.adjust_brightness(self.brightness_value)
-        # if self.saturation_value != 100:
-        #     self.adjust_saturation(self.saturation_value)
-        # if self.contrast_value != 100:
-        #     self.adjust_contrast(self.contrast_value)
 
-        self.adjust_redness(self.redness_value)
-        self.adjust_greenness(self.greenness_value)
-        self.adjust_blueness(self.blueness_value)
-        self.adjust_saturation(self.saturation_value)
-        self.adjust_contrast(self.contrast_value)
-        self.adjust_brightness(self.brightness_value)
-        self.adjust_exposure(self.exposure_value)
-        #self.adjust_gaussian(self.gaussian_value)
+  
+
+        if self.redness_value != 0 or self.resetting:
+            self.adjust_redness(self.redness_value)
+
+        if self.greenness_value != 0 or self.resetting:
+            self.adjust_greenness(self.greenness_value)
+
+        if self.blueness_value != 0 or self.resetting:
+            self.adjust_blueness(self.blueness_value)
+
+        if self.saturation_value != 100 or self.resetting:
+            self.adjust_saturation(self.saturation_value)
+ 
+        if self.brightness_value != 100 or self.resetting:
+            self.adjust_brightness(self.brightness_value)
+
+        if self.exposure_value != 0 or self.resetting:
+            self.adjust_exposure(self.exposure_value)
+
+        if self.contrast_value != 100 or self.resetting:
+            self.adjust_contrast(self.contrast_value)
+
+        # updated_texture = TextureLayer(self.altered_pixmap, self.original_image_location)
+        # self.texture_layers[self.selected_layer_index] = updated_texture
+
         self.adjust_opacity(self.opacity_value)
         self.altered_image = self.current_image
 
+
         self.setCursor(QtCore.Qt.ArrowCursor)
-        self.tool_panel.refresh_tool()
+        #self.tool_panel.refresh_tool()
 
         # Optionally update the full-res altered_image
         #self.altered_image = self.altered_pixmap.toImage()
-
-    # def adjust_brightness(self,value):
-    #         factor = value/100
-    #         image = self.base_image.convertToFormat(QImage.Format_ARGB32)
-    #         altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-    #         pil_img = ImageQt.fromqimage(altered_image)
-
-    #         # for pixelY in range(altered_image.height()):
-    #         #     for pixelX in range (altered_image.width()):
-    #         #         pixel_color = QColor(altered_image.pixel(pixelX,pixelY))
-    #         #         H,S,L,A = pixel_color.getHsl()
-
-    #         brightness_enhancer = ImageEnhance.Brightness(pil_img)
-
-
-
-    #         pil_img = brightness_enhancer.enhance(factor)
-
-    #         new_qimage = ImageQt.ImageQt(pil_img).convertToFormat(QImage.Format_ARGB32)
-
-
-    #         self.base_pixmap = QPixmap.fromImage(image)
-    #         self.altered_pixmap = QPixmap.fromImage(new_qimage)
-
-    #         updated_texture = TextureLayer(QPixmap.fromImage(new_qimage), self.original_image_location)
-    #         #update textures
-    #         self.texture_layers[0] = updated_texture
-    #         #self.active_tool_widget.texture_layers[0] = updated_texture
-    #         self.active_tool_widget.update_overlay()
-
-    #         #self.base_image = self.base_pixmap.toImage()
-    #         ########################
-    #         self.altered_image = self.altered_pixmap.toImage()
-    #         self.adjust_saturation(self.saturation_value)
-    #         self.update()
-
-
-    # def adjust_brightness(self,value):
-    #         factor = value/100
-    #         image = self.base_image.convertToFormat(QImage.Format_ARGB32)
-    #         altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-            
-    #         # for pixelY in range(altered_image.height()):
-    #         #     for pixelX in range (altered_image.width()):
-    #         #         pixel_color = QColor(altered_image.pixel(pixelX,pixelY))
-    #         #         H,S,L,A = pixel_color.getHsl()
-
-
-    #         for pixelY in range(image.height()):
-    #             for pixelX in range (image.width()):
-
-    #                 pixel_color_alter = QColor(altered_image.pixel(pixelX,pixelY))
-    #                 H,S,L,A = pixel_color_alter.getHsl()
-
-
-    #                 pixel_color = QColor(image.pixel(pixelX,pixelY))
-    #                 H1,S1,L1,A1 = pixel_color.getHsl()
-    #                 L1 = int(L1*factor)
-    #                 if L1>255:
-    #                     L1 = 255
-
-    #                 pixel_color_alter.setHsl(H,S1,L1,A)
-    #                 altered_image.setPixelColor(pixelX,pixelY,pixel_color_alter)
-
-    #         self.brightness_panel.image_label.setPixmap(QPixmap.fromImage(altered_image))
-
-    #         #self.base_pixmap = QPixmap.fromImage(image)
-    #         self.altered_pixmap = QPixmap.fromImage(altered_image)
-
-    #         updated_texture = TextureLayer(QPixmap.fromImage(altered_image), QtCore.QPoint(0,0))
-    #         #update textures
-    #         self.texture_layers[0] = updated_texture
-    #         #self.active_tool_widget.texture_layers[0] = updated_texture
-    #         self.active_tool_widget.update_overlay()
-
-    #         #self.base_image = self.base_pixmap.toImage()
-    #         ########################
-    #         self.altered_image = self.altered_pixmap.toImage()
-    #         self.adjust_saturation(self.saturation_value)
-    #         self.update()
 
 
     ##########################################
@@ -3979,7 +3402,7 @@ class PenTool(QtWidgets.QWidget):
         self.update_overlay()
         self.setMouseTracking(True)
 
-        self.painter_point = None
+        self.painter_point = QtCore.QPoint(0,0)
 
 #HERE HERE HERE HERE LAYERS
 
@@ -4170,6 +3593,10 @@ class PenTool(QtWidgets.QWidget):
         self.in_selection = False
         self.update_overlay()
 
+        self.parent_window.change_layer
+        item = self.parent_window.layers.item(self.parent_window.selected_layer_index)
+        self.parent_window.change_layer(item)
+        
     def update_overlay(self):
         self.overlay.fill(QtCore.Qt.transparent)
         painter = QtGui.QPainter(self.parent_window.selected_layer.pixmap)
