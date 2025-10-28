@@ -3583,7 +3583,6 @@ class PenTool(QtWidgets.QWidget):
         self.in_selection = False
         self.update_overlay()
 
-        self.parent_window.change_layer
         item = self.parent_window.layers.item(self.parent_window.selected_layer_index)
         self.parent_window.change_layer(item)
         
