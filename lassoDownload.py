@@ -2032,7 +2032,7 @@ class MainWindow(QMainWindow):
 
 
         self.current_image = self.altered_image
-        self.setCursor(QtCore.Qt.ArrowCursor)
+        #self.setCursor(QtCore.Qt.ArrowCursor)
 
 
         self.selected_layer = self.texture_layers[self.selected_layer_index]
@@ -2055,11 +2055,11 @@ class MainWindow(QMainWindow):
 
         self.opacity_slider.reset(self.layer_opacities[self.selected_layer_index])
         self.use_low_res = True
-        #self.tool_panel.refresh_tool()
+        self.tool_panel.refresh_tool()
 
     def apply_1k_resolution_adjustments(self, bool):
         self.use_low_res = bool
-        self.setCursor(QtCore.Qt.ForbiddenCursor)
+        #self.setCursor(QtCore.Qt.ForbiddenCursor)
         self.resolution = 256
 
   
@@ -2092,8 +2092,8 @@ class MainWindow(QMainWindow):
         self.altered_image = self.current_image
 
 
-        self.setCursor(QtCore.Qt.ArrowCursor)
-        #self.tool_panel.refresh_tool()
+        #self.setCursor(QtCore.Qt.ArrowCursor)
+        self.tool_panel.refresh_tool()
 
         # Optionally update the full-res altered_image
         #self.altered_image = self.altered_pixmap.toImage()
@@ -2505,7 +2505,7 @@ class MainWindow(QMainWindow):
         self.texture_layers.append(pen_layer)
 
         painter = QtGui.QPainter(final_image)
-        for layer in self.translucent_texture_layers:
+        for layer in self.texture_layers:
             painter.drawPixmap(layer.position, layer.pixmap)
 
 
@@ -2548,7 +2548,7 @@ class MainWindow(QMainWindow):
         self.texture_layers.append(pen_layer)
 
         painter = QtGui.QPainter(final_image)
-        for layer in self.translucent_texture_layers[1:]:
+        for layer in self.texture_layers[1:]:
             painter.drawPixmap(layer.position, layer.pixmap)
 
         painter.end()
@@ -2954,7 +2954,7 @@ class ToolSectionMenu(QMainWindow):
             "  Move Layer - click and drag on the \n"\
             "  contents of a layer\n\n"\
             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-
+        self.setCursor(QtCore.Qt.ArrowCursor)
         self.update_tool()
 
 
@@ -2974,6 +2974,7 @@ class ToolSectionMenu(QMainWindow):
             "  Increase Pen Size - press ] \n\n"\
             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
         self.selected_tool = "Pen"
+        self.parent_window.setCursor(QtCore.Qt.CrossCursor)
         self.update_tool()
         if self.previous_selected_tool == self.selected_tool:
             self.previous_selected_tool = "Pen"
@@ -2998,6 +2999,7 @@ class ToolSectionMenu(QMainWindow):
             "  selection. \n\n"\
             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
         self.selected_tool = "Lasso"
+        self.setCursor(QtCore.Qt.CrossCursor)
         self.update_tool()
         
     def enable_rectanlge_tool(self):
@@ -3025,6 +3027,7 @@ class ToolSectionMenu(QMainWindow):
             "  selection.\n\n"\
             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
         self.selected_tool = "Rectanlge"
+        self.parent_window.setCursor(QtCore.Qt.CrossCursor)
         self.update_tool()
         
 
@@ -3051,6 +3054,7 @@ class ToolSectionMenu(QMainWindow):
             "  selection.\n\n"\
             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
         self.selected_tool = "Ellipse"
+        self.parent_window.setCursor(QtCore.Qt.CrossCursor)
         self.update_tool()
         
 
@@ -3076,6 +3080,7 @@ class ToolSectionMenu(QMainWindow):
             "  selection\n"\
             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
         self.selected_tool = "Polygon"
+        self.parent_window.setCursor(QtCore.Qt.ArrowCursor)
         self.update_tool()
         
 
@@ -3095,6 +3100,7 @@ class ToolSectionMenu(QMainWindow):
             "  outside of the image to rotate\n\n"\
             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
         self.selected_tool = "Transform"
+        self.parent_window.setCursor(QtCore.Qt.SizeAllCursor)
         self.update_tool()
         
 
