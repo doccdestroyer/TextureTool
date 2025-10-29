@@ -25,7 +25,7 @@ import PIL
 from PIL import Image, ImageEnhance, ImageOps, ImageQt, ImageFilter
 
 import PY_tools
-from PY_tools import PenTool, MoveTool, LassoTool, PolygonalTool, RectangularTool, EllipticalTool, TransformTool
+from PY_tools import PenTool, MoveTool, LassoTool, PolygonalTool, RectangularTool, EllipticalTool, TransformTool, TextureLayer
 
 ###############################################################
 #                   DELETION WINDOW                           # 
@@ -96,14 +96,7 @@ class DeleteConfirmationWindow(QWidget):
         self.parent_window.update()
 
 
-###############################################################
-#                     TEXTURE LAYER                           # 
-###############################################################
-class TextureLayer:
-    def __init__(self, pixmap: QtGui.QPixmap, position: QtCore.QPoint = QtCore.QPoint(0, 0)):
-        self.pixmap = pixmap
-        self.position = position
-        self.selected = False
+
 ###############################################################
 #                       RENAMER MENU                          # 
 ###############################################################

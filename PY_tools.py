@@ -12,7 +12,20 @@ import math
 #from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar, QColorDialog
 from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF, QAction, QImage, QColor, QPixmap, QAction, QTransform, QIcon
 
+import PIL 
+from PIL import Image, ImageEnhance, ImageOps, ImageQt, ImageFilter
 
+###############################################################
+#                     TEXTURE LAYER                           # 
+###############################################################
+class TextureLayer:
+    def __init__(self, pixmap: QtGui.QPixmap, position: QtCore.QPoint = QtCore.QPoint(0, 0)):
+        self.pixmap = pixmap
+        self.position = position
+        self.selected = False
+###############################################################
+#                        MOVETOOL                             # 
+###############################################################
 class MoveTool(QtWidgets.QWidget):
     def __init__(self, parent_window):
         super().__init__()
@@ -93,6 +106,7 @@ class MoveTool(QtWidgets.QWidget):
             if self.dragging_layer:
                 self.dragging_layer.selected = False
                 self.dragging_layer = None
+                self.translucent_dragging_layer = None
 
 
 
@@ -2272,17 +2286,6 @@ class TransformTool(QWidget):
 
     
 
-
-                # half_pix_height_difference = self.OGHEIGHT -(self.dragging_layer.pixmap.height() * 0.5)
-                # half_pix_width_difference = self.OGWIDTH - self.dragging_layer.pixmap.width() * 0.5
-                
-
-                print("DRAGGING LAYER POSITION", self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position)
-                dragging_position_x = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position.x()
-                dragging_position_y = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position.y()
-
-                # half_pix_height_difference = self.OGHEIGHT - (self.dragging_layer.pixmap.height() * 0.5)
-                # half_pix_width_differenece = self.OGWIDTH - (self.dragging_layer.pixmap.width() * 0.5)
 
                 half_pix_height_difference = (self.OGHEIGHT - self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.height())/2
                 half_pix_width_differenece = (self.OGWIDTH - self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.width())/2
