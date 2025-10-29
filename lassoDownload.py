@@ -390,8 +390,8 @@ class MainWindow(QMainWindow):
 
                             
     def change_layer(self, item):
-
-        self.layer_opacities[self.selected_layer_index] = self.opacity_value
+        if self.opacity_value != self.layer_opacities[self.selected_layer_index]:
+            self.layer_opacities[self.selected_layer_index] = self.opacity_value
         self.apply_full_resolution_adjustments()
         # self.item = item        
         print("LAYER CHANGED")
@@ -2002,28 +2002,28 @@ class MainWindow(QMainWindow):
         self.setCursor(QtCore.Qt.ForbiddenCursor)
 
 
-
+        any_value_changed = False
         if self.redness_value != 0 or self.resetting:
             self.adjust_redness(self.redness_value)
-
+            any_value_changed = True
         if self.greenness_value != 0 or self.resetting:
             self.adjust_greenness(self.greenness_value)
-
+            any_value_changed = True
         if self.blueness_value != 0 or self.resetting:
             self.adjust_blueness(self.blueness_value)
-
+            any_value_changed = True
         if self.saturation_value != 100 or self.resetting:
             self.adjust_saturation(self.saturation_value)
- 
+            any_value_changed = True
         if self.brightness_value != 100 or self.resetting:
             self.adjust_brightness(self.brightness_value)
-
+            any_value_changed = True
         if self.exposure_value != 0 or self.resetting:
             self.adjust_exposure(self.exposure_value)
-
+            any_value_changed = True
         if self.contrast_value != 100 or self.resetting:
             self.adjust_contrast(self.contrast_value)
-
+            any_value_changed = True
 
 
 
@@ -2035,10 +2035,16 @@ class MainWindow(QMainWindow):
 
         self.tool_panel.refresh_tool()
         
-        if self.opacity_value != self.layer_opacities[self.selected_layer_index]:
+
+        if self.opacity_value != self.layer_opacities[self.selected_layer_index] or self.resetting or any_value_changed:
             self.adjust_opacity(self.opacity_value)
+        #self.adjust_opacity(self.opacity_value)
  
+        self.tool_panel.refresh_tool()
+        
         self.adjust_apply_button_colour(0)
+
+        self.selected_layer = self.texture_layers[self.selected_layer_index]
 
         self.current_image = self.selected_layer.pixmap.toImage()
         self.altered_image = self.current_image
@@ -3264,6 +3270,7 @@ class MoveTool(QtWidgets.QWidget):
         self.last_pan_point = None
 
         self.dragging_layer = self.parent_window.selected_layer
+        self.translucent_dragging_layer = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index]
         self.drag_start_offset = QtCore.QPoint()
 
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
@@ -3298,9 +3305,9 @@ class MoveTool(QtWidgets.QWidget):
                             self.dragging_layer = layer
                             index = self.parent_window.texture_layers.index(self.dragging_layer)
 
-
                             self.parent_window.selected_layer = self.texture_layers[index]
                             self.parent_window.selected_layer_index = index
+                            self.translucent_dragging_layer = self.parent_window.translucent_texture_layers[index]
 
 
                             item = self.parent_window.layers.item(self.parent_window.selected_layer_index)
@@ -3318,6 +3325,7 @@ class MoveTool(QtWidgets.QWidget):
         elif self.dragging_layer:
             new_position = self.get_scaled_point(event.position()) - self.drag_start_offset
             self.dragging_layer.position = new_position
+            self.translucent_dragging_layer.position = new_position
             self.update()
 
     def mouseReleaseEvent(self, event):
@@ -3344,7 +3352,7 @@ class MoveTool(QtWidgets.QWidget):
         painter.translate(self.parent_window.pan_offset)
         painter.scale(self.parent_window.scale_factor, self.parent_window.scale_factor)
 
-        for layer in self.texture_layers[0:]:
+        for layer in self.parent_window.translucent_texture_layers[0:]:
             painter.drawPixmap(layer.position, layer.pixmap)
         painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
         
@@ -5241,7 +5249,7 @@ class TransformTool(QWidget):
 
         #self.merged_selection_path = parent_window.merged_selection_path
 
-        self.image = self.parent_window.selected_layer.pixmap
+        self.image = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap
 
         self.overlay = QtGui.QPixmap(self.image.size())
         self.overlay.fill(QtCore.Qt.transparent)
@@ -5265,7 +5273,7 @@ class TransformTool(QWidget):
         self.topLeft = None
 
 
-        self.rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size())
+        self.rectangle = QtCore.QRect(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position, self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.size())
         self.center_point = self.rectangle.center()
         self.paint_center_point = self.center_point
 
@@ -5280,9 +5288,9 @@ class TransformTool(QWidget):
         new_size = base_size * scale
         self.resize(new_size)
         self.update()
-    
+    #def startScaling(self, layer_input, layer_output)
     def mousePressEvent(self, event):
-        if self.parent_window.selected_layer == self.parent_window.texture_layers[0]:
+        if self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index] == self.parent_window.texture_layers[0]:
             pass
         else:
             if event.button() == QtCore.Qt.LeftButton and self.inSelection:
@@ -5291,7 +5299,7 @@ class TransformTool(QWidget):
                     self.setCursor(QtCore.Qt.ClosedHandCursor)
                 else:
                     self.point = self.get_scaled_point(event.position())
-                    self.rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size())
+                    self.rectangle = QtCore.QRect(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position, self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.size())
                     
                     self.topLeft = self.rectangle.topLeft()
 
@@ -5300,8 +5308,8 @@ class TransformTool(QWidget):
                     self.center_point = self.rectangle.center()
 
 
-                    half_pix_height = self.parent_window.selected_layer.pixmap.height() * 0.5
-                    half_pix_width = self.parent_window.selected_layer.pixmap.width() * 0.5
+                    half_pix_height = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.height() * 0.5
+                    half_pix_width = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.width() * 0.5
                     
                     #self.center_point = QtCore.QPoint(self.topLeft.x() + half_pix_width, self.topLeft.y() + half_pix_height)
 
@@ -5309,24 +5317,25 @@ class TransformTool(QWidget):
                     unreal.log(print(self.center_point))
                     print(self.center_point)
 
-                    self.selected_pixmap = self.parent_window.selected_layer.pixmap
+                    self.selected_pixmap = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap
+                    self.og_pixmap = self.parent_window.selected_layer.pixmap
 
                     if self.rectangle.contains(self.point):
 
-                            # index = self.parent_window.texture_layers.index(self.parent_window.selected_layer)
+                       
 
         
-                            # self.parent_window.selected_layer = self.texture_layers[index]
+                            # self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index] = self.texture_layers[index]
                             # self.parent_window.selected_layer_index = index
 
 
                             # item = self.parent_window.layers.item(self.parent_window.selected_layer_index)
                             # self.parent_window.layers.setCurrentItem(item)
-                            self.drag_start_offset = self.point - self.parent_window.selected_layer.position
+                            self.drag_start_offset = self.point - self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position
 
                             #############
 
-                            #self.overlay = QtGui.QPixmap(self.parent_window.selected_layer.pixmap.size())
+                            #self.overlay = QtGui.QPixmap(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.size())
                             self.scaling = False
                             self.rotating = False
 
@@ -5337,12 +5346,24 @@ class TransformTool(QWidget):
                         unreal.log ("YOU DID IT YOU DID IT")
                         self.scaling = True
                         self.rotating = False
+
                         base_image = self.selected_pixmap.toImage()
                         convert = base_image.convertToFormat(QImage.Format_ARGB32)
-                        self.pillow_image = ImageQt.fromqimage(convert)            
-                        self.rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size())
-                        self.center_point_of_scaling = QtCore.QPoint(self.parent_window.selected_layer.position.x(),self.parent_window.selected_layer.position.y())
-                        self.original_dragging_layer_data = self.parent_window.selected_layer
+                        self.pillow_image = ImageQt.fromqimage(convert)  
+
+
+
+
+                        base_image = self.og_pixmap.toImage()
+                        convert = base_image.convertToFormat(QImage.Format_ARGB32)
+                        self.opaque_pillow_image = ImageQt.fromqimage(convert)   
+
+
+
+
+                        self.rectangle = QtCore.QRect(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position, self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.size())
+                        self.center_point_of_scaling = QtCore.QPoint(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position.x(),self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position.y())
+                        self.original_dragging_layer_data = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index]
 
                     else: #currently set to scaling settings which will need ot be changed once ui and indication is clearer
                         unreal.log ("ROTATION")
@@ -5355,23 +5376,37 @@ class TransformTool(QWidget):
 
 
 
-                        rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size())
+                        rectangle = QtCore.QRect(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position, self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.size())
                         self.topLeft = rectangle.topLeft()
                         self.center_point = QtCore.QPoint(self.topLeft.x() + half_pix_width, self.topLeft.y() + half_pix_height)
                         #self.paint_center_point = self.center_point
 
-                        base_image = self.parent_window.selected_layer.pixmap.toImage()
+                        base_image = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.toImage()
                         convert = base_image.convertToFormat(QImage.Format_ARGB32)
                         self.pillow_image = ImageQt.fromqimage(convert) 
 
 
-                        self.OGHEIGHT = self.parent_window.selected_layer.pixmap.height()
-                        self.OGWIDTH = self.parent_window.selected_layer.pixmap.width()
+                        #################################
+                        base_image = self.og_pixmap.toImage()
+                        convert = base_image.convertToFormat(QImage.Format_ARGB32)
+                        self.opaque_pillow_image = ImageQt.fromqimage(convert)  
+                        #################################   
+
+
+                        self.OGHEIGHT = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.height()
+                        self.OGWIDTH = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.width()
 
 
                         if self.parent_window.never_rotated == True:
                             self.pillow_image = self.pillow_image.rotate(45, expand = True)
                             self.pillow_image = self.pillow_image.rotate(0, expand = True)
+
+                            #################################   
+                            self.opaque_pillow_image = self.opaque_pillow_image.rotate(45, expand = True)
+                            self.opaque_pillow_image = self.opaque_pillow_image.rotate(0, expand = True)
+                            #################################   
+
+
                             self.parent_window.never_rotated = False
                             print("NEVER ROTATED SET TO FALSE BECAUSE IT WAS TRUE, IMAGE EXPANDED TWICE")
                         # base_image = self.dragging_pixmap.toImage()
@@ -5381,7 +5416,7 @@ class TransformTool(QWidget):
                     self.update()
                             
     def mouseMoveEvent(self,event): 
-        if self.parent_window.selected_layer == self.parent_window.texture_layers[0]:
+        if self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index] == self.parent_window.texture_layers[0]:
             pass
         else:
             if self.panning and self.last_pan_point:
@@ -5417,39 +5452,47 @@ class TransformTool(QWidget):
 
 
                 resized_image = self.pillow_image.resize((int(self.pillow_image.size[0]*self.image_scale_factor), int(self.pillow_image.size[1]*self.image_scale_factor)))
-                unreal.log(print("image scaled"))
-
 
                 new_qimage = ImageQt.ImageQt(resized_image).convertToFormat(QImage.Format_ARGB32)
                 new_image = QPixmap.fromImage(new_qimage)
 
-
-                #self.dragging_pixmap = self.dragging_pixmap.scaled(self.dragging_pixmap.width()*self.image_scale_factor,self.dragging_pixmap.height()*self.image_scale_factor)
                 self.selected_pixmap = new_image
 
-
-
-
-                bounds_rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.selected_pixmap.size())
-
                 new_position = QtCore.QPoint(self.original_dragging_layer_data.position.x() - width_difference/2, self.original_dragging_layer_data.position.y() - height_difference/2)
-                #new_position = QtCore.QPoint(self.center_point_of_scaling.x() - width_difference/2, self.center_point_of_scaling.y() - height_difference/2)
-                #new_position =  QtCore.QPoint(self.center_point_of_scaling.x(), self.center_point_of_scaling.y())
+
 
                 new_layer = TextureLayer(self.selected_pixmap, new_position)
 
+                self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index] = new_layer
+                #self.parent_window.selected_layer = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index]
+
+
+                #################################   
+                resized_image = self.opaque_pillow_image.resize((int(self.opaque_pillow_image.size[0]*self.image_scale_factor), int(self.opaque_pillow_image.size[1]*self.image_scale_factor)))
+
+                new_qimage = ImageQt.ImageQt(resized_image).convertToFormat(QImage.Format_ARGB32)
+                new_image = QPixmap.fromImage(new_qimage)
+                
+                self.og_pixmap = new_image
+
+                new_position = QtCore.QPoint(self.original_dragging_layer_data.position.x() - width_difference/2, self.original_dragging_layer_data.position.y() - height_difference/2)
+
+
+                new_layer = TextureLayer(self.og_pixmap, new_position)
+
                 self.parent_window.texture_layers[self.parent_window.selected_layer_index] = new_layer
                 self.parent_window.selected_layer = self.parent_window.texture_layers[self.parent_window.selected_layer_index]
-
+                #################################   
                 self.update_overlay()
                 
-                # for layer in self.parent_window.texture_layers:
-                #     if self.dragging_layer == layer:
+
+
+
 
             elif self.rotating:
                 hover_point = self.get_scaled_point(event.position())
                 self.parent_window.never_rotated = False
-                rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size())
+                rectangle = QtCore.QRect(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position, self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.size())
                 topLeft = rectangle.topLeft()
                 
                 print("TOP LEFT BASE: ", self.topLeft)
@@ -5461,15 +5504,15 @@ class TransformTool(QWidget):
                 # half_pix_width_difference = self.OGWIDTH - self.dragging_layer.pixmap.width() * 0.5
                 
 
-                print("DRAGGING LAYER POSITION", self.parent_window.selected_layer.position)
-                dragging_position_x = self.parent_window.selected_layer.position.x()
-                dragging_position_y = self.parent_window.selected_layer.position.y()
+                print("DRAGGING LAYER POSITION", self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position)
+                dragging_position_x = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position.x()
+                dragging_position_y = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position.y()
 
                 # half_pix_height_difference = self.OGHEIGHT - (self.dragging_layer.pixmap.height() * 0.5)
                 # half_pix_width_differenece = self.OGWIDTH - (self.dragging_layer.pixmap.width() * 0.5)
 
-                half_pix_height_difference = (self.OGHEIGHT - self.parent_window.selected_layer.pixmap.height())/2
-                half_pix_width_differenece = (self.OGWIDTH - self.parent_window.selected_layer.pixmap.width())/2
+                half_pix_height_difference = (self.OGHEIGHT - self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.height())/2
+                half_pix_width_differenece = (self.OGWIDTH - self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.width())/2
 
 
                 # self.center_point = QtCore.QPoint(topLeft.x() - half_pix_width, topLeft.y() - half_pix_height)
@@ -5487,6 +5530,7 @@ class TransformTool(QWidget):
             
             
                 rotated_image = self.pillow_image.rotate(360 - rotation_angle)
+
 
                 # larger_scalar = max(self.OGHEIGHT, self.OGWIDTH)
 
@@ -5514,22 +5558,36 @@ class TransformTool(QWidget):
                 
                 new_layer = TextureLayer(new_image, newTopLeft)
 
+                #self.parent_window.texture_layers[self.parent_window.selected_layer_index] = new_layer
+                self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index] = new_layer
+                
+                
+                #############################################################
+                rotated_image = self.opaque_pillow_image.rotate(360 - rotation_angle)
+                new_qimage = ImageQt.ImageQt(rotated_image).convertToFormat(QImage.Format_ARGB32)
+                new_image = QPixmap.fromImage(new_qimage)
+
+                
+                new_layer = TextureLayer(new_image, newTopLeft)
+
                 self.parent_window.texture_layers[self.parent_window.selected_layer_index] = new_layer
                 self.parent_window.selected_layer = self.parent_window.texture_layers[self.parent_window.selected_layer_index]
+                #############################################################
+                
                 self.update_overlay()
 
                         
             else:
                 new_position = self.get_scaled_point(event.position()) - self.drag_start_offset
-                self.parent_window.selected_layer.position = new_position
+                self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position = new_position
                 
-                half_pix_height = self.parent_window.selected_layer.pixmap.height() * 0.5
-                half_pix_width = self.parent_window.selected_layer.pixmap.width() * 0.5
-                rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size())
+                half_pix_height = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.height() * 0.5
+                half_pix_width = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.width() * 0.5
+                rectangle = QtCore.QRect(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position, self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.size())
                 topLeft = rectangle.topLeft()
                 self.paint_center_point = QtCore.QPoint(topLeft.x() + half_pix_width, topLeft.y() + half_pix_height)
-                #half_pix_height = self.parent_window.selected_layer.pixmap.height() * 0.5
-                #half_pix_width = self.parent_window.selected_layer.pixmap.width() * 0.5
+                #half_pix_height = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.height() * 0.5
+                #half_pix_width = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.width() * 0.5
                 #self.paint_center_point = QtCore.QPoint(self.topLeft.x() + half_pix_width, self.topLeft.y() + half_pix_height)
 
 
@@ -5537,7 +5595,7 @@ class TransformTool(QWidget):
             self.update()
 
     def mouseReleaseEvent(self, event):
-        if self.parent_window.selected_layer == self.parent_window.texture_layers[0]:
+        if self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index] == self.parent_window.texture_layers[0]:
             pass
         else:
             if event.button() == QtCore.Qt.LeftButton:
@@ -5545,25 +5603,30 @@ class TransformTool(QWidget):
                     self.panning = False
                     self.setCursor(QtCore.Qt.ArrowCursor)
                 # else:
-                #     base_image = self.parent_window.selected_layer.pixmap.toImage()
+                #     base_image = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.toImage()
                 #     convert = base_image.convertToFormat(QImage.Format_ARGB32)
                 #     self.pillow_image = ImageQt.fromqimage(convert) 
                     
                 if self.scaling:
                     self.update_overlay()
-                    # self.selected_pixmap = self.parent_window.selected_layer.pixmap
+                    # self.selected_pixmap = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap
                     self.scaling = False
                     # self.rectangle = None
                     self.point = None
                     # self.center_point = None
                     self.update_overlay()
-                    self.parent_window.tool_panel.refresh_tool()
+
                     #self.parent_window.never_rotated = True
 
+
+                    item = self.parent_window.layers.item(self.parent_window.selected_layer_index)
+                    self.parent_window.change_layer(item)
+
+                    self.parent_window.tool_panel.refresh_tool()
                 elif self.rotating:
                     self.update_overlay()   
 
-                    self.selected_pixmap = self.parent_window.selected_layer.pixmap
+                    self.selected_pixmap = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap
                     self.rotating = False
 
 
@@ -5572,16 +5635,17 @@ class TransformTool(QWidget):
 
 
                     self.update_overlay()   
-                    self.parent_window.tool_panel.refresh_tool()
                 # if self.panning != True:
                 #     new_layer = TextureLayer(self.dragging_pixmap, self.dragging_layer.position)
-                #     self.parent_window.selected_layer = self.parent_window.texture_layers[(self.parent_window.texture_layers.index(new_layer))]
+                #     self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index] = self.parent_window.texture_layers[(self.parent_window.texture_layers.index(new_layer))]
 
-                    self.rectangle = QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size())
+                    self.rectangle = QtCore.QRect(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position, self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.size())
                     self.topLeft = self.rectangle.topLeft()
 
-
-
+                    ##################################
+                    item = self.parent_window.layers.item(self.parent_window.selected_layer_index)
+                    self.parent_window.change_layer(item)
+                    self.parent_window.tool_panel.refresh_tool()
                 # elif self.dragging_layer:
                 #     self.dragging_layer.selected = False
                 #     self.dragging_layer = None
@@ -5605,12 +5669,12 @@ class TransformTool(QWidget):
         # painter.drawPixmap(0, 0, self.overlay)
 
         for layer in self.parent_window.translucent_texture_layers[0:]:
-                        painter.drawPixmap(layer.position, layer.pixmap)
+            painter.drawPixmap(layer.position, layer.pixmap)
         painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay)
 
         # painter = QtGui.QPainter(self.overlay)
-        if self.parent_window.selected_layer != self.texture_layers[0]:
-            painter.drawRect(QtCore.QRect(self.parent_window.selected_layer.position, self.parent_window.selected_layer.pixmap.size()))
+        if self.parent_window.selected_layer_index != 0:
+            painter.drawRect(QtCore.QRect(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position, self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.size()))
             pen = QtGui.QPen(QtCore.Qt.white, 10)
             pen.setCapStyle(Qt.RoundCap)
             painter.setPen(pen)
@@ -5621,8 +5685,8 @@ class TransformTool(QWidget):
 
 
         # rect = self.rect()
-        # xc = self.parent_window.selected_layer.pixmap.width() * 0.5
-        # yc = self.parent_window.selected_layer.pixmap.height() * 0.5
+        # xc = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.width() * 0.5
+        # yc = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.height() * 0.5
 
         # painter.setPen(QtGui.QPen(QtCore.Qt.black, 1))
 
@@ -5679,7 +5743,7 @@ class TransformTool(QWidget):
 
         outline_pen =QtGui.QPen(QtGui.QColor(0, 0, 255, 255), 5)
 
-        if self.parent_window.selected_layer:
+        if self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index]:
             
             painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
@@ -5690,6 +5754,7 @@ class TransformTool(QWidget):
 
         painter.end()
         self.update()
+
 
 
 ###############################################################
