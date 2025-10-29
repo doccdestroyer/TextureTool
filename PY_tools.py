@@ -1,4 +1,7 @@
 
+
+import os, sys
+sys.path.append(os.path.join(os.path.dirname(__file__)))
 import PySide6
 from PySide6 import QtWidgets, QtGui, QtCore
 from PySide6.QtWidgets import QPushButton, QWidget, QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar, QColorDialog, QDockWidget, QListWidget, QMessageBox

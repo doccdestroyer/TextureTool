@@ -1,5 +1,9 @@
 import unreal
 import PY_main_script as MainScript
+
+import os, sys
+sys.path.append(os.path.join(os.path.dirname(__file__)))
+
 # def list_menu(num = 1000):
 #     menu_list = set()
 
