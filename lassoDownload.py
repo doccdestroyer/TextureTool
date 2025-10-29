@@ -379,6 +379,8 @@ class MainWindow(QMainWindow):
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+-"), self, activated=self.zoom_out)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+0"), self, activated=self.reset_zoom)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+Shift+i"), self, activated=self.invert_selections)
+
+
     # def keyPressEvent(self, event):
     #     if event.key() == 16777216:
     #         self.clear_selections()
@@ -639,10 +641,12 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, descript_dock)
 
         descript_zoom_dock = QDockWidget("Zoom/Pan User Guide", self)
-        self.tool_zoom_label = QLabel("  Space    -  Hold, Drag to Pan\n\n" \
-        "  Ctrl +   -  \n\n" \
-        "  Ctrl -   -  Zoom Out\n\n" \
-        "  Ctrl 0   -  Reset Zoom"\
+        self.tool_zoom_label = QLabel(
+        "\n  Pan                       -      Space and Drag\n\n" \
+        "  Zoom In              -      Ctrl +\n\n" \
+        "  Zoom Out           -      Ctrl -\n\n" \
+        "  Reset Zoom        -      Ctrl 0\n\n"\
+        "  Invert Selection  -      Ctrl Shift i"\
         "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nn\n\n\n")
         descript_zoom_dock.setWidget(self.tool_zoom_label)
         descript_zoom_dock.setFixedSize(225,440)
@@ -3385,7 +3389,9 @@ class PenTool(QtWidgets.QWidget):
 
         self.in_selection = False
 
-        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        QtGui.QShortcut(QtGui.QKeySequence("["), self, activated=self.decrease_pen)
+        QtGui.QShortcut(QtGui.QKeySequence("]"), self, activated=self.increase_pen)
+
         self.setFocus()
         self.resize(self.image.size()) 
 
@@ -3393,7 +3399,7 @@ class PenTool(QtWidgets.QWidget):
         self.selections_paths = parent_window.selections_paths
         self.update_overlay()
         self.setMouseTracking(True)
-
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.painter_point = QtCore.QPoint(0,0)
 
 #HERE HERE HERE HERE LAYERS
@@ -3466,16 +3472,15 @@ class PenTool(QtWidgets.QWidget):
             self.clear_overlay()
             self.update_overlay()
 
-        if event.key() == 91:
-            unreal.log(print("HELLO"))
-            self.parent_window.pen_size -= 5
-            if self.parent_window.pen_size < 2:
-                self.parent_window.pen_size = 2
-        if event.key() == 93:
-            unreal.log(print("goodbye"))
-            self.parent_window.pen_size += 5
-            if self.parent_window.pen_size > 750:
-                self.parent_window.pen_size = 750
+    def decrease_pen(self):
+        self.parent_window.pen_size -= 5
+        if self.parent_window.pen_size < 2:
+            self.parent_window.pen_size = 2
+
+    def increase_pen(self):
+        self.parent_window.pen_size += 5
+        if self.parent_window.pen_size > 750:
+            self.parent_window.pen_size = 750
 
     def keyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
