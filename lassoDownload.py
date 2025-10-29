@@ -2505,7 +2505,7 @@ class MainWindow(QMainWindow):
         self.texture_layers.append(pen_layer)
 
         painter = QtGui.QPainter(final_image)
-        for layer in self.texture_layers:
+        for layer in self.translucent_texture_layers:
             painter.drawPixmap(layer.position, layer.pixmap)
 
 
@@ -2548,7 +2548,7 @@ class MainWindow(QMainWindow):
         self.texture_layers.append(pen_layer)
 
         painter = QtGui.QPainter(final_image)
-        for layer in self.texture_layers[1:]:
+        for layer in self.translucent_texture_layers[1:]:
             painter.drawPixmap(layer.position, layer.pixmap)
 
         painter.end()
