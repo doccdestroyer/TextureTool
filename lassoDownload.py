@@ -637,7 +637,7 @@ class MainWindow(QMainWindow):
         descript_dock = QDockWidget("Tool User Guide", self)
         self.tool_description_label = QLabel(self.tool_description)
         descript_dock.setWidget(self.tool_description_label)
-        descript_dock.setFixedSize(225,440)
+        descript_dock.setFixedSize(225,1000)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, descript_dock)
 
         descript_zoom_dock = QDockWidget("Zoom/Pan User Guide", self)
@@ -649,7 +649,7 @@ class MainWindow(QMainWindow):
         "  Invert Selection  -      Ctrl Shift i"\
         "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nn\n\n\n")
         descript_zoom_dock.setWidget(self.tool_zoom_label)
-        descript_zoom_dock.setFixedSize(225,440)
+        descript_zoom_dock.setFixedSize(225,300)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, descript_zoom_dock)
 
         tool_dock = QDockWidget("Tools", self)
@@ -2946,13 +2946,13 @@ class ToolSectionMenu(QMainWindow):
             self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
             self.parent_window.active_tool_widget.deleteLater()
         self.parent_window.active_tool_widget = MoveTool(parent_window=self.parent_window)
-        self.parent_window.tool_description = "\n Move Tool \n\n\n" \
-            "  This tool allows you to \n"\
-            "  select and move any layer.\n\n"\
-            "  Left click and drag in\n"\
-            "  the bounds of any image\n\n"\
-            "  Left click and drag on the \n"\
-            "  to move it \n"\
+        self.parent_window.tool_description = "\n  Move Tool \n\n\n" \
+            "  This tool allows you to select and \n"\
+            "  move any layer\n\n"\
+            "  Select Layer - click on the contents \n"\
+            "  of a layer\n\n"\
+            "  Move Layer - click and drag on the \n"\
+            "  contents of a layer\n\n"\
             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 
         self.update_tool()
@@ -2964,14 +2964,14 @@ class ToolSectionMenu(QMainWindow):
             self.parent_window.active_tool_widget.deleteLater()
 
         self.parent_window.active_tool_widget = PenTool(self.parent_window.image_path, parent_window=self.parent_window, color = self.parent_window.color)
-        self.parent_window.tool_description =  "\n Pen Tool\n\n\n"\
-            "  This Tool allows you to draw \n"\
-            "  on the image. \n\n"\
-            "  If you have had a prior \n"\
-            "  selection, you will only be \n"\
-            "  able to draw within that \n"\
+        self.parent_window.tool_description =  "\n  Pen Tool\n\n\n"\
+            "  This tool allows you to draw on the \n"\
+            "  selected layer within its bounds. \n\n"\
+            "  If there was a prior selection you \n"\
+            "  will only be able to draw within the \n"\
             "  selection.\n\n"\
-            "  Press [ or ] to scale the pen."\
+            "  Decrease Pen Size - press [\n\n"\
+            "  Increase Pen Size - press ] \n\n"\
             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
         self.selected_tool = "Pen"
         self.update_tool()
@@ -2985,16 +2985,17 @@ class ToolSectionMenu(QMainWindow):
             self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
             self.parent_window.active_tool_widget.deleteLater()
         self.parent_window.active_tool_widget = LassoTool(self.parent_window.image_path, parent_window=self.parent_window)
-        self.parent_window.tool_description = "\n Lasso Tool\n\n\n"\
+        self.parent_window.tool_description = "\n  Lasso Tool\n\n\n"\
             "  This tool allows you to make \n"\
-            "  freehand selections.\n\n"\
-            "  Press shift on initial click \n"\
-            "  to do an additional selection.\n\n"\
-            "  Press alt on initial click to do \n"\
-            "  a removal of your previous \n"\
+            "  freehand selections \n\n"\
+            "  Add Selection- hold shift on initial \n"\
+            "  click then draw desired addition \n\n"\
+            "  Subtract Selection- hold alt on \n"\
+            "  initial click then draw desired \n"\
+            "  removal \n\n"\
+            "  Remove All Selections - press \n"\
+            "  escape to remove the entire \n"\
             "  selection. \n\n"\
-            "  Press delete to remove the \n"\
-            "  entire selection.\n"\
             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
         self.selected_tool = "Lasso"
         self.update_tool()
@@ -3004,23 +3005,24 @@ class ToolSectionMenu(QMainWindow):
             self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
             self.parent_window.active_tool_widget.deleteLater()
         self.parent_window.active_tool_widget = RectangularTool(self.parent_window.image_path, parent_window=self.parent_window)
-        self.parent_window.tool_description = "\n Rectangular Tool\n\n\n"\
+        self.parent_window.tool_description = "\n  Rectangular Tool\n\n\n"\
             "  This tool allows you to draw \n"\
-            "  rectangular selections by \n"\
-            "  clicking and dragging. \n\n"\
-            "  Press shift on initial click \n"\
-            "  to do an additional selection. \n\n"\
-            "  Press alt on initial click for \n"\
-            "  a removal of your previous \n"\
-            "  selection. \n\n"\
-            "  Hold shift whilst drawing to \n"\
-            "  lock the selection into a \n"\
-            "  square. \n\n"\
-            "  Hold alt whilst drawing to \n"\
-            "  lock the selection around the \n"\
-            "  starting point. \n\n"\
-            "  Press delete to remove the \n"\
-            "  entire selection.\n"\
+            "  rectangular selections\n\n"\
+            "  Draw Rectangle - click and drag\n\n"\
+            "  Add Rectangle - hold shift on initial \n"\
+            "  click then drag to desired addition\n\n"\
+            "  Subtract Rectangle - hold alt on \n"\
+            "  initial click then drag to desired \n"\
+            "  removal\n\n"\
+            "  Lock to Square - whilst drawing, \n"\
+            "  hold shift to lock rectangle into a \n"\
+            "  square\n\n"\
+            "  Lock around Point - whilst \n"\
+            "  drawing, hold alt to lock rectangle \n"\
+            "  around initial point\n"\
+            "  Remove All Selections - press \n"\
+            "  escape to remove the entire \n"\
+            "  selection.\n\n"\
             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
         self.selected_tool = "Rectanlge"
         self.update_tool()
@@ -3031,23 +3033,22 @@ class ToolSectionMenu(QMainWindow):
             self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
             self.parent_window.active_tool_widget.deleteLater()
         self.parent_window.active_tool_widget = EllipticalTool(self.parent_window.image_path, parent_window=self.parent_window)
-        self.parent_window.tool_description = "\n Ellipse Tool\n\n\n"\
+        self.parent_window.tool_description = "\n  Ellipse Tool\n\n\n"\
             "  This tool allows you to draw \n"\
-            "  elliptical selections by \n"\
-            "  clicking and dragging. \n\n"\
-            "  Press shift on initial click \n"\
-            "  to do an additional selection. \n\n"\
-            "  Press alt on initial click for \n"\
-            "  a removal of your previous \n"\
-            "  selection. \n\n"\
-            "  Hold shift whilst drawing to \n"\
-            "  lock the selection into a \n"\
-            "  circle. \n\n"\
-            "  Hold alt whilst drawing to \n"\
-            "  lock the selection around the \n"\
-            "  starting point. \n\n"\
-            "  Press delete to remove the \n"\
-            "  entire selection.\n"\
+            "  elliptical selections.\n\n"\
+            "  Draw Ellipse - click and drag\n\n"\
+            "  Add Ellipse - hold shift on initial \n"\
+            "  click then drag to desired addition\n\n"\
+            "  Subtract Ellipse - hold alt on initial \n"\
+            "  click then drag to desired removal\n\n"\
+            "  Lock to Circle- whilst drawing, hold \n"\
+            "  shift to lock rectangle into a circle\n\n"\
+            "  Lock around Point - whilst \n"\
+            "  drawing, hold alt to lock ellipse \n"\
+            "  around initial point.\n\n"\
+            "  Remove All Selections - press \n"\
+            "  escape to remove the entire \n"\
+            "  selection.\n\n"\
             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
         self.selected_tool = "Ellipse"
         self.update_tool()
@@ -3058,7 +3059,7 @@ class ToolSectionMenu(QMainWindow):
             self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
             self.parent_window.active_tool_widget.deleteLater()
         self.parent_window.active_tool_widget = PolygonalTool(self.parent_window.image_path, parent_window=self.parent_window)
-        self.parent_window.tool_description = "\n Polygonal Lasso Tool \n\n\n"\
+        self.parent_window.tool_description = "\n  Polygonal Lasso Tool \n\n\n"\
             "  This tool allows you to make \n"\
             "  polygonal selections by \n"\
             "  drawing point by point,\n"\
@@ -3083,20 +3084,15 @@ class ToolSectionMenu(QMainWindow):
             self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
             self.parent_window.active_tool_widget.deleteLater()
         self.parent_window.active_tool_widget = TransformTool(parent_window=self.parent_window)
-        self.parent_window.tool_description =  "\n Transform Tool\n\n\n"\
-            "  This Tool allows you to  \n"\
-            "  manipulate the selected  \n"\
+        self.parent_window.tool_description =  "\n  Transform Tool\n\n\n"\
+            "  This Tool allows you to \n"\
+            "  manipulate the selected \n"\
             "  layer. \n\n"\
-            "  Left click and drag in the  \n"\
-            "  image to move it.\n\n"\
-            "  Left click and drag on the  \n"\
-            "  border of the image to scale  \n"\
-            "  it. Go along the central point  \n"\
-            "  of the image in order to flip  \n"\
-            "  the image. \n\n"\
-            "  Left click and drag on the  \n"\
-            "  outside of the image to  \n"\
-            "  rotate\n\n"\
+            "  Move - left click and drag\n\n"\
+            "  Scale - left click and drag on the\n"\
+            "  border of the image to scale it.\n\n"\
+            "  Rotate - left click and drag on the \n"\
+            "  outside of the image to rotate\n\n"\
             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
         self.selected_tool = "Transform"
         self.update_tool()
