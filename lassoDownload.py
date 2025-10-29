@@ -2320,36 +2320,38 @@ class MainWindow(QMainWindow):
  
 
     def flip_horizontal(self):
-        self.flip_selected_layer(-1,1)
-
+        self.flip_selected_layer(self.selected_layer, -1,1, self.texture_layers)
+        self.flip_selected_layer(self.translucent_texture_layers[self.selected_layer_index], -1,1, self.translucent_texture_layers)
 
     def flip_vertical(self):
-        self.flip_selected_layer(1,-1)
+        self.flip_selected_layer(self.selected_layer, 1,-1, self.texture_layers)
+        self.flip_selected_layer(self.translucent_texture_layers[self.selected_layer_index], 1,-1, self.translucent_texture_layers)
 
-    def flip_selected_layer(self,x,y):
-        layer_pixmap = self.selected_layer.pixmap
-        layer_position = self.selected_layer.position
+    def flip_selected_layer(self, layer ,x,y, destination):
+        layer_pixmap = layer.pixmap
+        layer_position = layer.position
 
         flipped_pixmap = layer_pixmap.transformed(QTransform().scale(x, y))
         flipped_position = QtCore.QPoint(layer_position.x()*x, layer_position.y()*y)
 
         new_layer = TextureLayer(flipped_pixmap, flipped_position)
-        self.texture_layers[self.selected_layer_index] = new_layer
+        destination[self.selected_layer_index] = new_layer
 
-    def flip_all_layers(self,x,y):
-        for layer in self.texture_layers:
+        self.tool_panel.refresh_tool()
+        self.apply_full_resolution_adjustments()
+
+    def flip_all_layers(self,x,y, layer_group):
+        for layer in layer_group:
             layer_pixmap = layer.pixmap
             layer_position = layer.position
 
-            index = self.texture_layers.index(layer)
+            index = layer_group.index(layer)
             flipped_pixmap = layer_pixmap.transformed(QTransform().scale(x, y))
             flipped_position = QtCore.QPoint(layer_position.x()*x, layer_position.y()*y)
 
             new_layer = TextureLayer(flipped_pixmap, flipped_position)
-            self.texture_layers[index] = new_layer
+            layer_group[index] = new_layer
 
-
-        #flip pen overlay
         layer_pixmap = self.pen_overlay
         flipped_pixmap = layer_pixmap.transformed(QTransform().scale(x, y))
         new_layer = flipped_pixmap
@@ -2357,25 +2359,17 @@ class MainWindow(QMainWindow):
         self.tool_panel.refresh_tool()
         self.active_tool_widget.update_overlay()
 
+        self.tool_panel.refresh_tool()
+        self.apply_full_resolution_adjustments()
 
     def flip_all_horizontal(self):
-        # for layer in self.texture_layers:
-        #     layer_pixmap = layer.pixmap
-        #     index = self.texture_layers.index(layer)
-        #     flipped = layer_pixmap.transformed(QTransform().scale(-1, 1))
-        #     new_layer = TextureLayer(flipped, QtCore.QPoint(0, 0))
-        #     self.texture_layers[index] = new_layer
-        self.flip_all_layers(-1,1)
+        self.flip_all_layers(-1,1, self.texture_layers)
+        self.flip_all_layers(-1,1, self.translucent_texture_layers)
 
 
     def flip_all_vertical(self):
-        # for layer in self.texture_layers:
-        #     layer_pixmap = layer.pixmap
-        #     index = self.texture_layers.index(layer)
-        #     flipped = layer_pixmap.transformed(QTransform().scale(1, -1))
-        #     new_layer = TextureLayer(flipped, QtCore.QPoint(0, 0))
-        #     self.texture_layers[index] = new_layer
-        self.flip_all_layers(1,-1)
+        self.flip_all_layers(1,-1, self.texture_layers)
+        self.flip_all_layers(1,-1, self.translucent_texture_layers)
 
 
     def show_help(self):
