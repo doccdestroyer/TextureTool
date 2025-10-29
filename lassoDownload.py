@@ -379,7 +379,7 @@ class MainWindow(QMainWindow):
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+-"), self, activated=self.zoom_out)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+0"), self, activated=self.reset_zoom)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+Shift+i"), self, activated=self.invert_selections)
-
+        #QtGui.QShortcut(QtGui.QKeySequence("Space"), self, activated=self.start_panning)
 
     # def keyPressEvent(self, event):
     #     if event.key() == 16777216:
@@ -389,7 +389,8 @@ class MainWindow(QMainWindow):
         self.will_delete = False
         self.show_delete_message = True
         self.resetting = False
-
+    #def start_panning(self):
+        
                             
     def change_layer(self, item):
         if self.opacity_value != self.layer_opacities[self.selected_layer_index]:
@@ -3273,6 +3274,7 @@ class MoveTool(QtWidgets.QWidget):
         self.translucent_dragging_layer = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index]
         self.drag_start_offset = QtCore.QPoint()
 
+
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setFocus()
 
@@ -3337,6 +3339,8 @@ class MoveTool(QtWidgets.QWidget):
                 self.dragging_layer.selected = False
                 self.dragging_layer = None
 
+
+
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
             self.panning = True
@@ -3393,6 +3397,7 @@ class PenTool(QtWidgets.QWidget):
 
         QtGui.QShortcut(QtGui.QKeySequence("["), self, activated=self.decrease_pen)
         QtGui.QShortcut(QtGui.QKeySequence("]"), self, activated=self.increase_pen)
+        QtGui.QShortcut(QtGui.QKeySequence("Space"), self, activated=self.start_panning)
 
         self.setFocus()
         self.resize(self.image.size()) 
@@ -3431,7 +3436,8 @@ class PenTool(QtWidgets.QWidget):
 
     #     dock.setWidget(parent_window.layers)
     #     parent_window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
-
+    def start_panning(self):
+        self.panning = True
 
     # def get_scaled_point(self, pos):         
     #     scale = self.parent_window.scale_factor
