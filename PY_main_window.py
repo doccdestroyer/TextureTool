@@ -2072,7 +2072,7 @@ class MainWindow(QMainWindow):
 
 
         flip_all_horizontal.triggered.connect(lambda: self.flip_all_horizontal())
-        flip_all_vertical.triggered.connect(lambda: self.flip_all_horizontal())
+        flip_all_vertical.triggered.connect(lambda: self.flip_all_vertical())
 
 
 
