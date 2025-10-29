@@ -3963,6 +3963,7 @@ class PolygonalTool(QtWidgets.QLabel):
             if self.drawing:
                 if len(self.points)>0:
                     self.points.remove(self.points[-1])
+                    self.update_overlay()
                 else:
                     self.clear_overlay()
                     self.drawing = False
