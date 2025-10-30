@@ -951,10 +951,10 @@ class PolygonalTool(QtWidgets.QLabel):
         painter.end()
         self.update()
             
-        def map_points_of_polygon(self, polygon, n):
-            path = QPainterPath()
-            path.addPolygon(polygon)
-            return [path.pointAtPercent(i/(n-1)) for i in range (n)]
+    def map_points_of_polygon(self, polygon, n):
+        path = QPainterPath()
+        path.addPolygon(polygon)
+        return [path.pointAtPercent(i/(n-1)) for i in range (n)]
 
     # def commit_polygon_to_image(self, polygon):
     #     painter = QtGui.QPainter(self.image)
@@ -1652,7 +1652,7 @@ class EllipticalTool(QtWidgets.QLabel):
             ellipse_path.addEllipse(ellipse)
             ellipse_polygon = ellipse_path.toFillPolygon()
 
-            new_polygon_f = QtGui.QPolygonF(map_points_of_polygon(ellipse_polygon, 100))
+            new_polygon_f = QtGui.QPolygonF(self.map_points_of_polygon(ellipse_polygon, 100))
             new_path = QPainterPath()
             new_path.addPolygon(new_polygon_f)
                 
@@ -2075,7 +2075,7 @@ class TransformTool(QWidget):
         new_size = base_size * scale
         self.resize(new_size)
         self.update()
-    #def startScaling(self, layer_input, layer_output)
+
     def mousePressEvent(self, event):
         if self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index] == self.parent_window.texture_layers[0]:
             pass
