@@ -561,17 +561,25 @@ class MainWindow(QMainWindow):
             """)   
         self.update()          
 
+
+    def get_low_res_pillow_image(self):
+            self.original_image_location = self.selected_layer.position
+            self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
+            pillow_image = ImageQt.fromqimage(altered_image)
+            return pillow_image
+    def get_high_res_pillow_image(self):
+            self.original_image_location = self.selected_layer.position
+            altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
+            pillow_image = ImageQt.fromqimage(altered_image)
+            return pillow_image
     def adjust_greenness(self,value):
             # Calculate factor based on value input
             factor = abs(value)/100
             # Low res adjustments
             if self.use_low_res:
                 # Get starting image (fully) opaque and convert it to a pillow Image
-                self.original_image_location = self.selected_layer.position
-                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
-                # If slider is on the left, adjust to more magenta
+                pillow_image = self.get_low_res_pillow_image()
                 if value < 0:
                     colorize_ops = ImageOps.colorize(pillow_image.convert('L'), mid = 'magenta', black = 'black', white = 'white').convert('RGBA')
                     colorize_ops = colorize_ops.convert('RGBA')
@@ -605,9 +613,7 @@ class MainWindow(QMainWindow):
             else: # Full Resolution Adjustment
                 self.setCursor(QtCore.Qt.ForbiddenCursor)
                 # Get starting image (fully) opaque and convert it to a pillow Image
-                self.original_image_location = self.selected_layer.position
-                altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
+                pillow_image = self.get_high_res_pillow_image()
                 # If slider is on the left, adjust to more magenta
                 if value < 0:
                     colorize_ops = ImageOps.colorize(pillow_image.convert('L'), mid = 'magenta', black = 'black', white = 'white').convert('RGBA')
@@ -641,11 +647,8 @@ class MainWindow(QMainWindow):
             factor = abs(value)/100
             # Low res adjustments
             if self.use_low_res:
-                # Get starting image (fully) opaque and convert it to a pillow Image
-                self.original_image_location = self.selected_layer.position
-                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
+                #Get starting image (fully) opaque and convert it to a pillow Image
+                pillow_image = self.get_low_res_pillow_image()
                 # If slider is on the left, adjust to more yellow
                 if value < 0:
                     colorize_ops = ImageOps.colorize(pillow_image.convert('L'), mid = 'yellow', black = 'black', white = 'white').convert('RGBA')
@@ -679,10 +682,8 @@ class MainWindow(QMainWindow):
                 self.update()
             else: # Full Resolution Adjustment
                 self.setCursor(QtCore.Qt.ForbiddenCursor)
-                # Get starting image (fully) opaque and convert it to a pillow Image
-                self.original_image_location = self.selected_layer.position
-                altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
+                #Get starting image (fully) opaque and convert it to a pillow Image
+                pillow_image = self.get_high_res_pillow_image()
                 # If slider is on the left, adjust to more yellow
                 if value < 0:
                     colorize_ops = ImageOps.colorize(pillow_image.convert('L'), mid = 'yellow', black = 'black', white = 'white').convert('RGBA')
@@ -715,11 +716,8 @@ class MainWindow(QMainWindow):
             factor = abs(value)/100
             # Low res adjustments
             if self.use_low_res:
-                # Get starting image (fully) opaque and convert it to a pillow Image
-                self.original_image_location = self.selected_layer.position
-                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
+                #Get starting image (fully) opaque and convert it to a pillow Image
+                pillow_image = self.get_low_res_pillow_image()
                 # If slider is on the left, adjust to more cyan
                 if value < 0:
                     colorize_ops = ImageOps.colorize(pillow_image.convert('L'), mid = 'aqua', black = 'black', white = 'white').convert('RGBA')
@@ -753,9 +751,7 @@ class MainWindow(QMainWindow):
                 self.update()
             else:  # Full Resolution Adjustment
                 self.setCursor(QtCore.Qt.ForbiddenCursor)
-                self.original_image_location = self.selected_layer.position
-                altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
+                pillow_image = self.get_high_res_pillow_image()
                 # If slider is on the left, adjust to more cyan
                 if value < 0:
                     colorize_ops = ImageOps.colorize(pillow_image.convert('L'), mid = 'aqua', black = 'black', white = 'white').convert('RGBA')
@@ -790,10 +786,7 @@ class MainWindow(QMainWindow):
             # Low res adjustments
             if self.use_low_res:
                 # Get starting image (fully) opaque and convert it to a pillow Image
-                self.original_image_location = self.selected_layer.position
-                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
+                pillow_image = self.get_low_res_pillow_image()
                 # Adjust contrast based on factor
                 contrast_enhancer = ImageEnhance.Contrast(pillow_image)
                 pillow_image = contrast_enhancer.enhance(factor)
@@ -819,10 +812,8 @@ class MainWindow(QMainWindow):
                 self.update()
             else: # Full Resolution Adjustment
                 self.setCursor(QtCore.Qt.ForbiddenCursor)
-                # Get starting image (fully) opaque and convert it to a pillow Image
-                self.original_image_location = self.selected_layer.position
-                altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
+                #Get starting image (fully) opaque and convert it to a pillow Image
+                pillow_image = self.get_high_res_pillow_image()
                 # Adjust contrast based on factor
                 contrast_enhancer = ImageEnhance.Contrast(pillow_image)
                 pillow_image = contrast_enhancer.enhance(factor)
@@ -849,10 +840,7 @@ class MainWindow(QMainWindow):
             # Low res adjustments
             if self.use_low_res:
                 # Get starting image (fully) opaque and convert it to a pillow Image
-                self.original_image_location = self.selected_layer.position
-                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
+                pillow_image = self.get_low_res_pillow_image()
                 # Adjust saturation based on factor
                 color_enhancer = ImageEnhance.Color(pillow_image)
                 pillow_image = color_enhancer.enhance(factor)
@@ -877,10 +865,8 @@ class MainWindow(QMainWindow):
                 self.update()
             else:  # Full Resolution Adjustment
                 self.setCursor(QtCore.Qt.ForbiddenCursor)
-                # Get starting image (fully) opaque and convert it to a pillow Image
-                self.original_image_location = self.selected_layer.position
-                altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
+                #Get starting image (fully) opaque and convert it to a pillow Image
+                pillow_image = self.get_high_res_pillow_image()
                 # Adjust contrast based on factor
                 color_enhancer = ImageEnhance.Color(pillow_image)
                 pillow_image = color_enhancer.enhance(factor)
@@ -909,10 +895,7 @@ class MainWindow(QMainWindow):
             # Low res adjustments
             if self.use_low_res:
                 # Get starting image (fully) opaque and convert it to a pillow Image
-                self.original_image_location = self.selected_layer.position
-                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image).convert("RGBA")
+                pillow_image = self.get_low_res_pillow_image()
                 # Adjust opacity based on factor
                 r, g, b, a = pillow_image.split()
                 new_alpha = a.point(lambda point: point*factor)
@@ -938,9 +921,7 @@ class MainWindow(QMainWindow):
             else:  # Full Resolution Adjustment
                 self.setCursor(QtCore.Qt.ForbiddenCursor)
                 # Get starting image (fully) opaque and convert it to a pillow Image
-                self.original_image_location = self.selected_layer.position
-                altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
+                pillow_image = self.get_high_res_pillow_image()
                 # Adjust opacity based on factor
                 r, g, b, a = pillow_image.split()
                 new_alpha = a.point(lambda point: point*factor)
@@ -965,10 +946,7 @@ class MainWindow(QMainWindow):
             factor = (value/100)
             if self.use_low_res:
                 # Get starting image (fully) opaque and convert it to a pillow Image
-                self.original_image_location = self.selected_layer.position
-                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
+                pillow_image = self.get_low_res_pillow_image()
                 # Adjust brightness based on factor
                 brightness_enhancer = ImageEnhance.Brightness(pillow_image)
                 pillow_image = brightness_enhancer.enhance(factor)
@@ -994,9 +972,7 @@ class MainWindow(QMainWindow):
             else:  # Full Resolution Adjustment
                 self.setCursor(QtCore.Qt.ForbiddenCursor)
                 # Get starting image (fully) opaque and convert it to a pillow Image
-                self.original_image_location = self.selected_layer.position
-                altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
+                pillow_image = self.get_high_res_pillow_image()
                 # Adjust brightness based on factor
                 brightness_enhancer = ImageEnhance.Brightness(pillow_image)
                 pillow_image = brightness_enhancer.enhance(factor)
@@ -1022,10 +998,7 @@ class MainWindow(QMainWindow):
             factor = 2**(value/100) # Exposure Calculation
             if self.use_low_res:
                 # Get starting image (fully) opaque and convert it to a pillow Image
-                self.original_image_location = self.selected_layer.position
-                self.low_res_image = self.altered_image.scaled(self.resolution, self.resolution, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                altered_image = self.low_res_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
+                pillow_image = self.get_low_res_pillow_image()
                 # Adjust exposure based on factor
                 exposure_enhancer = ImageEnhance.Brightness(pillow_image)
                 pillow_image = exposure_enhancer.enhance(factor)
@@ -1051,9 +1024,7 @@ class MainWindow(QMainWindow):
             else: # Full Resolution Adjustment
                 self.setCursor(QtCore.Qt.ForbiddenCursor)
                 # Get starting image (fully) opaque and convert it to a pillow Image
-                self.original_image_location = self.selected_layer.position
-                altered_image = self.altered_image.convertToFormat(QImage.Format_ARGB32)
-                pillow_image = ImageQt.fromqimage(altered_image)
+                pillow_image = self.get_high_res_pillow_image()
                 # Adjust exposure based on factor
                 if value != 0:
                     exposure_enhancer = ImageEnhance.Brightness(pillow_image)
