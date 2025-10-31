@@ -204,7 +204,7 @@ class Slider(QWidget):
 #                    TOOL SELECTION MENU                      #
 ###############################################################
 # Tool Selection Menu
-class ToolSectionMenu(QMainWindow):
+class ToolSelectionMenu(QMainWindow):
     def __init__(self, parent = None):
         super().__init__(parent)
         # Establish parent and parent layout

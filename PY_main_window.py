@@ -13,7 +13,7 @@ import time
 
 import PIL 
 from PIL import Image, ImageEnhance, ImageOps, ImageQt, ImageFilter
-from PY_secondary_UI import ToolSectionMenu, Slider, DeleteConfirmationWindow, ChooseNameWindow, TextureLayer, MoveTool
+from PY_secondary_UI import ToolSelectionMenu, Slider, DeleteConfirmationWindow, ChooseNameWindow, TextureLayer, MoveTool
 
 ###############################################################
 #                        MAIN WINDOW                          #
@@ -308,7 +308,7 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, descript_zoom_dock)
         # Add tool panel
         tool_dock = QDockWidget("Tools", self)
-        self.tool_panel = ToolSectionMenu(parent=self)
+        self.tool_panel = ToolSelectionMenu(parent=self)
         tool_dock.setFixedSize(32,500)
         tool_dock.setWidget(self.tool_panel)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, tool_dock)

@@ -1000,17 +1000,17 @@ class RectangularTool(QtWidgets.QLabel):
                     variance = min(abs(self.x_difference), abs(self.y_difference))
                     # If the x difference is negative, establish direction multiplier as -1
                     if self.x_difference <0:
-                        directionX = -1
+                        direction_x = -1
                     else:
-                        directionX = 1
+                        direction_x = 1
                     # If the y difference is negative, establish direction multiplier as -1
                     if self.y_difference <0:
-                        directionY = -1
+                        direction_y = -1
                     else:
-                        directionY = 1
+                        direction_y = 1
                     # Set release point location to match square dimensions and direction multipliers
-                    self.release_point.setY(self.start_point.y() + variance * directionY)
-                    self.release_point.setX(self.start_point.x() + variance * directionX)
+                    self.release_point.setY(self.start_point.y() + variance * direction_y)
+                    self.release_point.setX(self.start_point.x() + variance * direction_x)
                     self.update_overlay()
                 else: # If not drawing a square, set release point to current relative position
                     self.release_point = self.get_scaled_point(event.position())
@@ -1128,18 +1128,18 @@ class RectangularTool(QtWidgets.QLabel):
                 variance = min(abs(self.x_difference), abs(self.y_difference))
                 # If the x difference is negative, establish direction multiplier as -1
                 if self.x_difference <0:
-                    directionX = -1
+                    direction_x = -1
                 else:
-                    directionX = 1
+                    direction_x = 1
                 # If the y difference is negative, establish direction multiplier as -1
                 if self.y_difference <0:
-                    directionY = -1
+                    direction_y = -1
                 else:
-                    directionY = 1
+                    direction_y = 1
                 # Set hover point location to match square dimensions and direction multipliers
-                self.hover_point.setY(self.start_point.y() + variance * directionY)
-                self.hover_point.setX(self.start_point.x() + variance * directionX)
-                # Establish rectanlge into square with new hover point
+                self.hover_point.setY(self.start_point.y() + variance * direction_y)
+                self.hover_point.setX(self.start_point.x() + variance * direction_x)
+                # Establish rectangle into square with new hover point
                 rectangle = QtCore.QRect(self.start_point, self.hover_point)
                 if not self.drawing_in_place:
                     # Draw outline of square with dashed line
@@ -1162,7 +1162,7 @@ class RectangularTool(QtWidgets.QLabel):
                 painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                 rectangle = QtCore.QRect(self.inital_point, self.temporary_release_point)
                 painter.drawRect(rectangle)
-            # Draw dotted line to show rectanlge preview
+            # Draw dotted line to show rectangle preview
             elif self.drawing and not self.isDrawn and not self.drawing_square:
                 painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                 rectangle = QtCore.QRect(self.start_point, self.hover_point)
@@ -1323,17 +1323,17 @@ class EllipticalTool(QtWidgets.QLabel):
                     variance = min(abs(self.x_difference), abs(self.y_difference))
                     # If the x difference is negative, establish direction multiplier as -1
                     if self.x_difference <0:
-                        directionX = -1
+                        direction_x = -1
                     else:
-                        directionX = 1
+                        direction_x = 1
                     # If the y difference is negative, establish direction multiplier as -1
                     if self.y_difference <0:
-                        directionY = -1
+                        direction_y = -1
                     else:
-                        directionY = 1
+                        direction_y = 1
                     # Set release point location to match circle dimensions and direction multipliers
-                    self.release_point.setY(self.start_point.y() + variance * directionY)
-                    self.release_point.setX(self.start_point.x() + variance * directionX)
+                    self.release_point.setY(self.start_point.y() + variance * direction_y)
+                    self.release_point.setX(self.start_point.x() + variance * direction_x)
                     self.update_overlay()
                 else: # If not drawing a circle, set release point to current relative position
                     self.release_point = self.get_scaled_point(event.position())
@@ -1448,7 +1448,7 @@ class EllipticalTool(QtWidgets.QLabel):
         painter = QtGui.QPainter(self.overlay)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         self.isDrawn = False
-        # # If not in original postions and user is drawing, calculate the hover "rectanlge and turn into ellipse
+        # # If not in original postions and user is drawing, calculate the hover "rectangle and turn into ellipse
         if self.start_point != QtCore.QPoint(0, 0) and self.hover_point != QtCore.QPoint(0, 0) and self.drawing:
             if self.drawing_circle and self.drawing:
                 # Calculate the difference between hover and start points
@@ -1458,18 +1458,18 @@ class EllipticalTool(QtWidgets.QLabel):
                 variance = min(abs(self.x_difference), abs(self.y_difference))
                 # If the x difference is negative, establish direction multiplier as -1
                 if self.x_difference <0:
-                    directionX = -1
+                    direction_x = -1
                 else:
-                    directionX = 1
+                    direction_x = 1
                 # If the y difference is negative, establish direction multiplier as -1
                 if self.y_difference <0:
-                    directionY = -1
+                    direction_y = -1
                 else:
-                    directionY = 1
+                    direction_y = 1
                 # Set hover point location to match square dimensions and direction multipliers
-                self.hover_point.setY(self.start_point.y() + variance * directionY)
-                self.hover_point.setX(self.start_point.x() + variance * directionX)
-                # Establish ellipse/rectanlge into circle with new hover point
+                self.hover_point.setY(self.start_point.y() + variance * direction_y)
+                self.hover_point.setX(self.start_point.x() + variance * direction_x)
+                # Establish ellipse/rectangle into circle with new hover point
                 ellipse = QtCore.QRect(self.start_point, self.hover_point)
                 if not self.drawing_in_place:
                     # Draw outline of square with dashed line
@@ -1492,7 +1492,7 @@ class EllipticalTool(QtWidgets.QLabel):
                 painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                 ellipse = QtCore.QRect(self.inital_point, self.temporary_release_point)
                 painter.drawEllipse(ellipse)
-            # Draw dotted line to show rectanlge preview
+            # Draw dotted line to show rectangle preview
             elif self.drawing and not self.isDrawn and not self.drawing_circle:
                 painter.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.DashLine))
                 ellipse = QtCore.QRect(self.start_point, self.hover_point)
@@ -1542,8 +1542,8 @@ class TransformTool(QWidget):
         self.rectangle = None
         self.point = None
         self.rotation_angle = 0
-        self.OGHEIGHT = None
-        self.OGWIDTH = None
+        self.original_height = None
+        self.original_width = None
         self.topLeft = None
         self.rectangle = QtCore.QRect(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position, self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.size())
         self.center_point = self.rectangle.center()
@@ -1581,12 +1581,12 @@ class TransformTool(QWidget):
                     self.setCursor(QtCore.Qt.ClosedHandCursor)
                 else:
                     self.point = self.get_scaled_point(event.position()) # Set point of click
-                    # Establish rectanlge over selected layer
+                    # Establish rectangle over selected layer
                     self.rectangle = QtCore.QRect(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position, self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.size())
                     self.topLeft = self.rectangle.topLeft()
-                    # Establish expanded rectanlge for scale detection
+                    # Establish expanded rectangle for scale detection
                     expanded_rectangle = self.expand_rectangle(self.rectangle, 1.2)
-                    # Estbalish center of rectanlge
+                    # Estbalish center of rectangle
                     self.center_point = self.rectangle.center()
                     # Get half the pixmap height and width of original layer
                     half_pix_height = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.height() * 0.5
@@ -1633,8 +1633,8 @@ class TransformTool(QWidget):
                         convert = base_image.convertToFormat(QImage.Format_ARGB32)
                         self.opaque_pillow_image = ImageQt.fromqimage(convert)  
                         # Establish original height and width
-                        self.OGHEIGHT = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.height()
-                        self.OGWIDTH = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.width()
+                        self.original_height = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.height()
+                        self.original_width = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.width()
                         # If layer has not been rotated, set up bounding box size
                         if self.parent_window.never_rotated == True:
                             # Rotate pillow images to get expanded bounding box
@@ -1711,8 +1711,8 @@ class TransformTool(QWidget):
                 rectangle = QtCore.QRect(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position, self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.size())
                 topLeft = rectangle.topLeft()
                 # Get the size difference based on the original dimensions  vs the new dimensiosn
-                half_pix_height_difference = (self.OGHEIGHT - self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.height())/2
-                half_pix_width_differenece = (self.OGWIDTH - self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.width())/2
+                half_pix_height_difference = (self.original_height - self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.height())/2
+                half_pix_width_differenece = (self.original_width - self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.width())/2
                 newTopLeft = QtCore.QPoint(self.topLeft.x() + half_pix_width_differenece, self.topLeft.y() + half_pix_height_difference)
                 # Get 3 points to calculate the angle of rotation (start point, center point, hover point)
                 a = self.point.x(), self.point.y()
@@ -1744,7 +1744,7 @@ class TransformTool(QWidget):
                 # Gets half sizes of pixmap of current layer
                 half_pix_height = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.height() * 0.5
                 half_pix_width = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.width() * 0.5
-                # Establishes rectanlge based on pixmap size
+                # Establishes rectangle based on pixmap size
                 rectangle = QtCore.QRect(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position, self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.size())
                 topLeft = rectangle.topLeft()
                 # Sets paint point for centre of rectangle
@@ -1777,7 +1777,7 @@ class TransformTool(QWidget):
                     self.selected_pixmap = self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap
                     self.rotating = False
                     self.update_overlay()  
-                    # Reset Rectanlge 
+                    # Reset rectangle 
                     self.rectangle = QtCore.QRect(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position, self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.size())
                     self.topLeft = self.rectangle.topLeft()
                     # Change layers and tool to refresh
@@ -1805,16 +1805,16 @@ class TransformTool(QWidget):
         for layer in self.parent_window.translucent_texture_layers[0:]: # Paint all layers
             painter.drawPixmap(layer.position, layer.pixmap)
         painter.drawPixmap(QtCore.QPoint(0,0), self.parent_window.pen_overlay) # Draw Pen Overlay
-        # Draw rectanlge around selected layer if it is not the base layer
+        # Draw rectangle around selected layer if it is not the base layer
         if self.parent_window.selected_layer_index != 0:
             painter.drawRect(QtCore.QRect(self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].position, self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index].pixmap.size()))
             pen = QtGui.QPen(QtCore.Qt.white, 10)
             pen.setCapStyle(Qt.RoundCap)
             painter.setPen(pen)
-            # Draw center point of boudning rectanlge
+            # Draw center point of boudning rectangle
             painter.drawPoint(self.paint_center_point)
 
-    # Expands the rectanlge by desired scale factor
+    # Expands the rectangle by desired scale factor
     def expand_rectangle(self,rectangle,scale_factor):
         transform = QTransform()
         center = rectangle.center()
@@ -1831,7 +1831,7 @@ class TransformTool(QWidget):
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
         outline_pen =QtGui.QPen(QtGui.QColor(0, 0, 255, 255), 5)
-        # Draw rectanlge on selected layer
+        # Draw rectangle on selected layer
         if self.parent_window.translucent_texture_layers[self.parent_window.selected_layer_index]:
             painter.setRenderHint(QtGui.QPainter.Antialiasing)
             painter = QtGui.QPainter(self.overlay)
