@@ -3,28 +3,24 @@ import sys
 
 import os, sys
 sys.path.append(os.path.join(os.path.dirname(__file__)))
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMessageBox
 
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout
 
-# Subclass QMainWindow to customize your application's main window
-class UnrealWindow(QWidget):
+# Welcome Window to show install has worked
+class WelcomeWindow(QWidget):
+    # Set Up Window
     def __init__(self, parent = None):
-        super(UnrealWindow, self).__init__(parent)
-
+        super(WelcomeWindow, self).__init__(parent)
         self.mainWindow= QMainWindow()
         self.mainWindow.setParent(self)
         self.setFixedSize(500,100)
         self.label = QLabel()
         self.label.setText("\n\n     The Texture Editor Tool has been sucessfully installed.")
-
         layout = QVBoxLayout()
-
         layout.addWidget(self.label)
-
         container = QWidget()
         container.setLayout(layout)
-
+        # Set Dark Mode
         self.setStyleSheet("""
             background-color: #2c2c2c;
             color: #ffffff;
@@ -32,22 +28,19 @@ class UnrealWindow(QWidget):
             font-size: 12px;
             selection-background-color: #424242;                  
         """)   
-
         self.mainWindow.setCentralWidget(container)
 
+# Destroys window if it exists, otherwise launches window
 def launchWindow():
     if QApplication.instance():
         # Id any current instances of tool and destroy
         for win in (QApplication.allWindows()):
-            if 'welcomeWindow' in win.objectName(): # update this name to match name below
+            if 'welcomeWindow' in win.objectName():
                 win.destroy()
-    else:
+    else: # Opens Welcome Window
         QApplication(sys.argv)
-
-    UnrealWindow.window = UnrealWindow()
-    UnrealWindow.window.show()
-    UnrealWindow.window.setWindowTitle("Welcome to the Texture Editor Tool")
-    UnrealWindow.window.setObjectName("welcomeWindow")
-    unreal.parent_external_window_to_slate(UnrealWindow.window.winId())
-
-
+    WelcomeWindow.window = WelcomeWindow()
+    WelcomeWindow.window.show()
+    WelcomeWindow.window.setWindowTitle("Welcome to the Texture Editor Tool")
+    WelcomeWindow.window.setObjectName("welcomeWindow")
+    unreal.parent_external_window_to_slate(WelcomeWindow.window.winId())

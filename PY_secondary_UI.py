@@ -1,72 +1,55 @@
-import os, sys
+import os
+import sys
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 
 import os
-import PySide6
-from PySide6 import QtWidgets, QtGui, QtCore
-from PySide6.QtWidgets import QPushButton, QWidget, QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar, QColorDialog, QDockWidget, QListWidget, QMessageBox
+from PySide6 import QtCore
+from PySide6.QtWidgets import QPushButton, QWidget, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QRadioButton, QButtonGroup
 from PySide6.QtCore import Qt, Signal
 import unreal
-import math
-###TODO ADJUST IMPORTS TO INCLUDE WHATS ONLY NECESARY
-#from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLineEdit, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QRadioButton, QButtonGroup, QComboBox, QDial, QMenu, QMenuBar, QColorDialog
-from PySide6.QtGui import QPainterPath,  QPolygon, QPolygonF, QAction, QImage, QColor, QPixmap, QAction, QTransform, QIcon
+from PySide6.QtGui import QAction, QAction, QIcon
 
-
-# from PySide6.QtGui import (QAction, QFont, QIcon, QKeySequence,
-#                            QTextCharFormat, QTextCursor, QTextTableFormat)
-#from PySide6.QtPrintSupport import QPrintDialog, QPrinter
-# from PySide6.QtWidgets import (QApplication, QDialog, QDockWidget,
-#                                QFileDialog, QListWidget, QMainWindow,
-#                                QMessageBox, QTextEdit)
-
-import time
-import PIL 
-from PIL import Image, ImageEnhance, ImageOps, ImageQt, ImageFilter
-
-import PY_tools
 from PY_tools import PenTool, MoveTool, LassoTool, PolygonalTool, RectangularTool, EllipticalTool, TransformTool, TextureLayer
 
 ###############################################################
 #                   DELETION WINDOW                           # 
 ###############################################################
+# Window to confirm layer deletion
 class DeleteConfirmationWindow(QWidget):
     def __init__(self, parent = None):
+        # Setup window
         super(DeleteConfirmationWindow, self).__init__(parent)
-
         self.mainWindow= QMainWindow()
-        #self.mainWindow.setParent(parent)
+        # Establish Parent Window
         self.parent_window = parent
 
-        # button
+        # Establish buttons and effects
         self.accept_button = QPushButton("Yes")
-        self.accept_button.clicked.connect(self.aceept_button_clicked)
-
+        self.accept_button.clicked.connect(self.accept_button_clicked)
         self.cancel_button = QPushButton("Cancel")
         self.cancel_button.clicked.connect(self.cancel_button_clicked)
 
-        # label
+        # Estbalish text label
         self.label = QLabel()
         self.label.setText("Are you sure you want to delete this layer?")
 
-        # radio button
+        # Establish "Dont show this again button" and link effect
         self.dont_show_again_radio_button = QRadioButton()
         self.dont_show_again_radio_button.setText("Don't show this again")
         self.dont_show_again_radio_button.clicked.connect(self.dont_show_again_enabled)
 
-        # combine all in a layout
+        # Combine all in a layout and container
         layout = QVBoxLayout()
-
         button_layouts= QHBoxLayout()
         button_layouts.addWidget(self.accept_button)
         button_layouts.addWidget(self.cancel_button)
         layout.addWidget(self.label)
         layout.addWidget(self.dont_show_again_radio_button)
         layout.addLayout(button_layouts)
-
         container = QWidget()
         container.setLayout(layout)
 
+        # Set dark mode
         self.setStyleSheet("""
             background-color: #252525;
             color: #ffffff;
@@ -76,21 +59,21 @@ class DeleteConfirmationWindow(QWidget):
 
         self.mainWindow.setCentralWidget(container)
 
-
-    def aceept_button_clicked(self, checked):
+    # Establish accept button effect to delete layer
+    def accept_button_clicked(self, checked):
         self.parent_window.will_delete = True
         self.parent_window.delete_current_layer()
         self.parent_window.update()
         self.mainWindow.close()
         self.mainWindow.deleteLater()
-
+    # Establish accept button effect to run deletion script without deleteinng layer    
     def cancel_button_clicked(self, checked):
         self.parent_window.will_delete = False
         self.parent_window.update()
         self.parent_window.delete_current_layer()
         self.mainWindow.close()
         self.mainWindow.deleteLater()
-
+    # Establish don't show this again effect
     def dont_show_again_enabled(self, checked):
         self.parent_window.show_delete_message = False
         self.parent_window.update()
@@ -101,33 +84,35 @@ class DeleteConfirmationWindow(QWidget):
 #                       RENAMER MENU                          # 
 ###############################################################
 class ChooseNameWindow(QMainWindow):
-    
+    # Establish ChooseNameWindow
     def __init__(self):
+        # Setup Window
         super().__init__()           
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
         self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
-        #self.mainWindow= QMainWindow()
-        #self.mainWindow.setParent(self)
+
+        # Add Apply Button and link effect
         self.button = QPushButton("Apply Name Change")
         self.button.setCheckable(True)
         self.button.clicked.connect(self.buttonClicked)
 
         self.label = QLabel()
 
+        # Add Set Name line edit
         self.lineEdit = QLineEdit()
         self.lineEdit.textChanged.connect(self.label.setText)
         self.lineEdit.setText('')
 
-
+        # Add widgets to layout
         layout = QVBoxLayout()
         layout.addWidget(self.button)
         layout.addWidget(self.lineEdit)
         layout.addWidget(self.label)
-
         container = QWidget()
         container.setLayout(layout)
 
+        # Set dark mode
         self.setStyleSheet("""
             background-color: #262626;
             color: #ffffff;
@@ -135,189 +120,102 @@ class ChooseNameWindow(QMainWindow):
             font-size: 12px;
             selection-background-color: #424242;                  
         """)  
- 
         self.setCentralWidget(container)
 
+        # Establish Variables
         self.name = None
         self.button_clicked = False
 
+    #Set LineText as name if pressed effect
     def buttonClicked(self, checked):
         self.button_clicked = True
         self.name = self.lineEdit.text() or "untitled"
         self.update()
 
+    # Gets and returns the name
     def getName(self):
-        print("internal name", self.name)
         return self.name
 
+    # Launches Window
     def launchWindow(self):
         ChooseNameWindow.window = ChooseNameWindow()
         ChooseNameWindow.window.show()
-        ChooseNameWindow.window.setWindowTitle("WINDOW Demo")
-        ChooseNameWindow.window.setObjectName("ToolWindow")
+        ChooseNameWindow.window.setWindowTitle("Choose File Name")
+        ChooseNameWindow.window.setObjectName("ChooseNameWindow")
         unreal.parent_external_window_to_slate(ChooseNameWindow.window.winId())
 
 
-
+###############################################################
+#                          SLIDER                             #
+###############################################################
+# Establishes Slider class to be used for all sliders
 class Slider(QWidget):
+    # Estalish Signals to communicate with other classes
     value_changed = Signal(int)
     has_released_slider = Signal(bool)
     def __init__(self, parent, name, min, max, default):
+        # Set Up Slider
         super().__init__(parent)
         self.parent_window = parent
- 
-
         self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
         self.setFixedSize(320, 25)
         self.setWindowTitle(name)
 
+        # Set up slider values and connections
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(min)
         self.slider.setMaximum(max)
         self.slider.setSliderPosition(default)
         self.slider.valueChanged.connect(self.sliderChanged)
         self.slider.sliderReleased.connect(self.slider_been_released)
-        # self.slider.sliderReleased.connect(self.slider_released)
 
-        self.texture_layers = parent.texture_layers
-
+        # Set dark mode
         self.setStyleSheet("""
             background-color: #252525;
             color: #ffffff;
             font-family: Segoe UI;
             font-size: 12px;
         """)  
- 
-        # self.setStyleSheet("""
-        #     QSlider::groove:horizontal {
-        #         border: 1px solid #999999;
-        #         height: 8px;
-        #         background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00FFFF, stop:1 #FF0000);
 
-        #     }
-
-        #     QSlider::handle:horizontal {
-        #         background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
-        #         border: 1px solid #5c5c5c;
-        #         width: 10px;
-        #         margin: -2px 0;
-        #         border-radius: 3px;
-        #     }
-        # """)
-
-
-        ################for layer in self.texture_layers: ADD ONCE LAYER SELECTION IS A THING
+        # Set textures and get base pixmap/image
+        self.texture_layers = parent.texture_layers
         self.original_pixmap = self.parent_window.base_pixmap
         self.original_image = self.original_pixmap.toImage()
 
+        # Add slider to widget
         self.image_label = QLabel()
-        
-        
-        #self.image_label.setPixmap(self.original_pixmap) #####################################################
-
-
         layout = QVBoxLayout()
         layout.addWidget(self.slider)
-        #layout.addWidget(self.image_label) ##################################################################
-
         self.setLayout(layout)
 
+    # Reset slider poistion to default
     def reset(self,default):
         self.slider.setSliderPosition(default)
 
+    # Emit new value when slider is changed
     def sliderChanged(self,value):
-        # factor = value/100
-        # image = self.original_image.convertToFormat(QImage.Format_ARGB32)
-        
-        # for pixelY in range(image.height()):
-        #     for pixelX in range(image.width()):
-        #         pixel_color = QColor(image.pixel(pixelX,pixelY))
-        #         H,S,L,A = pixel_color.getHsl()
-        #         S = int(S*factor)
-        #         pixel_color.setHsl(H,S,L,A)
-        #         image.setPixelColor(pixelX,pixelY,pixel_color)
-        
-        # self.image_label.setPixmap(QPixmap.fromImage(image))
-        # #texture_layer = TextureLayer(self.image_label, QtCore.QPoint(100,100))
-        # texture_layer2 = TextureLayer(QPixmap.fromImage(image), QtCore.QPoint(0,0))
-
-        # self.parent_window.texture_layers[0] = texture_layer2
-        # #self.parent_window.base_layer = texture_layer2
-
-        # #move_tool_class = MoveTool(parent=parent_window)
-        # self.parent_window.active_tool_widget.texture_layers[0] = texture_layer2
-
-        #self.parent_window.active_tool_widget.update_overlay()
-        # print("base texture layer updated")
-        # self.parent_window.update()
         self.value_changed.emit(value)
     
+    # Emit boolean to say if the slider has been released
     def slider_been_released(self):
-        unreal.log(print("hi"))
-        # self.setCursor(QtCore.Qt.ForbiddenCursor)
-        # self.parent_window.use_low_res = False
         self.has_released_slider.emit(True)
 
-        #self.has_released_slider.emit(True)
-
-    
 ###############################################################
 #                    TOOL SELECTION MENU                      #
 ###############################################################
+# Tool Selection Menu
 class ToolSectionMenu(QMainWindow):
     def __init__(self, parent = None):
         super().__init__(parent)
+        # Establish parent and parent layout
         self.parent_window = parent
         self.parent_layout = self.parent_window.layout
-
+        # Esablish window
         self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
         self.setFixedSize(32, 1000)
         self.setWindowTitle("Tool Menu")
 
-        layout = QVBoxLayout(self)
-
-        self.pen_tool = QRadioButton()
-        self.pen_tool.setText('Pen')
-        self.lasso_tool = QRadioButton()
-        self.lasso_tool.setText('Lasso')
-        self.rectangle_tool = QRadioButton()
-        self.rectangle_tool.setText('Rectangle')
-        self.ellipse_tool = QRadioButton()
-        self.ellipse_tool.setText('Ellipse')
-        self.polygonal_tool = QRadioButton()
-        self.polygonal_tool.setText('Polygonal')
-        self.move_tool = QRadioButton()
-        self.move_tool.setText('Move')
-        self.transform_tool = QRadioButton()
-        self.transform_tool.setText('Transform')
-        self.fill_tool = QRadioButton()
-        self.fill_tool.setText('Fill')
-
-
-        self.radioButtonGroup = QButtonGroup()
-        self.radioButtonGroup.addButton(self.pen_tool)
-        self.radioButtonGroup.addButton(self.lasso_tool)
-        self.radioButtonGroup.addButton(self.rectangle_tool)
-        self.radioButtonGroup.addButton(self.ellipse_tool)
-        self.radioButtonGroup.addButton(self.polygonal_tool)
-        self.radioButtonGroup.addButton(self.move_tool)
-        self.radioButtonGroup.addButton(self.transform_tool)
-        self.radioButtonGroup.addButton(self.fill_tool)
-
-        layout.addWidget(self.pen_tool)
-        layout.addWidget(self.lasso_tool)
-        layout.addWidget(self.rectangle_tool)
-        layout.addWidget(self.ellipse_tool)
-        layout.addWidget(self.polygonal_tool)
-        layout.addWidget(self.move_tool)
-        layout.addWidget(self.transform_tool)
-        # layout.addWidget(self.fill_tool)
-
-
-        # for button in [self.pen_tool, self.rectangle_tool, self.ellipse_tool, self.lasso_tool, self.polygonal_tool, self.move_tool, self.transform_tool, self.fill_tool]:
-        #     self.radioButtonGroup.addButton(button)
-        #     button.clicked.connect(self.radioButtonGroupChanged)
-
+        # Set dark mode
         self.setStyleSheet("""
             background-color: #262626;
             color: #ffffff;
@@ -326,15 +224,9 @@ class ToolSectionMenu(QMainWindow):
             selection-background-color: #424242;                  
         """)  
  
-        #self.pen_tool.setChecked(True)
-        #self.radioButtonGroupChanged()
-        # self.parent_window.active_tool_widget =  PenTool(self.image_path, self)
+        # Set intial tool as pen
         self.selected_tool = "Pen"
-        self.previous_selected_tool = None
         self.refresh_tool()
-
-        # self._text_edit = QTextEdit()
-        # self.setCentralWidget(self._text_edit)
 
         self.create_actions()
         self.create_tool_bars()
@@ -346,7 +238,7 @@ class ToolSectionMenu(QMainWindow):
             font-size: 12px;
             selection-background-color: #424242;                  
         """)  
- 
+    # Add Tool bar actions to corresponding Icon
     def create_tool_bars(self):
         self.tool_bar = self.addToolBar("File")
         self.tool_bar.setOrientation(Qt.Vertical)
@@ -358,10 +250,7 @@ class ToolSectionMenu(QMainWindow):
         self.tool_bar.addAction(self.ellipse_action)
         self.tool_bar.addAction(self.transform_action)
 
-
-
-
-
+    # Create Actions for tool bars with icons
     def create_actions(self):
         icon = QIcon(os.path.join(os.path.dirname(__file__), "icon_images", "move.png"))
         self.move_action = QAction(icon, "Move Tool",
@@ -400,25 +289,16 @@ class ToolSectionMenu(QMainWindow):
                                   triggered=self.enable_transform_tool)
 
 
-
+    # Update the current tool
     def update_tool(self):
         if self.parent_window.active_tool_widget:
             self.parent_layout.insertWidget(0,self.parent_window.active_tool_widget)
-            #parent_layout.insertWidget(1,self.parent_window.add_texture_button)
             self.parent_window.active_tool_widget.show()
-            # if self.parent_window.active_tool_widget == self.move_tool or  self.parent_window.active_tool_widget == self.transform_tool:
-            #     self.parent_window.setCursor(QtCore.Qt.ArrowCursor)
-            # else: 
-            #     self.parent_window.active_tool_widget.setCursor(QtCore.Qt.CrossCursor)
-
         self.parent_window.tool_description_label.setText(self.parent_window.tool_description)
-        #self.parent_window.get_tool_description()
         self.parent_window.update()
 
+    # Refresh the tool
     def refresh_tool(self):
-
-
-
         if self.selected_tool == "Move":
             self.enable_move_tool()
         elif self.selected_tool == "Pen":
@@ -433,13 +313,9 @@ class ToolSectionMenu(QMainWindow):
             self.enable_ellipse_tool()
         elif self.selected_tool == "Transform":
             self.enable_transform_tool()
-
-
         self.parent_window.tool_description_label.setText(self.parent_window.tool_description)
-        #self.parent_window.get_tool_description()
-        # self.parent_window.update()
 
-
+    # Enable move tool
     def enable_move_tool(self):
         if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
             self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
@@ -456,7 +332,7 @@ class ToolSectionMenu(QMainWindow):
         self.setCursor(QtCore.Qt.ArrowCursor)
         self.update_tool()
 
-
+    # Enable pen tool
     def enable_pen_tool(self):
         if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
             self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
@@ -475,11 +351,8 @@ class ToolSectionMenu(QMainWindow):
         self.selected_tool = "Pen"
         self.parent_window.setCursor(QtCore.Qt.CrossCursor)
         self.update_tool()
-        if self.previous_selected_tool == self.selected_tool:
-            self.previous_selected_tool = "Pen"
 
-
-        
+    # Enable lasso tool
     def enable_lasso_tool(self):
         if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
             self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
@@ -500,7 +373,8 @@ class ToolSectionMenu(QMainWindow):
         self.selected_tool = "Lasso"
         self.setCursor(QtCore.Qt.CrossCursor)
         self.update_tool()
-        
+
+    # Enable rectangle tool
     def enable_rectanlge_tool(self):
         if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
             self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
@@ -528,8 +402,8 @@ class ToolSectionMenu(QMainWindow):
         self.selected_tool = "Rectanlge"
         self.parent_window.setCursor(QtCore.Qt.CrossCursor)
         self.update_tool()
-        
 
+    # Enable ellipse tool
     def enable_ellipse_tool(self):
         if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
             self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
@@ -555,8 +429,8 @@ class ToolSectionMenu(QMainWindow):
         self.selected_tool = "Ellipse"
         self.parent_window.setCursor(QtCore.Qt.CrossCursor)
         self.update_tool()
-        
 
+    # Enable polygonal tool
     def enable_polygonal_tool(self):
         if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
             self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
@@ -581,8 +455,8 @@ class ToolSectionMenu(QMainWindow):
         self.selected_tool = "Polygon"
         self.parent_window.setCursor(QtCore.Qt.ArrowCursor)
         self.update_tool()
-        
-
+    
+    # Enable transform tool
     def enable_transform_tool(self):
         if hasattr(self.parent_window, "active_tool_widget") and self.parent_window.active_tool_widget:
             self.parent_layout.removeWidget(self.parent_window.active_tool_widget)
